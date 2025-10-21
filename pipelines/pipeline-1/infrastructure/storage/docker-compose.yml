@@ -1,0 +1,92 @@
+version: '3.8'
+
+# Storage Layer - MinIO S3-compatible object storage
+# This provides shared storage for Airflow logs, Kafka data, and ingestion pipelines
+
+services:
+  # MinIO - Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_REGION: 'eu-east-1'
+      # Browser settings
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"       # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"   # Web Console
+    volumes:
+      - minio-data:/data
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # MinIO Client - Initialize buckets and policies
+  mc-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      echo 'Initializing MinIO...';
+      sleep 3;
+      
+      echo 'Setting up MinIO alias...';
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      
+      echo 'Creating buckets...';
+      /usr/bin/mc mb myminio/${MINIO_AIRFLOW_LOGS_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_KAFKA_BUCKET} --ignore-existing;
+      
+      echo 'Setting lifecycle policies...';
+      /usr/bin/mc ilm add --expiry-days ${AIRFLOW_LOG_RETENTION_DAYS:-30} myminio/${MINIO_AIRFLOW_LOGS_BUCKET} || true;
+      
+      echo 'Creating ingestion subfolders...';
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/raw --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/staging --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/processed --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/temp --ignore-existing;
+      
+      echo 'Setting temp folder auto-cleanup (7 days)...';
+      /usr/bin/mc ilm add --expiry-days 7 myminio/${MINIO_INGESTION_BUCKET}/temp || true;
+      
+      echo 'MinIO initialization complete!';
+      echo '';
+      echo 'Bucket Summary:';
+      /usr/bin/mc ls myminio;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_AIRFLOW_LOGS_BUCKET: ${MINIO_AIRFLOW_LOGS_BUCKET}
+      MINIO_INGESTION_BUCKET: ${MINIO_INGESTION_BUCKET}
+      MINIO_KAFKA_BUCKET: ${MINIO_KAFKA_BUCKET}
+      AIRFLOW_LOG_RETENTION_DAYS: ${AIRFLOW_LOG_RETENTION_DAYS:-30}
+    networks:
+      - data-platform-network
+
+volumes:
+  minio-data:
+    driver: local
+
+networks:
+  data-platform-network:
+    external: true

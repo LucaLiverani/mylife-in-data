@@ -1,0 +1,46 @@
+# Airflow Setup
+
+This directory contains the Docker Compose configuration for setting up an Apache Airflow instance.
+
+The setup includes:
+- PostgreSQL for the metadata database
+- Redis for the Celery broker
+- Airflow Webserver
+- Airflow Scheduler
+- Airflow Worker
+- Airflow Triggerer
+
+## Getting Started
+
+### 1. Prerequisites
+
+- Docker
+- Docker Compose
+
+### 2. Create `.env` file
+
+Before starting, create a `.env` file in this directory. This file will hold your credentials and configuration. You can copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+Update the `.env` file with your desired values. You will need to generate a Fernet key for `AIRFLOW__CORE__FERNET_KEY`:
+
+```bash
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+### 3. Start the Services
+
+You can start the Airflow instance using the main `start-all.sh` script in the parent directory, or by running the following command in this directory:
+
+```bash
+docker-compose up -d
+```
+
+## Accessing Airflow
+
+- **Airflow Web UI**: `http://localhost:8080`
+
+Log in to the UI using the admin credentials you set in your `.env` file.
