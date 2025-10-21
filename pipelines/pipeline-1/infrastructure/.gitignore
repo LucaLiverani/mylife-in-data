@@ -1,0 +1,19 @@
+# Environment variables
+.env
+**/.env
+
+# Logs
+**/logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
