@@ -1,0 +1,7 @@
+prefect
+boto3
+python-dotenv
+spotipy
+pandas
+pytest
+pytest-mock
