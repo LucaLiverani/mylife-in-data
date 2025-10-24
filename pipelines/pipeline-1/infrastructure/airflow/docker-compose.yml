@@ -1,44 +1,38 @@
 version: '3.8'
 
 x-airflow-common: &airflow-common
-  # Use the EXACT version, not a tag that might have been updated
   image: apache/airflow:2.7.3-python3.8
   environment: &airflow-common-env
+    PYTHONPATH: /opt/airflow/dags
     # Core Configuration
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    
     # Database
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    
     # Celery
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-    
     # Logging to MinIO
     AIRFLOW__LOGGING__REMOTE_LOGGING: 'true'
     AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: 's3://airflow-logs'
     AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: 'minio_s3'
-    
     # MinIO connection
     AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
     AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
-    
     # Constrain provider versions for Airflow 2.7.3
     _PIP_ADDITIONAL_REQUIREMENTS: >-
       apache-airflow-providers-amazon==8.13.0
       apache-airflow-providers-apache-kafka==1.3.1
       apache-airflow-providers-openlineage==1.2.1
       confluent-kafka
-    
   volumes:
-    - ./dags:/opt/airflow/dags
+    - ../../pipeline_code:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
-  user: "${AIRFLOW_UID:-50000}:0"
+  # user: "${AIRFLOW_UID:-50000}:0"
   networks:
     - data-platform-network
 
@@ -58,7 +52,7 @@ services:
       - data-platform-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -68,6 +62,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: airflow-redis
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
@@ -75,7 +71,7 @@ services:
       - data-platform-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping || exit 1"]
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -91,23 +87,25 @@ services:
       - |
         set -e
         echo "🔧 Starting Airflow initialization..."
-
-        # Wait for database
+        
+        # Wait for postgres
         echo "⏳ Waiting for database..."
-        sleep 10
-
-        # Test database connection
-        echo "🔌 Testing database connection..."
-        until airflow db check 2>/dev/null; do
-          echo "   Database not ready, waiting..."
-          sleep 3
+        for i in {1..30}; do
+          if pg_isready -h postgres -p 5432 -U ${POSTGRES_USER}; then
+            echo "✅ PostgreSQL is ready!"
+            break
+          fi
+          sleep 2
         done
-        echo "   ✅ Database connection successful"
-
+        
+        # Test connection
+        echo "🔌 Testing database connection..."
+        psql "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}" -c "SELECT 1"
+        
         # Initialize database
         echo "🗄️  Initializing Airflow database..."
         airflow db migrate
-
+        
         # Create admin user
         echo "👤 Creating admin user..."
         airflow users create \
@@ -116,35 +114,31 @@ services:
           --firstname Admin \
           --lastname User \
           --role Admin \
-          --email ${AIRFLOW_ADMIN_EMAIL} 2>&1 || echo "⚠️  User already exists, skipping..."
-
-        # Set up MinIO connection
+          --email ${AIRFLOW_ADMIN_EMAIL} 2>&1 || echo "⚠️  User already exists"
+        
+        # MinIO connection
         echo "🔗 Setting up MinIO connection..."
         airflow connections delete minio_s3 2>/dev/null || true
         airflow connections add minio_s3 \
           --conn-type aws \
           --conn-login ${MINIO_ROOT_USER} \
           --conn-password ${MINIO_ROOT_PASSWORD} \
-          --conn-extra '{"endpoint_url": "http://minio:9000", "region_name": "us-east-1"}' || echo "⚠️  MinIO connection setup failed"
-
-        # Set up Kafka connection
+          --conn-extra '{"endpoint_url": "http://minio:9000", "region_name": "us-east-1"}' || echo "⚠️  MinIO connection failed"
+        
+        # Kafka connection
         echo "🔗 Setting up Kafka connection..."
         airflow connections delete kafka_default 2>/dev/null || true
         airflow connections add kafka_default \
           --conn-type generic \
           --conn-host kafka \
           --conn-port 9092 \
-          --conn-extra '{"bootstrap.servers": "kafka:9092", "group.id": "airflow"}' || echo "⚠️  Kafka connection setup failed"
-
-        echo ""
+          --conn-extra '{"bootstrap.servers": "kafka:9092", "group.id": "airflow"}' || echo "⚠️  Kafka connection failed"
+        
         echo "✅ Airflow initialization complete!"
     environment:
       <<: *airflow-common-env
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-    # DO NOT override user here - use the common user
     volumes:
-      - ./dags:/opt/airflow/dags
+      - ../../pipeline_code:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./plugins:/opt/airflow/plugins
