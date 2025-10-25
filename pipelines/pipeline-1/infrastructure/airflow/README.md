@@ -44,3 +44,33 @@ docker-compose up -d
 - **Airflow Web UI**: `http://localhost:8080`
 
 Log in to the UI using the admin credentials you set in your `.env` file.
+
+## Update package for piepline
+
+---
+
+## When to Restart What:
+
+| Change | Command |
+|--------|---------|
+| **DAG file edited** | Nothing! Wait 30s ⚡ |
+| **New package in requirements.txt** | `docker-compose build && docker-compose up -d` |
+| **Config change** | `docker-compose restart airflow-scheduler` |
+| **New Airflow connection** | Nothing if added via UI, or `docker-compose restart` |
+| **Code in spotify/ module** | `docker-compose restart airflow-scheduler airflow-worker` |
+
+---
+
+## Quick Workflow:
+
+```bash
+# Daily work - edit DAGs
+vim ~/projects/.../pipeline_code/spotify_ingestion_dag.py
+# Auto-detected in 30s! ✅
+
+# Weekly/monthly - add package
+echo "requests==2.31.0" >> ~/projects/.../pipeline_code/requirements.txt
+cd ~/projects/.../infrastructure/airflow
+docker-compose build && docker-compose up -d
+# Takes ~2-3 minutes with caching
+```
