@@ -1,6 +1,7 @@
-spotipy
+apache-airflow==2.7.3
+apache-airflow-providers-amazon==8.12.0
 pandas
-apache-airflow
+spotipy
 python-dotenv
 pendulum
 pyarrow
