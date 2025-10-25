@@ -1,7 +1,10 @@
 version: '3.8'
 
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.7.3-python3.8
+  build:
+    context: ../..  # Go to project root
+    dockerfile: infrastructure/airflow/Dockerfile
+  #image: apache/airflow:2.7.3-python3.8
   environment: &airflow-common-env
     PYTHONPATH: /opt/airflow/dags
     # Core Configuration
@@ -32,11 +35,30 @@ x-airflow-common: &airflow-common
     - ./logs:/opt/airflow/logs
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
-  # user: "${AIRFLOW_UID:-50000}:0"
+  user: "${AIRFLOW_UID:-50000}:0"
   networks:
     - data-platform-network
 
 services:
+  fix-permissions:
+    image: alpine:latest
+    user: root
+    volumes:
+      - ../../pipeline_code:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./config:/opt/airflow/config
+      - ./plugins:/opt/airflow/plugins
+    command: >
+      sh -c "
+        chown -R 50000:${AIRFLOW_GID:-1000} /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
+        chmod -R 775 /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
+        find /opt/airflow/dags -type f -exec chmod 664 {} \; &&
+        echo 'Permissions fixed! User 50000 and group ${AIRFLOW_GID:-1000} can edit files.'
+        "
+    environment:
+      AIRFLOW_GID: ${AIRFLOW_GID:-1000}
+    networks:
+      - data-platform-network
   # PostgreSQL - Airflow metadata
   postgres:
     image: postgres:13
@@ -57,6 +79,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    depends_on:
+      - fix-permissions
 
   # Redis - Celery broker
   redis:

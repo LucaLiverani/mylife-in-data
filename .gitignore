@@ -4,6 +4,5 @@
 */**/.pytest_cache
 */**/.mypy_cache
 */**/.ruff_cache
-*/*/**/.spotipy_token_cache
 **/venv
 */**/.venv
