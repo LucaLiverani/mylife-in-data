@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  spotify-current-producer:
+    build:
+      context: ..
+      dockerfile: producers/Dockerfile
+    image: spotify-producer:latest
+    container_name: spotify-current-producer
+    environment:
+      # Spotify credentials
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI}
+      
+      # Token cache path
+      SPOTIFY_TOKEN_CACHE_PATH: /app/tokens/.spotify_cache
+      
+      # Kafka config - connects to external Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: spotify.player.current
+      POLL_INTERVAL: 1
+      
+      # Python config
+      PYTHONUNBUFFERED: 1
+      
+    volumes:
+      # Token directory (persistent)
+      - ../tokens:/app/tokens:rw
+      
+      # Logs
+      - ./logs/producer:/app/logs
+      
+    networks:
+      # Connect to existing Kafka network
+      - data-platform-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "spotify_current_playing_producer.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  data-platform-network:
+    external: true

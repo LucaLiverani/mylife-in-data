@@ -28,6 +28,17 @@ def create_topics():
                 'max.message.bytes': '10485760',  # 10MB
             }
         ),
+        NewTopic(
+            name='spotify.player.current',
+            num_partitions=3,
+            replication_factor=1,
+            topic_configs={
+                'compression.type': 'snappy',
+                'retention.ms': '604800000',  # 7 days
+                'cleanup.policy': 'delete',
+                'max.message.bytes': '10485760',  # 10MB
+            }                     
+        ),
     ]
     
     # Create topics
