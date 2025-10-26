@@ -3,3 +3,5 @@ __pycache__/
 .env
 .spotipy_token_cache
 airflow_variables.json
+tokens
+logs
