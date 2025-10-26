@@ -1,9 +1,10 @@
 version: '3.8'
 
-# Storage Layer - MinIO S3-compatible object storage
-# This provides shared storage for Airflow logs, Kafka data, and ingestion pipelines
+# Storage Layer - MinIO S3-compatible object storage + Iceberg REST Catalog
+# This provides shared storage for Airflow logs, Kafka data, ingestion pipelines, and Iceberg tables
 
 services:
+
   # MinIO - Object Storage
   minio:
     image: minio/minio:latest
@@ -12,7 +13,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_REGION: 'eu-east-1'
+      MINIO_REGION: ${MINIO_REGION:-eu-east-1}
       # Browser settings
       MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
     ports:
@@ -47,7 +48,6 @@ services:
       -c "
       echo 'Initializing MinIO...';
       sleep 3;
-      
       echo 'Setting up MinIO alias...';
       /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       
@@ -55,6 +55,7 @@ services:
       /usr/bin/mc mb myminio/${MINIO_AIRFLOW_LOGS_BUCKET} --ignore-existing;
       /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET} --ignore-existing;
       /usr/bin/mc mb myminio/${MINIO_KAFKA_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET} --ignore-existing;
       
       echo 'Setting lifecycle policies...';
       /usr/bin/mc ilm add --expiry-days ${AIRFLOW_LOG_RETENTION_DAYS:-30} myminio/${MINIO_AIRFLOW_LOGS_BUCKET} || true;
@@ -68,6 +69,10 @@ services:
       echo 'Setting temp folder auto-cleanup (7 days)...';
       /usr/bin/mc ilm add --expiry-days 7 myminio/${MINIO_INGESTION_BUCKET}/temp || true;
       
+      echo 'Creating Iceberg warehouse subfolders...';
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET}/spotify --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET}/analytics --ignore-existing;
+      
       echo 'MinIO initialization complete!';
       echo '';
       echo 'Bucket Summary:';
@@ -79,12 +84,61 @@ services:
       MINIO_AIRFLOW_LOGS_BUCKET: ${MINIO_AIRFLOW_LOGS_BUCKET}
       MINIO_INGESTION_BUCKET: ${MINIO_INGESTION_BUCKET}
       MINIO_KAFKA_BUCKET: ${MINIO_KAFKA_BUCKET}
+      MINIO_WAREHOUSE_BUCKET: ${MINIO_WAREHOUSE_BUCKET:-warehouse}
       AIRFLOW_LOG_RETENTION_DAYS: ${AIRFLOW_LOG_RETENTION_DAYS:-30}
     networks:
       - data-platform-network
 
+  # Iceberg REST Catalog
+  iceberg-rest:
+    image: tabulario/iceberg-rest:latest
+    container_name: iceberg-rest
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "${ICEBERG_REST_PORT:-8181}:8181"
+    environment:
+      # Catalog configuration
+      CATALOG_WAREHOUSE: s3://${MINIO_WAREHOUSE_BUCKET:-warehouse}/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_URI: jdbc:sqlite:file:/tmp/iceberg-rest-catalog.db
+      
+      # S3 (MinIO) configuration
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+      CATALOG_S3_ACCESS__KEY__ID: ${MINIO_ROOT_USER}
+      CATALOG_S3_SECRET__ACCESS__KEY: ${MINIO_ROOT_PASSWORD}
+      
+      # AWS configuration (required even for MinIO)
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_REGION: ${MINIO_REGION:-eu-east-1}
+      
+      # JVM options (optional - adjust based on your needs)
+      JAVA_OPTS: "-Xmx1g -Xms512m"
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    volumes:
+      # Persist catalog metadata (SQLite database)
+      - iceberg-catalog-data:/tmp
+
 volumes:
   minio-data:
+    driver: local
+  iceberg-catalog-data:
     driver: local
 
 networks:
