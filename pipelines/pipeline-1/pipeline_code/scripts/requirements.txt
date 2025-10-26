@@ -1,1 +1,4 @@
 kafka-python
+spotipy
+python-dotenv
+apache-airflow
