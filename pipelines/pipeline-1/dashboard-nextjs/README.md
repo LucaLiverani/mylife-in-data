@@ -9,16 +9,16 @@ A modern, interactive dashboard that aggregates data from various services (Spot
 ![Python](https://img.shields.io/badge/Python-3.11+-green?style=flat-square&logo=python)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-## 🚀 Features
+## Features
 
-- **📊 Data Visualization**: Beautiful charts showing my monthly activity across all services
+- **Data Visualization**: Beautiful charts showing my monthly activity across all services
 - **🎵 Spotify Integration**: Track listening history with recent plays and statistics
 - **🎬 YouTube Activity**: Monitor video watching patterns
-- **🔍 Google Search**: View search history and trends
-- **🗺️ Travel Map**: Interactive map showing my travel history with connections
-- **✨ Modern UI**: Smooth animations, glassmorphism effects, and responsive design
-- **🎨 Color-coded Services**: Each service has distinct colors and visual identity
-- **⚡ Real-time Updates**: Dynamic data loading from FastAPI backend
+- **Google Search**: View search history and trends
+- **Travel Map**: Interactive map showing my travel history with connections
+- **Modern UI**: Smooth animations, glassmorphism effects, and responsive design
+- **Color-coded Services**: Each service has distinct colors and visual identity
+- **Real-time Updates**: Dynamic data loading from FastAPI backend
 
 ## 📁 Project Structure
 
@@ -54,7 +54,7 @@ dashboard-nextjs/
 └── package.json                  # Dependencies and scripts
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework**: Next.js 15 (App Router)
@@ -71,7 +71,7 @@ dashboard-nextjs/
 - **Language**: Python 3.11+
 - **Data**: Mock data generation (ready for real API integration)
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -125,7 +125,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 CORS_ORIGINS=http://localhost:3000
 ```
 
-## 🚀 Running the Project
+## Running the Project
 
 ### Development Mode
 
@@ -366,7 +366,7 @@ import Link from 'next/link';
 
 The page will be automatically available at `http://localhost:3000/spotify`.
 
-## 📊 Adding New Components
+## Adding New Components
 
 ### 1. Create Component File
 
@@ -465,7 +465,7 @@ This project uses Tailwind CSS with a custom dark theme:
 </div>
 ```
 
-## 📝 Available Scripts
+## Available Scripts
 
 ```bash
 # Development
@@ -481,7 +481,7 @@ npm run type-check   # Run TypeScript compiler check
 cd api && python main.py    # Start FastAPI server
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Port Already in Use
 
@@ -575,6 +575,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Built with ❤️ by Luigi Liverani**
+**Built with  by Luigi Liverani**
 
 *"Pretty charts, brutal honesty, optional self-improvement."*

@@ -53,7 +53,7 @@ Log in to the UI using the admin credentials you set in your `.env` file.
 
 | Change | Command |
 |--------|---------|
-| **DAG file edited** | Nothing! Wait 30s ⚡ |
+| **DAG file edited** | Nothing! Wait 30s |
 | **New package in requirements.txt** | `docker-compose build && docker-compose up -d` |
 | **Config change** | `docker-compose restart airflow-scheduler` |
 | **New Airflow connection** | Nothing if added via UI, or `docker-compose restart` |
@@ -66,7 +66,7 @@ Log in to the UI using the admin credentials you set in your `.env` file.
 ```bash
 # Daily work - edit DAGs
 vim ~/projects/.../pipeline_code/spotify_ingestion_dag.py
-# Auto-detected in 30s! ✅
+# Auto-detected in 30s!
 
 # Weekly/monthly - add package
 echo "requests==2.31.0" >> ~/projects/.../pipeline_code/requirements.txt

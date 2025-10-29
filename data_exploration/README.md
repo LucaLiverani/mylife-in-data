@@ -82,16 +82,16 @@ isort src/ tests/
 
 ---
 
-## **🎯 Best Practices Checklist**
+## **Best Practices Checklist**
 
-### **✅ Environment Management**
+### **Environment Management**
 
 - [ ] Always activate `.venv` before working
 - [ ] Keep `requirements.txt` updated (`pip freeze > requirements.txt`)
 - [ ] Use `.env` for sensitive credentials (never commit!)
 - [ ] Document dependencies in README
 
-### **✅ Notebook Hygiene**
+### **Notebook Hygiene**
 
 - [ ] Clear outputs before committing (`Cell → All Output → Clear`)
 - [ ] Use descriptive cell comments
@@ -99,7 +99,7 @@ isort src/ tests/
 - [ ] Extract reusable code to `src/` modules
 - [ ] Name notebooks with numbers: `01_exploration.ipynb`, `02_analysis.ipynb`
 
-### **✅ Code Quality**
+### **Code Quality**
 
 - [ ] Format code with Black: `black .`
 - [ ] Sort imports with isort: `isort .`
@@ -107,7 +107,7 @@ isort src/ tests/
 - [ ] Use type hints where helpful
 - [ ] Write docstrings for functions
 
-### **✅ Version Control**
+### **Version Control**
 
 - [ ] Commit frequently with clear messages
 - [ ] Don't commit large data files
@@ -115,7 +115,7 @@ isort src/ tests/
 - [ ] Clear notebook outputs before committing
 - [ ] Use `.gitignore` properly
 
-### **✅ DuckDB Specific**
+### **DuckDB Specific**
 
 - [ ] Use parameterized queries for safety
 - [ ] Close connections when done (use context managers)
@@ -125,7 +125,7 @@ isort src/ tests/
 
 ---
 
-## **🚀 Quick Start Commands**
+## **Quick Start Commands**
 
 ```bash
 # Complete setup from scratch

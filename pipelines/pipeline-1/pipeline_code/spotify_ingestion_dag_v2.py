@@ -89,7 +89,7 @@ def extract_raw_spotify_data(**context):
         }
         items_with_metadata.append(raw_item)
     
-    log.info(f"✅ Extracted {len(items_with_metadata)} raw items")
+    log.info(f"Extracted {len(items_with_metadata)} raw items")
     
     # Push to XCom
     ti.xcom_push(key='raw_items', value=items_with_metadata)
@@ -243,12 +243,12 @@ def consolidate_raw_to_jsonl(**context):
             })
             
             log.info(
-                f"✅ Wrote {len(unique_items)} items to {key} "
+                f"Wrote {len(unique_items)} items to {key} "
                 f"({file_size_kb:.2f} KB, {compression_ratio:.1f}x compression)"
             )
             
         except Exception as e:
-            log.error(f"❌ Failed to process date {date_str}: {e}", exc_info=True)
+            log.error(f"Failed to process date {date_str}: {e}", exc_info=True)
             raise AirflowException(f"Failed to consolidate data for {date_str}")
     
     result = {
@@ -261,7 +261,7 @@ def consolidate_raw_to_jsonl(**context):
     ti.xcom_push(key='consolidation_result', value=result)
     
     log.info(
-        f"✅ Consolidation complete: {result['total_items']} items "
+        f"Consolidation complete: {result['total_items']} items "
         f"across {result['dates_processed']} file(s)"
     )
     
@@ -342,7 +342,7 @@ def publish_raw_to_kafka(**context):
         
         ti.xcom_push(key='kafka_result', value=result)
         
-        log.info(f"✅ Published {success_count}/{len(raw_items)} items to Kafka")
+        log.info(f"Published {success_count}/{len(raw_items)} items to Kafka")
         
         if error_count > len(raw_items) * 0.1:
             raise AirflowException(f"Too many Kafka failures: {error_count}/{len(raw_items)}")
@@ -375,18 +375,18 @@ def validate_outputs(**context):
     # Check S3 consolidation
     if consolidation_result and consolidation_result['status'] == 'success':
         checks['s3_jsonl'] = 'PASSED'
-        log.info(f"✅ S3 JSONL: {consolidation_result['total_items']} items in {consolidation_result['dates_processed']} file(s)")
+        log.info(f"S3 JSONL: {consolidation_result['total_items']} items in {consolidation_result['dates_processed']} file(s)")
     else:
         checks['s3_jsonl'] = 'FAILED'
-        log.error("❌ S3 consolidation failed")
+        log.error("S3 consolidation failed")
     
     # Check Kafka
     if kafka_result and kafka_result['published'] > 0:
         checks['kafka'] = 'PASSED'
-        log.info(f"✅ Kafka: {kafka_result['published']} events")
+        log.info(f"Kafka: {kafka_result['published']} events")
     else:
         checks['kafka'] = 'FAILED'
-        log.error("❌ Kafka publish failed")
+        log.error("Kafka publish failed")
     
     # Check counts
     if consolidation_result and kafka_result:
@@ -395,7 +395,7 @@ def validate_outputs(**context):
         else:
             checks['count_consistency'] = 'WARNING'
             log.warning(
-                f"⚠️ Count mismatch - Extracted: {item_count}, "
+                f"WARNING: Count mismatch - Extracted: {item_count}, "
                 f"S3: {consolidation_result['total_items']}, "
                 f"Kafka: {kafka_result['published']}"
             )
@@ -405,7 +405,7 @@ def validate_outputs(**context):
     if not all_passed:
         raise AirflowException("Validation failed")
     
-    log.info("✅ All validations passed")
+    log.info("All validations passed")
     return checks
 
 # ============================================================================

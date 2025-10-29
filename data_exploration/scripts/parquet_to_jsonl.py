@@ -21,7 +21,7 @@ except NameError:
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
-    print(f"✓ Added project root to sys.path: {PROJECT_ROOT}")
+    print(f"Added project root to sys.path: {PROJECT_ROOT}")
 
 from src.duckdb_config import DuckDBConnection
 
@@ -67,7 +67,7 @@ def get_jsonl_sample_structure(s3, bucket_name):
             return None
         
         sample_file_path = jsonl_files[0]
-        print(f"✓ Using '{sample_file_path}' as a structure reference.")
+        print(f"Using '{sample_file_path}' as a structure reference.")
 
         with s3.open(sample_file_path, "rb") as f:
             with gzip.GzipFile(fileobj=f) as gz:
@@ -77,7 +77,7 @@ def get_jsonl_sample_structure(s3, bucket_name):
                 sample_data = json.loads(first_line)
                 return set(sample_data.keys())
     except Exception as e:
-        print(f"✗ Could not read sample JSONL file structure: {e}")
+        print(f"Could not read sample JSONL file structure: {e}")
         return None
 
 def validate_structure(new_record, expected_structure):
@@ -99,7 +99,7 @@ def convert_parquet_to_jsonl_s3():
     # Get the expected structure from an existing JSONL file
     expected_structure = get_jsonl_sample_structure(s3, bucket_name)
     if not expected_structure:
-        print("✗ Cannot proceed without a reference structure. Exiting.")
+        print("Cannot proceed without a reference structure. Exiting.")
         return
 
     try:
@@ -108,9 +108,9 @@ def convert_parquet_to_jsonl_s3():
         if not parquet_files:
             print("No Parquet files found to convert.")
             return
-        print(f"✓ Found {len(parquet_files)} parquet files to convert.")
+        print(f"Found {len(parquet_files)} parquet files to convert.")
     except Exception as e:
-        print(f"✗ Error listing S3 Parquet files: {e}")
+        print(f"Error listing S3 Parquet files: {e}")
         return
 
     for parquet_file in parquet_files:
@@ -136,12 +136,12 @@ def convert_parquet_to_jsonl_s3():
 
                         # Validate the structure of the first record
                         if not validate_structure(json_record, expected_structure):
-                            print(f"✗ Structure mismatch in '{parquet_file}'. Expected: {expected_structure}, Got: {set(json_record.keys())}")
+                            print(f"Structure mismatch in '{parquet_file}'. Expected: {expected_structure}, Got: {set(json_record.keys())}")
                             is_structure_valid = False
                             break
-                        
+
                         gz.write((json.dumps(json_record) + "\n").encode("utf-8"))
-                
+
                 if not is_structure_valid:
                     continue
 
@@ -149,10 +149,10 @@ def convert_parquet_to_jsonl_s3():
                 date_str = Path(parquet_file).stem
                 jsonl_s3_path = f"{output_path_prefix}/{date_str}.jsonl.gz"
                 s3.upload(temp_f.name, jsonl_s3_path)
-                print(f"✓ Successfully converted and uploaded to 's3://{jsonl_s3_path}'")
+                print(f"Successfully converted and uploaded to 's3://{jsonl_s3_path}'")
 
         except Exception as e:
-            print(f"✗ Error processing file '{parquet_file}': {e}")
+            print(f"Error processing file '{parquet_file}': {e}")
         finally:
             # Clean up the temporary file
             if 'temp_f' in locals() and os.path.exists(temp_f.name):
