@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from '@/components/ui/card';
-import { TravelMap } from '@/components/TravelMap';
+import { TravelMapClient } from '@/components/TravelMapClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function MapsPageClient({ travelData, mockData }: { travelData: any, mockData: any }) {
@@ -12,7 +12,7 @@ export function MapsPageClient({ travelData, mockData }: { travelData: any, mock
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
           <h2 className="text-2xl font-bold mb-6">Travel Map</h2>
           <div className="h-[500px] rounded-lg overflow-hidden">
-            <TravelMap locations={travelData.locations} />
+            <TravelMapClient locations={travelData.locations} />
           </div>
         </Card>
       </section>
