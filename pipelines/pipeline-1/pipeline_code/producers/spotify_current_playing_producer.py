@@ -25,7 +25,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # Configuration
-POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 1))
+POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 1))  # Poll and send every 1 seconds
 KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'spotify.player.current')
 MAX_RETRIES = 3
@@ -83,32 +83,36 @@ class SpotifyCurrentPlayingProducer:
         return (track_id, is_playing)
 
     def poll_and_publish(self):
-        """Poll Spotify and publish current track to Kafka only if state changes."""
+        """Poll Spotify and publish current track to Kafka.
+
+        Always sends the current state to ensure dashboard stays up-to-date.
+        """
         try:
             current = get_currently_playing(self.sp)
             current_state_fingerprint = self._get_state_fingerprint(current)
 
-            if current_state_fingerprint == self.last_state_fingerprint:
-                # No change in state, do nothing
-                return
+            # Check if state changed (for logging purposes)
+            state_changed = current_state_fingerprint != self.last_state_fingerprint
 
-            # State has changed, prepare and send message
+            # Prepare and send message (always send to keep dashboard current)
             log_message = ""
             if current is None:
                 message = { 'timestamp': datetime.utcnow().isoformat() + 'Z', 'is_playing': False, 'track_id': None }
-                log_message = "Playback stopped or unavailable."
+                if state_changed:
+                    log_message = "Playback stopped or unavailable."
             else:
                 item = current.get('item', {})
                 track_id = item.get('id')
                 is_playing = current.get('is_playing', False)
-                
-                if self.last_state_fingerprint is None:
-                    log_message = "Producer started."
-                elif track_id != self.last_state_fingerprint[0]:
-                    artist_names = ', '.join([a.get('name', 'N/A') for a in item.get('artists', [])])
-                    log_message = f"New track: {item.get('name')} - {artist_names}"
-                elif is_playing != self.last_state_fingerprint[1]:
-                    log_message = f"Playback {'resumed' if is_playing else 'paused'}."
+
+                if state_changed:
+                    if self.last_state_fingerprint is None:
+                        log_message = "Producer started."
+                    elif track_id != self.last_state_fingerprint[0]:
+                        artist_names = ', '.join([a.get('name', 'N/A') for a in item.get('artists', [])])
+                        log_message = f"New track: {item.get('name')} - {artist_names}"
+                    elif is_playing != self.last_state_fingerprint[1]:
+                        log_message = f"Playback {'resumed' if is_playing else 'paused'}."
 
                 message = {
                     'timestamp': datetime.utcnow().isoformat() + 'Z',
@@ -137,12 +141,15 @@ class SpotifyCurrentPlayingProducer:
                     'context': current.get('context'),
                 }
 
-            log.info(f"State change detected: {log_message} Sending to Kafka.")
+            if log_message:
+                log.info(f"State change detected: {log_message} Sending to Kafka.")
+
             future = self.producer.send(KAFKA_TOPIC, value=message, key=message.get('track_id'))
             future.get(timeout=10) # Wait for send confirmation
 
-            # Update state
-            self.last_state_fingerprint = current_state_fingerprint
+            # Update state only if it actually changed
+            if state_changed:
+                self.last_state_fingerprint = current_state_fingerprint
             self.consecutive_errors = 0
 
         except KafkaError as e:
@@ -194,7 +201,7 @@ class SpotifyCurrentPlayingProducer:
         
         self.setup()
         self.running = True
-        
+
         try:
             while self.running:
                 self.poll_and_publish()
