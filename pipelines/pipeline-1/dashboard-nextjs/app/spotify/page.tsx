@@ -5,6 +5,7 @@ import { spotifyAPI } from '@/lib/api';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { SpotifyPageClient } from '@/components/spotify/SpotifyPageClient';
+import { SpotifyLiveStream } from '@/components/spotify/SpotifyLiveStream';
 
 export const metadata = {
   title: 'Spotify Stats - My Life in Data',
@@ -50,9 +51,17 @@ export default async function SpotifyPage() {
           </div>
         </FadeIn>
 
-        {/* KPI Section */}
+        {/* Live Stream Section */}
         <section className="mb-12">
           <FadeIn delay={0.1}>
+            <h2 className="text-2xl font-bold mb-4 text-white/90">Now Playing</h2>
+            <SpotifyLiveStream />
+          </FadeIn>
+        </section>
+
+        {/* KPI Section */}
+        <section className="mb-12">
+          <FadeIn delay={0.2}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KPIMetric
                 label="Total Time"
@@ -78,7 +87,7 @@ export default async function SpotifyPage() {
           </FadeIn>
         </section>
 
-        <FadeIn delay={0.2}>
+        <FadeIn delay={0.3}>
           <SpotifyPageClient data={data} />
         </FadeIn>
       </div>

@@ -4,7 +4,7 @@ import { ParticleBackground } from '@/components/animations/ParticleBackground';
 import { Typewriter } from '@/components/animations/Typewriter';
 import { DataGenerationChart } from '@/components/charts/DataGenerationChart';
 import { RecentEventItem } from '@/components/RecentEventItem';
-import { TravelMap } from '@/components/TravelMap';
+import { TravelMapClient } from '@/components/TravelMapClient';
 import { overviewAPI, travelAPI, spotifyAPI } from '@/lib/api';
 
 interface RecentTrack {
@@ -262,7 +262,7 @@ export default async function Home() {
               {/* Map */}
               <div className="lg:col-span-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 flex flex-col">
                 <div className="flex-1 min-h-[400px]">
-                  <TravelMap locations={travelData.locations} />
+                  <TravelMapClient locations={travelData.locations} />
                 </div>
               </div>
 
