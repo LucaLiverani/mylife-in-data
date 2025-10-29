@@ -4,7 +4,7 @@ This project is a personal data platform that collects and analyzes data from va
 
 ## Project Structure
 
--   `experiments/`: Contains notebooks for data exploration and analysis.
+-   `data_exploration/`: Contains notebooks for data exploration and analysis.
 -   `pipelines/`: Contains the data pipelines for ingesting, processing, and storing data.
 
 ## Getting Started
