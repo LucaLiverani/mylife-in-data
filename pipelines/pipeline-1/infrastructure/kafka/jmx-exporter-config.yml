@@ -1,0 +1,5 @@
+hostPort: kafka:9101
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: ".*"

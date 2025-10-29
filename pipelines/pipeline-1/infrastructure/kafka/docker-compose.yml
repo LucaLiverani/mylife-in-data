@@ -9,8 +9,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_SYNC_LIMIT: 2
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: zookeeper
     ports:
       - "2181:2181"
+      - "9999:9999"  # JMX port
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
       - zookeeper-logs:/var/lib/zookeeper/log
@@ -33,6 +36,7 @@ services:
     ports:
       - "9092:9092"
       - "9093:9093"
+      - "9101:9101"  # JMX port
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -60,6 +64,11 @@ services:
       
       # Auto-create topics
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      
+      # JMX port
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: kafka
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
     volumes:
       - kafka-data:/var/lib/kafka/data
     networks:
@@ -134,6 +143,7 @@ services:
         condition: service_healthy
     ports:
       - "8083:8083"
+      - "9103:9102"  # JMX port 
     environment:
       CONNECT_BOOTSTRAP_SERVERS: kafka:9092
       CONNECT_REST_PORT: 8083
@@ -150,6 +160,8 @@ services:
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+      KAFKA_JMX_PORT: 9102
+      KAFKA_JMX_HOSTNAME: kafka-connect
     volumes:
       - kafka-connect-data:/data
     networks:
@@ -160,6 +172,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Add JMX exporter
+  jmx-exporter:
+    image: bitnami/jmx-exporter:latest
+    container_name: jmx-exporter
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "5556:5556"
+    volumes:
+      - ./jmx-exporter-config.yml:/tmp/jmx-exporter-config.yml:ro
+    command:
+      - "5556"
+      - "/tmp/jmx-exporter-config.yml"
+    networks:
+      - default
+      - data-platform-network
 
 volumes:
   zookeeper-data:
