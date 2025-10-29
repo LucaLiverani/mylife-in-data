@@ -50,3 +50,10 @@ if current_track:
 else:
     print("No track is currently playing.")
     print(current_track)
+
+artist_uri = ["spotify:artist:7ry8L53T4oJtSIogGYuioq"]
+
+track = sp.artists(artist_uri)
+
+print(f"== Artist Details ==")
+print(json.dumps(track, indent=2))

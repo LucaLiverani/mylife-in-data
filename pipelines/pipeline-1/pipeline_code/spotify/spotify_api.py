@@ -158,3 +158,15 @@ def get_current_track_simplified(sp):
     except Exception as e:
         log.error(f"Error fetching current track: {e}")
         raise
+
+def get_artists(sp, artists=[]):    
+    """
+    Get artist details.
+    """
+    try:
+        artists = sp.artists(artists)
+        return artists
+    except Exception as e:
+        log.error(f"Error fetching artist details: {e}")
+        raise
+        
