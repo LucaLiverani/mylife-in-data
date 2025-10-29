@@ -16,6 +16,8 @@ services:
       MINIO_REGION: ${MINIO_REGION:-eu-east-1}
       # Browser settings
       MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+      # Metrics
+      MINIO_PROMETHEUS_AUTH_TYPE: "public"
     ports:
       - "${MINIO_API_PORT:-9000}:9000"       # S3 API
       - "${MINIO_CONSOLE_PORT:-9001}:9001"   # Web Console
@@ -23,6 +25,7 @@ services:
       - minio-data:/data
     networks:
       - data-platform-network
+      - default
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -89,56 +92,8 @@ services:
     networks:
       - data-platform-network
 
-  # Iceberg REST Catalog
-  iceberg-rest:
-    image: tabulario/iceberg-rest:latest
-    container_name: iceberg-rest
-    depends_on:
-      minio:
-        condition: service_healthy
-    ports:
-      - "${ICEBERG_REST_PORT:-8181}:8181"
-    environment:
-      # Catalog configuration
-      CATALOG_WAREHOUSE: s3://${MINIO_WAREHOUSE_BUCKET:-warehouse}/
-      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
-      CATALOG_URI: jdbc:sqlite:file:/tmp/iceberg-rest-catalog.db
-      
-      # S3 (MinIO) configuration
-      CATALOG_S3_ENDPOINT: http://minio:9000
-      CATALOG_S3_PATH__STYLE__ACCESS: "true"
-      CATALOG_S3_ACCESS__KEY__ID: ${MINIO_ROOT_USER}
-      CATALOG_S3_SECRET__ACCESS__KEY: ${MINIO_ROOT_PASSWORD}
-      
-      # AWS configuration (required even for MinIO)
-      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
-      AWS_REGION: ${MINIO_REGION:-eu-east-1}
-      
-      # JVM options (optional - adjust based on your needs)
-      JAVA_OPTS: "-Xmx1g -Xms512m"
-    networks:
-      - data-platform-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/config"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-    volumes:
-      # Persist catalog metadata (SQLite database)
-      - iceberg-catalog-data:/tmp
-
 volumes:
   minio-data:
-    driver: local
-  iceberg-catalog-data:
     driver: local
 
 networks:
