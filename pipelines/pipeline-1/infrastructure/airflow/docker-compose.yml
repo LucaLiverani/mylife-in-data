@@ -117,13 +117,13 @@ services:
       - -c
       - |
         set -e
-        echo "🔧 Starting Airflow initialization..."
+        echo "Starting Airflow initialization..."
         
         # Wait for postgres
         echo "⏳ Waiting for database..."
         for i in {1..30}; do
           if pg_isready -h postgres -p 5432 -U ${POSTGRES_USER}; then
-            echo "✅ PostgreSQL is ready!"
+            echo "PostgreSQL is ready!"
             break
           fi
           sleep 2
@@ -134,7 +134,7 @@ services:
         psql "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}" -c "SELECT 1"
         
         # Initialize database
-        echo "🗄️  Initializing Airflow database..."
+        echo "Initializing Airflow database..."
         airflow db migrate
         
         # Create admin user
@@ -145,7 +145,7 @@ services:
           --firstname Admin \
           --lastname User \
           --role Admin \
-          --email ${AIRFLOW_ADMIN_EMAIL} 2>&1 || echo "⚠️  User already exists"
+          --email ${AIRFLOW_ADMIN_EMAIL} 2>&1 || echo "User already exists"
         
         # MinIO connection
         echo "🔗 Setting up MinIO connection..."
@@ -154,7 +154,7 @@ services:
           --conn-type aws \
           --conn-login ${MINIO_ROOT_USER} \
           --conn-password ${MINIO_ROOT_PASSWORD} \
-          --conn-extra '{"endpoint_url": "http://minio:9000", "region_name": "us-east-1"}' || echo "⚠️  MinIO connection failed"
+          --conn-extra '{"endpoint_url": "http://minio:9000", "region_name": "us-east-1"}' || echo "MinIO connection failed"
         
         # Kafka connection
         echo "🔗 Setting up Kafka connection..."
@@ -163,9 +163,9 @@ services:
           --conn-type generic \
           --conn-host kafka \
           --conn-port 9092 \
-          --conn-extra '{"bootstrap.servers": "kafka:9092", "group.id": "airflow"}' || echo "⚠️  Kafka connection failed"
+          --conn-extra '{"bootstrap.servers": "kafka:9092", "group.id": "airflow"}' || echo "Kafka connection failed"
         
-        echo "✅ Airflow initialization complete!"
+        echo "Airflow initialization complete!"
     environment:
       <<: *airflow-common-env
     volumes:

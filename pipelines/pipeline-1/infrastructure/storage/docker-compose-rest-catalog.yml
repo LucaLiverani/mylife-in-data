@@ -1,0 +1,178 @@
+version: '3.8'
+
+# Storage Layer - MinIO S3-compatible object storage + Iceberg REST Catalog
+# This provides shared storage for Airflow logs, Kafka data, ingestion pipelines, and Iceberg tables
+
+services:
+
+  # MinIO - Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_REGION: ${MINIO_REGION:-eu-east-1}
+      # Browser settings
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+      # Metrics
+      MINIO_PROMETHEUS_AUTH_TYPE: "public"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"       # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"   # Web Console
+    volumes:
+      - minio-data:/data
+    networks:
+      - data-platform-network
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # PostgreSQL - Iceberg Catalog Metadata
+  iceberg-postgres:
+    image: postgres:15-alpine
+    container_name: iceberg-postgres
+    environment:
+      POSTGRES_USER: ${ICEBERG_POSTGRES_USER:-iceberg}
+      POSTGRES_PASSWORD: ${ICEBERG_POSTGRES_PASSWORD:-iceberg}
+      POSTGRES_DB: ${ICEBERG_POSTGRES_DB:-iceberg_catalog}
+    ports:
+      - "${ICEBERG_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - iceberg-postgres-data:/var/lib/postgresql/data
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${ICEBERG_POSTGRES_USER:-iceberg}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Iceberg REST Catalog
+  iceberg-rest:
+    image: tabulario/iceberg-rest:1.6.1
+    container_name: iceberg-rest
+    ports:
+      - "${ICEBERG_REST_PORT:-8181}:8181"
+    environment:
+      # Catalog configuration
+      CATALOG_CATALOG__IMPL: org.apache.iceberg.jdbc.JdbcCatalog
+      CATALOG_URI: jdbc:postgresql://iceberg-postgres:5432/${ICEBERG_POSTGRES_DB:-iceberg_catalog}
+      CATALOG_JDBC_USER: ${ICEBERG_POSTGRES_USER:-iceberg}
+      CATALOG_JDBC_PASSWORD: ${ICEBERG_POSTGRES_PASSWORD:-iceberg}
+      
+      # Warehouse location
+      CATALOG_WAREHOUSE: s3://${MINIO_WAREHOUSE_BUCKET:-warehouse}/
+      
+      # S3/MinIO configuration
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      CATALOG_S3_ACCESS__KEY__ID: ${MINIO_ROOT_USER}
+      CATALOG_S3_SECRET__ACCESS__KEY: ${MINIO_ROOT_PASSWORD}
+      CATALOG_S3_PATH__STYLE__ACCESS: true
+      CATALOG_S3_REGION: ${MINIO_REGION:-eu-east-1}
+    depends_on:
+      minio:
+        condition: service_healthy
+      iceberg-postgres:
+        condition: service_healthy
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # MinIO Client - Initialize buckets and policies
+  mc-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      echo 'Initializing MinIO...';
+      sleep 3;
+      
+      echo '📡 Setting up MinIO alias...';
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      
+      echo 'Creating buckets...';
+      /usr/bin/mc mb myminio/${MINIO_AIRFLOW_LOGS_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_KAFKA_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET} --ignore-existing;
+      
+      echo ' Setting lifecycle policies...';
+      /usr/bin/mc ilm add --expiry-days ${AIRFLOW_LOG_RETENTION_DAYS:-30} myminio/${MINIO_AIRFLOW_LOGS_BUCKET} || true;
+      
+      echo ' Creating ingestion subfolders...';
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/raw --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/staging --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/processed --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET}/temp --ignore-existing;
+      
+      echo 'Setting temp folder auto-cleanup (7 days)...';
+      /usr/bin/mc ilm add --expiry-days 7 myminio/${MINIO_INGESTION_BUCKET}/temp || true;
+      
+      echo 'Creating Iceberg warehouse structure...';
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET}/bronze --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET}/silver --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET}/gold --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET}/metadata --ignore-existing;
+      
+      echo 'MinIO initialization complete!';
+      echo '';
+      echo 'Bucket Summary:';
+      /usr/bin/mc ls myminio;
+      echo '';
+      echo 'Iceberg warehouse structure:';
+      /usr/bin/mc ls myminio/${MINIO_WAREHOUSE_BUCKET}/;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_AIRFLOW_LOGS_BUCKET: ${MINIO_AIRFLOW_LOGS_BUCKET}
+      MINIO_INGESTION_BUCKET: ${MINIO_INGESTION_BUCKET}
+      MINIO_KAFKA_BUCKET: ${MINIO_KAFKA_BUCKET}
+      MINIO_WAREHOUSE_BUCKET: ${MINIO_WAREHOUSE_BUCKET:-warehouse}
+      AIRFLOW_LOG_RETENTION_DAYS: ${AIRFLOW_LOG_RETENTION_DAYS:-30}
+    networks:
+      - data-platform-network
+
+volumes:
+  minio-data:
+    driver: local
+  iceberg-postgres-data:
+    driver: local
+
+networks:
+  data-platform-network:
+    external: true

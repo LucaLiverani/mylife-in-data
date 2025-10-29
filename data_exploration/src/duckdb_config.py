@@ -73,9 +73,9 @@ class DuckDBConnection:
             try:
                 self.con.execute(f"INSTALL {ext}")
                 self.con.execute(f"LOAD {ext}")
-                print(f"✓ Loaded extension: {ext}")
+                print(f"Loaded extension: {ext}")
             except Exception as e:
-                print(f"✗ Failed to load extension {ext}: {e}")
+                print(f"Failed to load extension {ext}: {e}")
 
     def _setup_s3(self):
         """Configure S3/MinIO access."""
@@ -90,8 +90,8 @@ class DuckDBConnection:
 
         for key, value in s3_config.items():
             self.con.execute(f"SET {key}='{value}'")
-        
-        print(f"✓ Configured S3/MinIO: {s3_config['s3_endpoint']}")
+
+        print(f"Configured S3/MinIO: {s3_config['s3_endpoint']}")
 
     def query(self, sql: str, as_df: bool = True):
         """
