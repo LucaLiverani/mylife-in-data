@@ -24,6 +24,10 @@ x-airflow-common: &airflow-common
     # MinIO connection
     AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
     AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    # Metrics
+    AIRFLOW__METRICS__STATSD_ON: 'true'
+    AIRFLOW__METRICS__STATSD_HOST: statsd-exporter
+    AIRFLOW__METRICS__STATSD_PORT: 9125
     # Constrain provider versions for Airflow 2.7.3
     _PIP_ADDITIONAL_REQUIREMENTS: >-
       apache-airflow-providers-amazon==8.13.0
@@ -37,6 +41,7 @@ x-airflow-common: &airflow-common
     - ./plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
   networks:
+    - default
     - data-platform-network
 
 services:
@@ -71,6 +76,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data/pgdata
     networks:
+      - default
       - data-platform-network
     restart: unless-stopped
     healthcheck:
@@ -92,6 +98,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
+      - default
       - data-platform-network
     restart: unless-stopped
     healthcheck:
@@ -260,6 +267,23 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+  
+  statsd-exporter:
+    image: prom/statsd-exporter:latest
+    container_name: statsd-exporter
+    ports:
+      - "9102:9102"
+      - "9125:9125/udp"
+    volumes:
+      - ./statsd-mapping.yml:/tmp/statsd-mapping.yml:ro
+    command:
+      - '--statsd.mapping-config=/tmp/statsd-mapping.yml'
+      - '--statsd.listen-udp=:9125'
+      - '--web.listen-address=:9102'
+    networks:
+      - default
+      - data-platform-network
+
 
 volumes:
   postgres-data:
