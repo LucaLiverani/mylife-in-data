@@ -1,4 +1,5 @@
 **.env
+**.env.local
 *.pyc
 */**/__pycache__
 */**/.pytest_cache
@@ -6,3 +7,8 @@
 */**/.ruff_cache
 **/venv
 */**/.venv
+.spotipy_token_cache
+
+# Cloudflare tunnel credentials and config
+**/cloudflared-config.yml
+**/.cloudflared/
