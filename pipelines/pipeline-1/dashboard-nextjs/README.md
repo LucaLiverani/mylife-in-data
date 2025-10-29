@@ -152,6 +152,26 @@ npm run dev
 # App will run on http://localhost:3000
 ```
 
+### Accessing from Other Devices
+
+The dashboard is configured to be accessible from other devices on your local network. To access from another device:
+
+1. Find your server's local IP address:
+   ```bash
+   # Linux/Mac
+   ip addr show | grep "inet " | grep -v 127.0.0.1
+   # Or
+   hostname -I
+   ```
+
+2. On the other device, navigate to:
+   ```
+   http://<your-server-ip>:3000
+   ```
+   For example: `http://192.168.1.100:3000`
+
+**Note**: The server binds to `0.0.0.0` (all network interfaces) by default, making it accessible from your local network. Make sure your firewall allows connections on port 3000.
+
 ### Production Build
 
 ```bash
@@ -162,6 +182,132 @@ npm start
 # Backend (use production ASGI server)
 cd api
 uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+## 🌐 Deploying to the Internet with Cloudflare Tunnel
+
+Expose your dashboard to the internet using Cloudflare Tunnel with systemd services for automatic startup and crash recovery. This setup exposes only the Next.js frontend while keeping the backend private.
+
+### Prerequisites
+
+- A Cloudflare account
+- Your domain (mylife-in-data.com) added to Cloudflare
+- Linux server with systemd
+
+### Step 1: Install Cloudflared
+
+```bash
+# Download and install cloudflared
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared-linux-amd64.deb
+```
+
+### Step 2: Authenticate and Create Tunnel
+
+```bash
+# Login to Cloudflare (opens browser)
+cloudflared tunnel login
+
+# Create the tunnel (note the tunnel ID that's displayed!)
+cloudflared tunnel create mylife-dashboard
+```
+
+### Step 3: Configure Cloudflare Tunnel
+
+```bash
+# Create the cloudflared config directory if it doesn't exist
+mkdir -p ~/.cloudflared
+
+# Copy and edit the config file
+cp cloudflared-config.yml ~/.cloudflared/config.yml
+
+# Edit the config file and replace <TUNNEL_ID> with your actual tunnel ID
+nano ~/.cloudflared/config.yml
+```
+
+Replace `<TUNNEL_ID>` with the tunnel ID from Step 2.
+
+### Step 4: Set Up DNS
+
+```bash
+# Route your domain to the tunnel
+cloudflared tunnel route dns mylife-dashboard mylife-in-data.com
+```
+
+### Step 5: Install Systemd Services
+
+```bash
+# Copy the service files to systemd directory
+sudo cp mylife-dashboard.service /etc/systemd/system/
+sudo cp cloudflared.service /etc/systemd/system/
+
+# Reload systemd to recognize new services
+sudo systemctl daemon-reload
+```
+
+### Step 6: Enable and Start Services
+
+```bash
+# Start and enable the Next.js dashboard
+sudo systemctl enable mylife-dashboard.service
+sudo systemctl start mylife-dashboard.service
+
+# Start and enable the Cloudflare tunnel
+sudo systemctl enable cloudflared.service
+sudo systemctl start cloudflared.service
+```
+
+### Step 7: Verify Everything is Running
+
+```bash
+# Check dashboard status
+sudo systemctl status mylife-dashboard
+
+# Check tunnel status
+sudo systemctl status cloudflared
+
+# View live logs
+sudo journalctl -u mylife-dashboard -f
+sudo journalctl -u cloudflared -f
+```
+
+### Service Management Commands
+
+```bash
+# Restart services
+sudo systemctl restart mylife-dashboard
+sudo systemctl restart cloudflared
+
+# Stop services
+sudo systemctl stop mylife-dashboard
+sudo systemctl stop cloudflared
+
+# View logs
+sudo journalctl -u mylife-dashboard --since today
+sudo journalctl -u cloudflared --since today
+```
+
+### What Gets Exposed
+
+- **Next.js Dashboard (port 3000)**: Exposed to the internet via mylife-in-data.com
+- **FastAPI Backend (port 8000)**: Remains private and accessible only locally
+- **SSL**: Automatically provided by Cloudflare (HTTPS)
+- **Auto-start**: Both services start on boot and restart on crash
+
+Your dashboard will be accessible at `https://mylife-in-data.com`
+
+### Architecture
+
+```
+Internet
+    ↓
+Cloudflare (SSL/CDN)
+    ↓
+Cloudflare Tunnel (cloudflared service)
+    ↓
+Next.js Dashboard (localhost:3000) ← Exposed via tunnel
+    ↓
+FastAPI Backend (localhost:8000) ← Remains private
 ```
 
 ## 🎨 Adding New Pages
@@ -367,6 +513,39 @@ Ensure Leaflet CSS is imported in the component:
 ```tsx
 import 'leaflet/dist/leaflet.css';
 ```
+
+### EventSource / SSE Connection Errors from Other Devices
+
+If you see `EventSource error: {}` when accessing from another device:
+
+1. **Restart the Next.js server** - The changes to bind to `0.0.0.0` require a server restart
+2. **Check firewall** - Ensure port 3000 is accessible:
+   ```bash
+   # Ubuntu/Debian
+   sudo ufw allow 3000/tcp
+
+   # Fedora/RHEL
+   sudo firewall-cmd --add-port=3000/tcp --permanent
+   sudo firewall-cmd --reload
+   ```
+3. **Verify network binding** - Check the server is listening on all interfaces:
+   ```bash
+   netstat -tlnp | grep 3000
+   # Should show: 0.0.0.0:3000 (not 127.0.0.1:3000)
+   ```
+4. **Test Kafka connection** - Ensure Kafka is accessible if using Spotify live stream
+
+### Hydration Mismatch Warnings
+
+If you see hydration mismatch errors in the console, these are typically caused by:
+
+1. **Browser extensions** - Extensions that modify the DOM (like DevTools remote debugging) can add attributes to HTML elements, causing mismatches. This is harmless and can be ignored.
+2. **The error message**: Look for lines like `- __gchrome_remoteframetoken` which indicate browser extension interference.
+
+**Solution**: These warnings don't affect functionality. If they bother you:
+- Disable browser extensions while developing
+- Test in an incognito/private window
+- The TravelMap component uses `next/dynamic` with `ssr: false` to prevent SSR-related hydration issues
 
 ## 📚 Documentation
 
