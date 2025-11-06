@@ -14,11 +14,6 @@ interface RecentTrack {
   albumArt?: string;
 }
 
-interface SpotifyData {
-  stats: Array<{ label: string; value: string }>;
-  totalHours: string;
-}
-
 interface TravelData {
   locations: Array<{ name: string; lat: number; lng: number; date: string; duration: string }>;
   stats: {
@@ -50,7 +45,6 @@ interface OverviewData {
 export default async function Home() {
   const overviewData = await overviewAPI.getStats() as OverviewData;
   const travelData = await travelAPI.getData() as TravelData;
-  const spotifyData = await spotifyAPI.getSummary() as SpotifyData;
   const recentTracks = await spotifyAPI.getRecent() as RecentTrack[];
 
   // Group recent events by service type

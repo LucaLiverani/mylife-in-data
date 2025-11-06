@@ -3,7 +3,13 @@
 import { Card } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-export function YouTubePageClient({ data }: { data: any }) {
+interface YouTubeData {
+  topChannels: Array<{ name: string; videos: number; category: string; hours: number }>;
+  categories: Array<{ name: string; value: number }>;
+  watchTime: Array<{ date: string; hours: number }>;
+}
+
+export function YouTubePageClient({ data }: { data: YouTubeData }) {
   return (
     <>
       {/* Charts Section */}
@@ -33,7 +39,7 @@ export function YouTubePageClient({ data }: { data: any }) {
           <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
             <h2 className="text-2xl font-bold mb-6">Content Categories</h2>
             <div className="space-y-4 pt-8">
-              {data.categories.map((cat: any, i: number) => (
+              {data.categories.map((cat, i: number) => (
                 <div key={i} className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>{cat.name}</span>
@@ -79,7 +85,7 @@ export function YouTubePageClient({ data }: { data: any }) {
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
           <h2 className="text-2xl font-bold mb-6">Channel Details</h2>
           <div className="space-y-4">
-            {data.topChannels.map((channel: any, i: number) => (
+            {data.topChannels.map((channel, i: number) => (
               <div
                 key={i}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"

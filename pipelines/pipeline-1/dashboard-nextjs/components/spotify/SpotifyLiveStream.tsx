@@ -24,7 +24,10 @@ interface SpotifyPlaybackData {
     type: string;
     volume_percent: number;
   };
-  context?: any;
+  context?: {
+    type: string;
+    uri: string;
+  } | null;
 }
 
 const LAST_TRACK_KEY = 'spotify_last_track';
@@ -140,9 +143,9 @@ export function SpotifyLiveStream() {
             setError(null);
           } else {
             // Multiple failures, show error to user
-            if (eventSource.readyState === EventSource.CONNECTING) {
+            if (eventSource && eventSource.readyState === EventSource.CONNECTING) {
               setError('Having trouble connecting to live stream...');
-            } else if (eventSource.readyState === EventSource.CLOSED) {
+            } else if (eventSource && eventSource.readyState === EventSource.CLOSED) {
               setError('Connection lost. Reconnecting...');
             } else {
               setError(`Connection error (attempt ${currentRetries}). Retrying...`);

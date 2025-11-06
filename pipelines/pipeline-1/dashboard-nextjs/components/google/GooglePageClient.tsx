@@ -3,7 +3,14 @@
 import { Card } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
-export function GooglePageClient({ data }: { data: any }) {
+interface GoogleData {
+  timeOfDay: Array<{ hour: string; searches: number }>;
+  categories: Array<{ name: string; value: number }>;
+  dailySearches: Array<{ date: string; searches: number }>;
+  topSearches: Array<{ query: string; count: number }>;
+}
+
+export function GooglePageClient({ data }: { data: GoogleData }) {
   return (
     <>
       {/* Charts Section */}
@@ -33,7 +40,7 @@ export function GooglePageClient({ data }: { data: any }) {
           <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
             <h2 className="text-2xl font-bold mb-6">Search Categories</h2>
             <div className="space-y-4 pt-8">
-              {data.categories.map((cat: any, i: number) => (
+              {data.categories.map((cat, i: number) => (
                 <div key={i} className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>{cat.name}</span>
@@ -79,7 +86,7 @@ export function GooglePageClient({ data }: { data: any }) {
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
           <h2 className="text-2xl font-bold mb-6">Top Searches</h2>
           <div className="space-y-3">
-            {data.topSearches.map((search: any, i: number) => (
+            {data.topSearches.map((search, i: number) => (
               <div
                 key={i}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
