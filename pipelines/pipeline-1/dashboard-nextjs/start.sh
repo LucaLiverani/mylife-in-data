@@ -20,7 +20,7 @@ sleep 2
 # Start Next.js frontend
 echo -e "${GREEN}Starting Next.js frontend on port 3000 (accessible from network)...${NC}"
 # npm run dev & # for dev
-# npm run build && npm start & # for production
+npm run build && npm start & # for production
 FRONTEND_PID=$!
 
 echo -e "\n${BLUE}Dashboard is starting...${NC}"

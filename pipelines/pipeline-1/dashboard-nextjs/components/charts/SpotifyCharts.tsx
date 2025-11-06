@@ -59,7 +59,10 @@ export function SpotifyCharts({ data }: SpotifyChartsProps) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry: any) => `${entry.name} ${entry.percent ? (entry.percent * 100).toFixed(0) : 0}%`}
+                  label={(entry: unknown) => {
+                    const data = entry as { name: string; value: number; percent?: number };
+                    return `${data.name} ${data.percent ? (data.percent * 100).toFixed(0) : 0}%`;
+                  }}
                   outerRadius={120}
                   fill="#8884d8"
                   dataKey="value"

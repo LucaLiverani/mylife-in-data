@@ -45,7 +45,7 @@ export async function GET() {
             try {
               const keepalive = `: keepalive\n\n`;
               controller.enqueue(encoder.encode(keepalive));
-            } catch (error) {
+            } catch {
               isActive = false;
               if (keepaliveInterval) clearInterval(keepaliveInterval);
             }

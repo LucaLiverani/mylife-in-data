@@ -24,6 +24,7 @@ export function TravelMap({ locations }: TravelMapProps) {
 
     const initMap = async () => {
       const L = (await import('leaflet')).default;
+      // @ts-expect-error CSS import doesn't have type definitions
       await import('leaflet/dist/leaflet.css');
 
       if (!isMounted || !mapRef.current || mapInstanceRef.current) return;

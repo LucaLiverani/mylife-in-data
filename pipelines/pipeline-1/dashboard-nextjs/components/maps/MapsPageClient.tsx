@@ -4,7 +4,17 @@ import { Card } from '@/components/ui/card';
 import { TravelMapClient } from '@/components/TravelMapClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export function MapsPageClient({ travelData, mockData }: { travelData: any, mockData: any }) {
+interface TravelData {
+  locations: Array<{ name: string; lat: number; lng: number; date: string; duration: string }>;
+}
+
+interface MockData {
+  monthlyTrips: Array<{ month: string; trips: number }>;
+  continents: Array<{ name: string; cities: number; percentage: number }>;
+  topDestinations: Array<{ city: string; visits: number; days: number }>;
+}
+
+export function MapsPageClient({ travelData, mockData }: { travelData: TravelData; mockData: MockData }) {
   return (
     <>
       {/* Map Section */}
@@ -44,7 +54,7 @@ export function MapsPageClient({ travelData, mockData }: { travelData: any, mock
           <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
             <h2 className="text-2xl font-bold mb-6">Cities by Continent</h2>
             <div className="space-y-4 pt-8">
-              {mockData.continents.map((continent: any, i: number) => (
+              {mockData.continents.map((continent, i: number) => (
                 <div key={i} className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>{continent.name}</span>
@@ -68,7 +78,7 @@ export function MapsPageClient({ travelData, mockData }: { travelData: any, mock
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
           <h2 className="text-2xl font-bold mb-6">Most Visited Destinations</h2>
           <div className="space-y-3">
-            {mockData.topDestinations.map((dest: any, i: number) => (
+            {mockData.topDestinations.map((dest, i: number) => (
               <div
                 key={i}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
