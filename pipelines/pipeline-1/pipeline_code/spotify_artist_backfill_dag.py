@@ -19,7 +19,7 @@ from typing import List
 
 import pendulum
 from airflow.models.dag import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.exceptions import AirflowException
 from kafka import KafkaProducer
@@ -47,7 +47,7 @@ SPOTIFY_BATCH_SIZE = 50
 
 default_args = {
     'owner': 'data-engineering',
-    'retries': 3,
+    'retries': 1,
     'retry_delay': timedelta(minutes=2),
     'execution_timeout': timedelta(minutes=60),
 }
@@ -112,7 +112,7 @@ def fetch_all_artist_details(**context):
     Fetch artist details from Spotify API in batches of 50.
     """
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
     run_id = context['run_id']
 
     artist_ids = ti.xcom_pull(task_ids='extract_artist_ids', key='artist_ids')
@@ -157,7 +157,7 @@ def fetch_all_artist_details(**context):
                     'raw_artist': artist,
                     '_ingestion_metadata': {
                         'ingested_at': pendulum.now('UTC').isoformat(),
-                        'execution_date': execution_date.isoformat(),
+                        'logical_date': logical_date.isoformat(),
                         'dag_id': context['dag'].dag_id,
                         'run_id': run_id,
                         'source': 'spotify_api_backfill',
@@ -256,7 +256,7 @@ def publish_artists_to_kafka(**context):
 def save_artists_to_s3(**context):
     """Save artist details to S3 as JSONL file"""
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
     s3_hook = S3Hook(aws_conn_id="minio_s3")
 
     artist_details = ti.xcom_pull(task_ids='fetch_artist_details', key='artist_details')
@@ -266,7 +266,7 @@ def save_artists_to_s3(**context):
         return {'status': 'skipped'}
 
     # S3 key for backfill file
-    date_str = execution_date.format('YYYY-MM-DD')
+    date_str = logical_date.format('YYYY-MM-DD')
     key = f"{RAW_FILE_FOLDER}/backfill_{date_str}.jsonl"
 
     log.info(f"Saving {len(artist_details)} artists to s3://{BUCKET_NAME}/{key}")
@@ -331,7 +331,7 @@ with DAG(
     dag_id="spotify_artist_backfill",
     default_args=default_args,
     description="One-time backfill: Fetch artist details for all artists in tracks table",
-    schedule_interval=None,  # Manual trigger only
+    schedule=None,  # Manual trigger only
     start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
     catchup=False,
     max_active_runs=1,

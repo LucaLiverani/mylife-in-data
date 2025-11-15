@@ -1,5 +1,5 @@
 import json
-from airflow.models import Variable
+from airflow.sdk import Variable
 from spotipy.cache_handler import CacheHandler
 
 class AirflowCacheHandler(CacheHandler):
@@ -13,7 +13,7 @@ class AirflowCacheHandler(CacheHandler):
         """
         Gets the token info from an Airflow Variable.
         """
-        token_info_json = Variable.get(self.var_name, default_var=None)
+        token_info_json = Variable.get(self.var_name, default=None)
         if token_info_json:
             return json.loads(token_info_json)
         return None
