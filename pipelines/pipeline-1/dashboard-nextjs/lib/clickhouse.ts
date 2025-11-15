@@ -34,7 +34,7 @@ export function getClickHouseClient(): ClickHouseClient {
 /**
  * Execute a query and return results as JSON array
  */
-export async function queryClickHouse<T = any>(query: string): Promise<T[]> {
+export async function queryClickHouse<T = unknown>(query: string): Promise<T[]> {
   const client = getClickHouseClient();
 
   try {
@@ -55,7 +55,7 @@ export async function queryClickHouse<T = any>(query: string): Promise<T[]> {
 /**
  * Execute a query and return a single row
  */
-export async function queryClickHouseOne<T = any>(query: string): Promise<T | null> {
+export async function queryClickHouseOne<T = unknown>(query: string): Promise<T | null> {
   const results = await queryClickHouse<T>(query);
   return results.length > 0 ? results[0] : null;
 }
