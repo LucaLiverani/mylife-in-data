@@ -31,7 +31,7 @@ Bronze (Raw) → Silver (Cleaned) → Gold (Aggregated)
 
 The required packages are in `requirements.txt`:
 ```bash
-pip install dbt-core==1.7.4 dbt-clickhouse==1.7.3
+pip install dbt-core dbt-clickhouse
 ```
 
 ### 2. Test Connection
