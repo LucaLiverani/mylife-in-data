@@ -27,8 +27,9 @@ log = logging.getLogger(__name__)
 
 BUCKET_NAME = "inbound"
 RAW_FILE_FOLDER = "raw/spotify/api/tracks"
-KAFKA_BOOTSTRAP_SERVERS = "kafka:9092" 
+KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_TOPIC = "spotify.tracks.raw"
+KAFKA_ARTIST_IDS_TOPIC = "spotify.artist_ids"
 
 
 
@@ -105,13 +106,13 @@ def check_for_data(**context):
     """Branch: Skip processing if no data"""
     ti = context['task_instance']
     item_count = ti.xcom_pull(task_ids='extract_raw_data', key='item_count')
-    
+
     if item_count == 0:
         log.info("No data to save, skipping")
         return 'skip_processing'
     else:
         log.info(f"Found {item_count} items, proceeding")
-        return ['consolidate_to_jsonl', 'publish_to_kafka']
+        return ['consolidate_to_jsonl', 'publish_to_kafka', 'publish_artist_ids']
 
 # ============================================================================
 # Task 3: Consolidate to Daily JSONL
@@ -353,7 +354,101 @@ def publish_raw_to_kafka(**context):
         producer.close()
 
 # ============================================================================
-# Task 5: Validate
+# Task 5: Extract and Publish Artist IDs (Parallel)
+# ============================================================================
+
+def publish_artist_ids(**context):
+    """
+    Extract unique artist IDs from tracks and publish to Kafka.
+    Runs in parallel with track consolidation and publishing.
+    """
+    ti = context['task_instance']
+    execution_date = context['execution_date']
+
+    raw_items = ti.xcom_pull(task_ids='extract_raw_data', key='raw_items')
+
+    if not raw_items:
+        log.info("No items to extract artists from")
+        return {'status': 'skipped', 'published': 0}
+
+    log.info(f"Extracting artist IDs from {len(raw_items)} tracks...")
+
+    # Extract unique artist IDs
+    artist_ids = set()
+    for item in raw_items:
+        try:
+            track = item['raw_item']['track']
+            artists = track.get('artists', [])
+            for artist in artists:
+                artist_id = artist.get('id')
+                if artist_id:
+                    artist_ids.add(artist_id)
+        except Exception as e:
+            log.warning(f"Failed to extract artist from item: {e}")
+            continue
+
+    log.info(f"Found {len(artist_ids)} unique artist IDs")
+
+    if not artist_ids:
+        return {'status': 'skipped', 'published': 0}
+
+    # Publish to Kafka
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        value_serializer=lambda v: json.dumps(v, default=str).encode('utf-8'),
+        key_serializer=lambda k: k.encode('utf-8') if k else None,
+        acks='all',
+        retries=3,
+        compression_type='snappy',
+    )
+
+    success_count = 0
+    error_count = 0
+
+    try:
+        for artist_id in artist_ids:
+            try:
+                message = {
+                    'artist_id': artist_id,
+                    'discovered_at': pendulum.now('UTC').isoformat(),
+                    'source_dag': context['dag'].dag_id,
+                    'execution_date': execution_date.isoformat(),
+                }
+
+                producer.send(
+                    topic=KAFKA_ARTIST_IDS_TOPIC,
+                    value=message,
+                    key=artist_id,
+                )
+
+                success_count += 1
+
+            except KafkaError as e:
+                error_count += 1
+                log.error(f"Failed to publish artist ID {artist_id}: {e}")
+                continue
+
+        producer.flush(timeout=30)
+
+        result = {
+            'status': 'success' if error_count == 0 else 'partial_success',
+            'topic': KAFKA_ARTIST_IDS_TOPIC,
+            'published': success_count,
+            'failed': error_count,
+            'total': len(artist_ids),
+        }
+
+        ti.xcom_push(key='artist_ids_result', value=result)
+
+        log.info(f"Published {success_count}/{len(artist_ids)} artist IDs to Kafka")
+
+        return result
+
+    finally:
+        producer.close()
+
+# ============================================================================
+# Task 6: Validate
 # ============================================================================
 
 def validate_outputs(**context):
@@ -446,20 +541,26 @@ with DAG(
         task_id='publish_to_kafka',
         python_callable=publish_raw_to_kafka,
     )
-    
+
+    # Publish Artist IDs (parallel)
+    artist_ids_task = PythonOperator(
+        task_id='publish_artist_ids',
+        python_callable=publish_artist_ids,
+    )
+
     # Validate
     validate_task = PythonOperator(
         task_id='validate_outputs',
         python_callable=validate_outputs,
         trigger_rule='all_done',
     )
-    
+
     # Skip
     skip_task = DummyOperator(
         task_id='skip_processing',
     )
-    
+
     # Dependencies
     extract_task >> branch_task
-    branch_task >> [consolidate_task, kafka_task] >> validate_task
+    branch_task >> [consolidate_task, kafka_task, artist_ids_task] >> validate_task
     branch_task >> skip_task

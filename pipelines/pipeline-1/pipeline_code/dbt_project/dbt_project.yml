@@ -1,0 +1,50 @@
+# dbt Project Configuration for Spotify Analytics
+name: 'spotify_analytics'
+version: '1.0.0'
+config-version: 2
+
+# Project profile (defined in profiles.yml)
+profile: 'spotify_analytics'
+
+# Source and target directories
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Model configurations
+models:
+  spotify_analytics:
+    # Materialization defaults
+    +materialized: view
+
+    # Silver layer - cleaned, deduplicated data
+    silver:
+      +materialized: view
+      +schema: silver
+      +database: analytics
+
+    # Gold layer - aggregated, dashboard-ready data
+    gold:
+      +materialized: table
+      +schema: gold
+      +database: analytics
+      # Refresh gold tables on each run
+      +on_schema_change: "sync_all_columns"
+
+# Tests
+tests:
+  +store_failures: true
+  +schema: dbt_test_failures
+
+# Documentation
+vars:
+  # Date range for analysis (last N days)
+  lookback_days: 365

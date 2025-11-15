@@ -159,13 +159,28 @@ def get_current_track_simplified(sp):
         log.error(f"Error fetching current track: {e}")
         raise
 
-def get_artists(sp, artists=[]):    
+def get_artists(sp, artist_ids):
     """
-    Get artist details.
+    Fetch artist details in bulk (up to 50 at a time).
+
+    Args:
+        sp: Spotify client
+        artist_ids: List of artist IDs (max 50)
+
+    Returns:
+        dict: Response with 'artists' key containing list of artist objects
     """
     try:
-        artists = sp.artists(artists)
-        return artists
+        if not artist_ids:
+            return {'artists': []}
+
+        # Spotify API allows max 50 artists per request
+        if len(artist_ids) > 50:
+            log.warning(f"Requested {len(artist_ids)} artists, but max is 50. Truncating.")
+            artist_ids = artist_ids[:50]
+
+        response = sp.artists(artist_ids)
+        return response
     except Exception as e:
         log.error(f"Error fetching artist details: {e}")
         raise

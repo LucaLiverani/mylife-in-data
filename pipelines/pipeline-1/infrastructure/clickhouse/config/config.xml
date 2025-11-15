@@ -1,0 +1,107 @@
+<clickhouse>
+    <!-- Listen on all interfaces -->
+    <listen_host>0.0.0.0</listen_host>
+
+    <!-- HTTP interface -->
+    <http_port>8123</http_port>
+
+    <!-- Native protocol port -->
+    <tcp_port>9000</tcp_port>
+
+    <!-- Interserver HTTP port for replication -->
+    <interserver_http_port>9009</interserver_http_port>
+
+    <!-- Logging configuration -->
+    <logger>
+        <level>information</level>
+        <console>1</console>
+        <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        <size>100M</size>
+        <count>10</count>
+    </logger>
+
+    <!-- Query logging -->
+    <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+    </query_log>
+
+    <!-- Query thread log -->
+    <query_thread_log>
+        <database>system</database>
+        <table>query_thread_log</table>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+    </query_thread_log>
+
+    <!-- Part log -->
+    <part_log>
+        <database>system</database>
+        <table>part_log</table>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+    </part_log>
+
+    <!-- Timezone -->
+    <timezone>UTC</timezone>
+
+    <!-- Max memory usage -->
+    <max_server_memory_usage_to_ram_ratio>0.9</max_server_memory_usage_to_ram_ratio>
+
+    <!-- Enable advanced format schemas -->
+    <format_schema_path>/var/lib/clickhouse/format_schemas/</format_schema_path>
+
+    <!-- User directories -->
+    <user_directories>
+        <users_xml>
+            <path>users.xml</path>
+        </users_xml>
+        <local_directory>
+            <path>/var/lib/clickhouse/access/</path>
+        </local_directory>
+    </user_directories>
+
+    <!-- Default profile settings -->
+    <profiles>
+        <default>
+            <max_memory_usage>10000000000</max_memory_usage>
+            <load_balancing>random</load_balancing>
+            <max_execution_time>300</max_execution_time>
+        </default>
+    </profiles>
+
+    <!-- Quotas -->
+    <quotas>
+        <default>
+            <interval>
+                <duration>3600</duration>
+                <queries>0</queries>
+                <errors>0</errors>
+                <result_rows>0</result_rows>
+                <read_rows>0</read_rows>
+                <execution_time>0</execution_time>
+            </interval>
+        </default>
+    </quotas>
+
+    <!-- Disable built-in security (for development) -->
+    <access_control_path>/var/lib/clickhouse/access/</access_control_path>
+
+    <!-- Enable Prometheus metrics endpoint -->
+    <prometheus>
+        <endpoint>/metrics</endpoint>
+        <port>8123</port>
+        <metrics>true</metrics>
+        <events>true</events>
+        <asynchronous_metrics>true</asynchronous_metrics>
+    </prometheus>
+
+    <!-- S3-compatible storage settings for MinIO -->
+    <s3>
+        <use_environment_credentials>false</use_environment_credentials>
+        <use_insecure_imds_request>false</use_insecure_imds_request>
+    </s3>
+</clickhouse>

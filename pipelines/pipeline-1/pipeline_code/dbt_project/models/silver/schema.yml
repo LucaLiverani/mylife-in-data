@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: silver_spotify_tracks
+    description: >
+      Cleaned and deduplicated Spotify listening history.
+      Removes duplicates and adds derived time dimensions.
+    columns:
+      - name: track_id
+        description: Unique identifier for the track
+        tests:
+          - not_null
+      - name: track_name
+        description: Name of the track
+        tests:
+          - not_null
+      - name: artist_id
+        description: Primary artist ID
+        tests:
+          - not_null
+      - name: played_at
+        description: Timestamp when track was played
+        tests:
+          - not_null
+          - unique
+      - name: track_duration_ms
+        description: Track duration in milliseconds
+      - name: track_duration_minutes
+        description: Track duration in minutes (derived)
+      - name: played_date
+        description: Date when track was played (derived)
+      - name: played_hour
+        description: Hour of day when track was played (0-23)
+      - name: day_of_week
+        description: Day of week (1=Monday, 7=Sunday)
+
+  - name: silver_spotify_artists
+    description: >
+      Latest details for each artist from the Spotify API.
+      Automatically updates when new artist data is ingested.
+    columns:
+      - name: artist_id
+        description: Unique identifier for the artist
+        tests:
+          - not_null
+          - unique
+      - name: artist_name
+        description: Name of the artist
+        tests:
+          - not_null
+      - name: popularity
+        description: Artist popularity score (0-100)
+      - name: followers_total
+        description: Total number of followers on Spotify
+      - name: genres
+        description: Array of genres associated with the artist
+      - name: last_updated
+        description: When this artist data was last fetched
