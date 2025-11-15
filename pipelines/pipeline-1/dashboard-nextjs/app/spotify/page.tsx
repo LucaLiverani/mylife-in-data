@@ -12,6 +12,9 @@ export const metadata = {
   description: 'Detailed Spotify listening statistics and analytics',
 };
 
+// Force dynamic rendering since we need to fetch data at runtime
+export const dynamic = 'force-dynamic';
+
 interface SpotifyFullData {
   kpis: {
     totalTime: string;
