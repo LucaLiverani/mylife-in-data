@@ -4,7 +4,12 @@
  */
 
 export async function fetchAPI<T>(endpoint: string): Promise<T> {
-  const response = await fetch(endpoint, {
+  // Convert relative URLs to absolute URLs for server-side fetching
+  const url = endpoint.startsWith('/')
+    ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${endpoint}`
+    : endpoint;
+
+  const response = await fetch(url, {
     next: { revalidate: 60 }, // Revalidate every minute
   });
 

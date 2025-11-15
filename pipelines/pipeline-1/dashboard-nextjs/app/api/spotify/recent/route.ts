@@ -26,7 +26,7 @@ export async function GET() {
         artist,
         played_at,
         album_art
-      FROM analytics.gold_spotify_recent_tracks
+      FROM analytics_gold.gold_spotify_recent_tracks
       ORDER BY recency_rank
       LIMIT 50
     `;
@@ -44,9 +44,7 @@ export async function GET() {
     return NextResponse.json(formattedResults.slice(0, 10));
   } catch (error) {
     console.error('Error fetching recent tracks:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch recent tracks' },
-      { status: 500 }
-    );
+    // Return empty array instead of error to allow page to load
+    return NextResponse.json([]);
   }
 }
