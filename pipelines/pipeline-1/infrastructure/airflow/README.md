@@ -43,7 +43,16 @@ docker-compose up -d
 
 - **Airflow Web UI**: `http://localhost:8080`
 
-Log in to the UI using the admin credentials you set in your `.env` file.
+### Login Credentials
+
+Airflow standalone mode auto-generates a password for the admin user. To get the password, run:
+
+```bash
+docker logs airflow-standalone 2>&1 | grep "Simple auth manager | Password"
+```
+
+- **Username**: admin
+- **Password**: See output from the command above
 
 ## Update package for piepline
 
