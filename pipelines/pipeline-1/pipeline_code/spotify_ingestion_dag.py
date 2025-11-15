@@ -10,8 +10,8 @@ from typing import Dict, List
 
 import pendulum
 from airflow.models.dag import DAG
-from airflow.operators.python import PythonOperator, BranchPythonOperator
-from airflow.operators.dummy import DummyOperator
+from airflow.providers.standard.operators.python import PythonOperator, BranchPythonOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.exceptions import AirflowException
 from kafka import KafkaProducer
@@ -35,7 +35,7 @@ KAFKA_ARTIST_IDS_TOPIC = "spotify.artist_ids"
 
 default_args = {
     'owner': 'data-engineering',
-    'retries': 3,
+    'retries': 1,
     'retry_delay': timedelta(minutes=2),
     'execution_timeout': timedelta(minutes=10),
 }
@@ -47,24 +47,24 @@ default_args = {
 def extract_raw_spotify_data(**context):
     """
     Extract raw JSON response from Spotify API.
-    - For scheduled runs, uses the execution_date as the 'after' timestamp.
+    - For scheduled runs, uses the logical_date as the 'after' timestamp.
     - For manual runs, fetches the last 50 tracks.
     """
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
     run_id = context['run_id']
     ti = context['task_instance']
-    
+
     sp = get_spotify_client()
-    
+
     # Handle manual vs. scheduled runs
     if run_id and run_id.startswith("manual__"):
         log.info("Manual run detected. Fetching last 50 played tracks.")
         # For manual runs, get the most recent 50 tracks
         raw_response = get_recently_played_tracks(sp)
     else:
-        # For scheduled runs, use the execution date window
-        after_timestamp = int(execution_date.timestamp() * 1000)
-        log.info(f"Scheduled run. Extracting data after: {execution_date}")
+        # For scheduled runs, use the logical date window
+        after_timestamp = int(logical_date.timestamp() * 1000)
+        log.info(f"Scheduled run. Extracting data after: {logical_date}")
         raw_response = get_recently_played_tracks(sp, after=after_timestamp)
 
     if not raw_response or not raw_response.get('items'):
@@ -72,9 +72,9 @@ def extract_raw_spotify_data(**context):
         ti.xcom_push(key='raw_items', value=[])
         ti.xcom_push(key='item_count', value=0)
         return 0
-    
+
     items = raw_response.get('items', [])
-    
+
     # Add minimal ingestion metadata to EACH item
     items_with_metadata = []
     for item in items:
@@ -82,20 +82,20 @@ def extract_raw_spotify_data(**context):
             'raw_item': item,  # Untouched API response
             '_ingestion_metadata': {
                 'ingested_at': pendulum.now('UTC').isoformat(),
-                'execution_date': execution_date.isoformat(),
+                'logical_date': logical_date.isoformat(),
                 'dag_id': context['dag'].dag_id,
                 'run_id': run_id,
                 'source': 'spotify_api',
             }
         }
         items_with_metadata.append(raw_item)
-    
+
     log.info(f"Extracted {len(items_with_metadata)} raw items")
-    
+
     # Push to XCom
     ti.xcom_push(key='raw_items', value=items_with_metadata)
     ti.xcom_push(key='item_count', value=len(items_with_metadata))
-    
+
     return len(items_with_metadata)
 
 # ============================================================================
@@ -127,23 +127,23 @@ def consolidate_raw_to_jsonl(**context):
     - Compresses with gzip
     """
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
     s3_hook = S3Hook(aws_conn_id="minio_s3")
-    
+
     raw_items = ti.xcom_pull(task_ids='extract_raw_data', key='raw_items')
-    
+
     if not raw_items:
         log.info("No items to consolidate")
         return {'status': 'skipped'}
-    
+
     log.info(f"Consolidating {len(raw_items)} items into daily JSONL files...")
-    
+
     # Group items by date (from played_at in raw item)
     from collections import defaultdict
     import pendulum
-    
+
     items_by_date = defaultdict(list)
-    
+
     for item in raw_items:
         try:
             played_at_str = item['raw_item']['played_at']
@@ -152,8 +152,8 @@ def consolidate_raw_to_jsonl(**context):
             items_by_date[date_key].append(item)
         except Exception as e:
             log.error(f"Failed to parse date from item: {e}")
-            # Fallback to execution_date
-            date_key = execution_date.format('YYYY-MM-DD')
+            # Fallback to logical_date
+            date_key = logical_date.format('YYYY-MM-DD')
             items_by_date[date_key].append(item)
     
     log.info(f"Items grouped into {len(items_by_date)} date(s)")
@@ -363,7 +363,7 @@ def publish_artist_ids(**context):
     Runs in parallel with track consolidation and publishing.
     """
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
 
     raw_items = ti.xcom_pull(task_ids='extract_raw_data', key='raw_items')
 
@@ -412,7 +412,7 @@ def publish_artist_ids(**context):
                     'artist_id': artist_id,
                     'discovered_at': pendulum.now('UTC').isoformat(),
                     'source_dag': context['dag'].dag_id,
-                    'execution_date': execution_date.isoformat(),
+                    'logical_date': logical_date.isoformat(),
                 }
 
                 producer.send(
@@ -511,7 +511,7 @@ with DAG(
     dag_id="spotify_raw_ingestion_jsonl",
     default_args=default_args,
     description="Extract RAW Spotify data to daily JSONL files (consolidated)",
-    schedule_interval="*/15 * * * *",
+    schedule="*/15 * * * *",
     start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
     catchup=False,
     max_active_runs=3,
@@ -556,7 +556,7 @@ with DAG(
     )
 
     # Skip
-    skip_task = DummyOperator(
+    skip_task = EmptyOperator(
         task_id='skip_processing',
     )
 

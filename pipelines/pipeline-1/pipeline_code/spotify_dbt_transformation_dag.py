@@ -6,14 +6,14 @@ from datetime import timedelta
 
 import pendulum
 from airflow.models.dag import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 log = logging.getLogger(__name__)
 
 default_args = {
     'owner': 'data-engineering',
-    'retries': 2,
+    'retries': 1,
     'retry_delay': timedelta(minutes=5),
     'execution_timeout': timedelta(minutes=30),
 }
@@ -25,23 +25,23 @@ DBT_PROFILES_DIR = '/opt/airflow/dags/dbt_project'
 
 def log_dbt_start(**context):
     """Log dbt transformation start"""
-    execution_date = context['execution_date']
-    log.info(f"Starting dbt transformations for {execution_date}")
-    return {"status": "started", "timestamp": str(execution_date)}
+    logical_date = context['logical_date']
+    log.info(f"Starting dbt transformations for {logical_date}")
+    return {"status": "started", "timestamp": str(logical_date)}
 
 
 def log_dbt_complete(**context):
     """Log dbt transformation completion"""
-    execution_date = context['execution_date']
-    log.info(f"Completed dbt transformations for {execution_date}")
-    return {"status": "completed", "timestamp": str(execution_date)}
+    logical_date = context['logical_date']
+    log.info(f"Completed dbt transformations for {logical_date}")
+    return {"status": "completed", "timestamp": str(logical_date)}
 
 
 with DAG(
     dag_id="spotify_dbt_transformation",
     default_args=default_args,
     description="Run dbt transformations to create gold layer analytics tables",
-    schedule_interval="*/30 * * * *",  # Run every 30 minutes
+    schedule="*/15 * * * *",  # Run every 15 minutes
     start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
     catchup=False,
     max_active_runs=1,

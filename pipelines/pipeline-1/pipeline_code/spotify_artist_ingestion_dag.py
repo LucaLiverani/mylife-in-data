@@ -8,8 +8,8 @@ from typing import Dict, List, Set
 
 import pendulum
 from airflow.models.dag import DAG
-from airflow.operators.python import PythonOperator, BranchPythonOperator
-from airflow.operators.dummy import DummyOperator
+from airflow.providers.standard.operators.python import PythonOperator, BranchPythonOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.exceptions import AirflowException
 from kafka import KafkaProducer, KafkaConsumer
@@ -40,7 +40,7 @@ SPOTIFY_BATCH_SIZE = 50  # Spotify API allows 50 artists per request
 
 default_args = {
     'owner': 'data-engineering',
-    'retries': 3,
+    'retries': 1,
     'retry_delay': timedelta(minutes=2),
     'execution_timeout': timedelta(minutes=15),
 }
@@ -58,7 +58,7 @@ def collect_artist_ids_to_fetch(**context):
     Returns unique list of artist IDs that need fetching.
     """
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
 
     artist_ids_to_fetch = set()
 
@@ -71,7 +71,7 @@ def collect_artist_ids_to_fetch(**context):
             value_deserializer=lambda m: json.loads(m.decode('utf-8')),
             auto_offset_reset='earliest',
             enable_auto_commit=True,
-            group_id=f'artist_ingestion_{execution_date.format("YYYY-MM-DD")}',
+            group_id=f'artist_ingestion_{logical_date.format("YYYY-MM-DD")}',
             consumer_timeout_ms=10000,  # Stop after 10s of no messages
         )
 
@@ -162,7 +162,7 @@ def fetch_artist_details(**context):
     Returns raw artist data with ingestion metadata.
     """
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
     run_id = context['run_id']
 
     artist_ids = ti.xcom_pull(task_ids='collect_artist_ids', key='artist_ids_to_fetch')
@@ -207,7 +207,7 @@ def fetch_artist_details(**context):
                     'raw_artist': artist,  # Untouched API response
                     '_ingestion_metadata': {
                         'ingested_at': pendulum.now('UTC').isoformat(),
-                        'execution_date': execution_date.isoformat(),
+                        'logical_date': logical_date.isoformat(),
                         'dag_id': context['dag'].dag_id,
                         'run_id': run_id,
                         'source': 'spotify_api',
@@ -319,7 +319,7 @@ def save_artists_to_s3(**context):
     Appends to existing file if present.
     """
     ti = context['task_instance']
-    execution_date = context['execution_date']
+    logical_date = context['logical_date']
     s3_hook = S3Hook(aws_conn_id="minio_s3")
 
     artist_details = ti.xcom_pull(task_ids='fetch_artist_details', key='artist_details')
@@ -329,7 +329,7 @@ def save_artists_to_s3(**context):
         return {'status': 'skipped'}
 
     # S3 key for today's file
-    date_str = execution_date.format('YYYY-MM-DD')
+    date_str = logical_date.format('YYYY-MM-DD')
     key = f"{RAW_FILE_FOLDER}/{date_str}.jsonl"
 
     log.info(f"Saving {len(artist_details)} artists to s3://{BUCKET_NAME}/{key}")
@@ -449,7 +449,7 @@ with DAG(
     dag_id="spotify_artist_ingestion",
     default_args=default_args,
     description="Fetch and store Spotify artist details with deduplication",
-    schedule_interval="0 */6 * * *",  # Every 6 hours
+    schedule="0 */6 * * *",  # Every 6 hours
     start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
     catchup=False,
     max_active_runs=1,
@@ -494,7 +494,7 @@ with DAG(
     )
 
     # Skip
-    skip_task = DummyOperator(
+    skip_task = EmptyOperator(
         task_id='skip_processing',
     )
 
