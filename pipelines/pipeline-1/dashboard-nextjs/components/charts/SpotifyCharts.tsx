@@ -94,7 +94,20 @@ export function SpotifyCharts({ data }: SpotifyChartsProps) {
               hours: data.timeSeries.values[i]
             }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="date" stroke="#fff" tick={false} />
+              <XAxis
+                dataKey="date"
+                stroke="#fff"
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  // Format date as "Nov 4"
+                  const date = new Date(value);
+                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  return `${months[date.getMonth()]} ${date.getDate()}`;
+                }}
+              />
               <YAxis stroke="#fff" />
               <Tooltip
                 contentStyle={{

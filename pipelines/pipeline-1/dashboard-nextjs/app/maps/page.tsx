@@ -11,6 +11,9 @@ export const metadata = {
   description: 'Detailed travel statistics and location analytics',
 };
 
+// Force dynamic rendering since we need to fetch data at runtime
+export const dynamic = 'force-dynamic';
+
 // Mock additional data
 const mockData = {
   monthlyTrips: [

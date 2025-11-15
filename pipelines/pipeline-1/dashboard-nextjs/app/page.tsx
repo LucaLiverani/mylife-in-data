@@ -7,6 +7,9 @@ import { RecentEventItem } from '@/components/RecentEventItem';
 import { TravelMapClient } from '@/components/TravelMapClient';
 import { overviewAPI, travelAPI, spotifyAPI } from '@/lib/api';
 
+// Force dynamic rendering since we need to fetch data at runtime
+export const dynamic = 'force-dynamic';
+
 interface RecentTrack {
   track: string;
   artist: string;
