@@ -1,0 +1,89 @@
+<clickhouse>
+    <!-- S3 Storage Configuration for MinIO Integration -->
+    <storage_configuration>
+        <disks>
+            <!-- Local disk (default) -->
+            <default>
+                <keep_free_space_bytes>1073741824</keep_free_space_bytes>
+            </default>
+
+            <!-- MinIO S3 disk -->
+            <s3>
+                <type>s3</type>
+                <endpoint>http://minio:9000/clickhouse/data/</endpoint>
+                <access_key_id>admin</access_key_id>
+                <secret_access_key>minio08062013</secret_access_key>
+                <region>eu-east-1</region>
+                <use_environment_credentials>false</use_environment_credentials>
+                <metadata_path>/var/lib/clickhouse/disks/s3/</metadata_path>
+                <cache_enabled>true</cache_enabled>
+                <cache_path>/var/lib/clickhouse/disks/s3_cache/</cache_path>
+                <max_cache_size>10737418240</max_cache_size>
+            </s3>
+
+            <!-- MinIO S3 for backups -->
+            <s3_backup>
+                <type>s3</type>
+                <endpoint>http://minio:9000/clickhouse/backups/</endpoint>
+                <access_key_id>admin</access_key_id>
+                <secret_access_key>minio08062013</secret_access_key>
+                <region>eu-east-1</region>
+                <use_environment_credentials>false</use_environment_credentials>
+                <metadata_path>/var/lib/clickhouse/disks/s3_backup/</metadata_path>
+            </s3_backup>
+        </disks>
+
+        <!-- Storage policies -->
+        <policies>
+            <!-- Default policy: use local disk -->
+            <default>
+                <volumes>
+                    <main>
+                        <disk>default</disk>
+                    </main>
+                </volumes>
+            </default>
+
+            <!-- S3 policy: use MinIO for storage -->
+            <s3_main>
+                <volumes>
+                    <main>
+                        <disk>s3</disk>
+                    </main>
+                </volumes>
+            </s3_main>
+
+            <!-- Tiered policy: hot data local, cold data on S3 -->
+            <tiered>
+                <volumes>
+                    <hot>
+                        <disk>default</disk>
+                        <max_data_part_size_bytes>1073741824</max_data_part_size_bytes>
+                    </hot>
+                    <cold>
+                        <disk>s3</disk>
+                    </cold>
+                </volumes>
+                <move_factor>0.2</move_factor>
+            </tiered>
+
+            <!-- Backup policy -->
+            <s3_backup>
+                <volumes>
+                    <main>
+                        <disk>s3_backup</disk>
+                    </main>
+                </volumes>
+            </s3_backup>
+        </policies>
+    </storage_configuration>
+
+    <!-- S3 settings for table engine -->
+    <s3>
+        <endpoint>http://minio:9000</endpoint>
+        <access_key_id>admin</access_key_id>
+        <secret_access_key>minio08062013</secret_access_key>
+        <region>eu-east-1</region>
+        <use_environment_credentials>false</use_environment_credentials>
+    </s3>
+</clickhouse>

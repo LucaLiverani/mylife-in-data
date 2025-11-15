@@ -12,3 +12,7 @@
 # Cloudflare tunnel credentials and config
 **/cloudflared-config.yml
 **/.cloudflared/
+
+# IDE
+.idea/
+.vscode/

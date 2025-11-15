@@ -1,0 +1,14 @@
+<clickhouse>
+    <!-- ZooKeeper Connection Configuration -->
+    <!-- Using Kafka's ZooKeeper for S3Queue coordination -->
+
+    <zookeeper>
+        <node>
+            <host>zookeeper</host>
+            <port>2181</port>
+        </node>
+        <session_timeout_ms>30000</session_timeout_ms>
+        <operation_timeout_ms>10000</operation_timeout_ms>
+        <root>/clickhouse</root>
+    </zookeeper>
+</clickhouse>

@@ -5,6 +5,9 @@ set -e
 
 echo "Starting Data Platform..."
 
+# Get the script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Create shared network if it doesn't exist
 if ! docker network inspect data-platform-network >/dev/null 2>&1; then
     echo "Creating shared network..."
@@ -13,7 +16,7 @@ fi
 
 # Start storage (MinIO)
 echo "Starting storage layer..."
-cd storage && docker-compose up -d && cd ..
+(cd "$SCRIPT_DIR/storage" && docker-compose up -d)
 
 # Wait for MinIO
 echo "Waiting for MinIO to be ready..."
@@ -21,16 +24,21 @@ sleep 10
 
 # Start Kafka
 echo "Starting Kafka ecosystem..."
-cd kafka && docker-compose up -d && cd ..
+(cd "$SCRIPT_DIR/kafka" && docker-compose up -d)
 
 # Wait for Kafka
 echo "Waiting for Kafka to be ready..."
 sleep 15
-#
+
 # Start Airflow
 echo "Starting Airflow..."
-cd airflow && docker-compose up -d && cd ..
+(cd "$SCRIPT_DIR/airflow" && docker-compose up -d)
 sleep 15
+
+# Start ClickHouse
+echo "Starting ClickHouse..."
+(cd "$SCRIPT_DIR/clickhouse" && docker-compose up -d)
+sleep 10
 
 echo ""
 echo "Data Platform Started Successfully!"
@@ -40,6 +48,8 @@ echo "   Airflow UI:        http://localhost:8080"
 echo "   MinIO Console:     http://localhost:9001"
 echo "   Kafka UI:          http://localhost:8090"
 echo "   Schema Registry:   http://localhost:8081"
+echo "   ClickHouse HTTP:   http://localhost:8123"
+echo "   ClickHouse Native: http://localhost:9200"
 echo ""
 # echo "View status: ./status.sh"
 # echo "View logs:   ./logs.sh [storage|kafka|airflow] [service-name]"

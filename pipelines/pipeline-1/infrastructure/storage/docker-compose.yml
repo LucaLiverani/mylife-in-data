@@ -59,6 +59,7 @@ services:
       /usr/bin/mc mb myminio/${MINIO_INGESTION_BUCKET} --ignore-existing;
       /usr/bin/mc mb myminio/${MINIO_KAFKA_BUCKET} --ignore-existing;
       /usr/bin/mc mb myminio/${MINIO_WAREHOUSE_BUCKET} --ignore-existing;
+      /usr/bin/mc mb myminio/${MINIO_CLICKHOUSE_BUCKET} --ignore-existing;
       
       echo 'Setting lifecycle policies...';
       /usr/bin/mc ilm add --expiry-days ${AIRFLOW_LOG_RETENTION_DAYS:-30} myminio/${MINIO_AIRFLOW_LOGS_BUCKET} || true;
@@ -88,6 +89,7 @@ services:
       MINIO_INGESTION_BUCKET: ${MINIO_INGESTION_BUCKET}
       MINIO_KAFKA_BUCKET: ${MINIO_KAFKA_BUCKET}
       MINIO_WAREHOUSE_BUCKET: ${MINIO_WAREHOUSE_BUCKET:-warehouse}
+      MINIO_CLICKHOUSE_BUCKET: ${MINIO_CLICKHOUSE_BUCKET:-clickhouse}
       AIRFLOW_LOG_RETENTION_DAYS: ${AIRFLOW_LOG_RETENTION_DAYS:-30}
     networks:
       - data-platform-network

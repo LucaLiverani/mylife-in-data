@@ -1,0 +1,58 @@
+<clickhouse>
+    <!-- Kafka Integration Configuration -->
+    <kafka>
+        <!-- Kafka broker list -->
+        <kafka_broker_list>kafka:9092</kafka_broker_list>
+
+        <!-- Consumer group prefix -->
+        <kafka_group_name>clickhouse_consumer</kafka_group_name>
+
+        <!-- Number of consumer threads per table -->
+        <kafka_num_consumers>1</kafka_num_consumers>
+
+        <!-- Max block size for inserts -->
+        <kafka_max_block_size>65536</kafka_max_block_size>
+
+        <!-- Skip broken messages -->
+        <kafka_skip_broken_messages>0</kafka_skip_broken_messages>
+
+        <!-- Commit every N messages -->
+        <kafka_commit_every_batch>0</kafka_commit_every_batch>
+
+        <!-- Poll timeout in milliseconds -->
+        <kafka_poll_timeout_ms>1000</kafka_poll_timeout_ms>
+
+        <!-- Poll max batch size -->
+        <kafka_poll_max_batch_size>65536</kafka_poll_max_batch_size>
+
+        <!-- Flush interval in milliseconds -->
+        <kafka_flush_interval_ms>7500</kafka_flush_interval_ms>
+
+        <!-- Thread per consumer -->
+        <kafka_thread_per_consumer>0</kafka_thread_per_consumer>
+
+        <!-- Handle errors mode: default (stream), or kafka_skip_broken_messages -->
+        <kafka_handle_error_mode>default</kafka_handle_error_mode>
+    </kafka>
+
+    <!-- Named Kafka configurations for different topics -->
+    <named_collections>
+        <!-- Spotify Kafka Topic -->
+        <spotify_kafka>
+            <kafka_broker_list>kafka:9092</kafka_broker_list>
+            <kafka_topic_list>spotify.tracks.raw</kafka_topic_list>
+            <kafka_group_name>clickhouse_spotify_consumer</kafka_group_name>
+            <kafka_format>JSONEachRow</kafka_format>
+            <kafka_num_consumers>2</kafka_num_consumers>
+            <kafka_max_block_size>65536</kafka_max_block_size>
+        </spotify_kafka>
+
+        <!-- Generic pattern for other topics -->
+        <generic_kafka>
+            <kafka_broker_list>kafka:9092</kafka_broker_list>
+            <kafka_group_name>clickhouse_consumer</kafka_group_name>
+            <kafka_format>JSONEachRow</kafka_format>
+            <kafka_num_consumers>1</kafka_num_consumers>
+        </generic_kafka>
+    </named_collections>
+</clickhouse>

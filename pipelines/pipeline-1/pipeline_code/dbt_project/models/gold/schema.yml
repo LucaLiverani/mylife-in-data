@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: gold_spotify_kpis
+    description: >
+      Dashboard KPIs - single row with all key metrics.
+      Refreshed on each dbt run.
+    columns:
+      - name: songs_streamed
+        description: Total songs played (formatted)
+      - name: unique_artists
+        description: Number of unique artists (formatted)
+      - name: total_time
+        description: Total listening time (formatted)
+      - name: avg_daily
+        description: Average daily listening time (formatted)
+      - name: updated_at
+        description: Last refresh timestamp
+
+  - name: gold_spotify_top_artists
+    description: >
+      Top 100 artists by play count with enriched details.
+    columns:
+      - name: rank
+        description: Artist ranking by play count
+      - name: name
+        description: Artist name
+      - name: plays
+        description: Number of plays
+      - name: hours
+        description: Total hours listened
+      - name: genre
+        description: Artist genres (comma-separated)
+      - name: popularity
+        description: Spotify popularity score (0-100)
+      - name: followers
+        description: Total Spotify followers
+
+  - name: gold_spotify_genres
+    description: >
+      Genre distribution by play count.
+    columns:
+      - name: name
+        description: Genre name
+      - name: value
+        description: Play count for this genre
+      - name: percentage
+        description: Percentage of total plays
+      - name: rank
+        description: Genre ranking
+
+  - name: gold_spotify_daily_listening
+    description: >
+      Daily listening hours time series with moving averages.
+    columns:
+      - name: date
+        description: Date (YYYY-MM-DD)
+      - name: hours
+        description: Hours listened on this date
+      - name: play_count
+        description: Number of tracks played
+      - name: hours_7day_avg
+        description: 7-day moving average
+      - name: hours_30day_avg
+        description: 30-day moving average
+
+  - name: gold_spotify_recent_tracks
+    description: >
+      Last 100 played tracks with artist details.
+    columns:
+      - name: track
+        description: Track name
+      - name: artist
+        description: Artist name
+      - name: played_at
+        description: When track was played
+      - name: recency_rank
+        description: Rank by recency (1 = most recent)
