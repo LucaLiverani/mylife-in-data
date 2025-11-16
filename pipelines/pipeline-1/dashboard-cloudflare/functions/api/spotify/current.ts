@@ -14,15 +14,29 @@ import { queryClickHouse } from '../../_shared/clickhouse';
 import { getFallbackData } from '../../_shared/fallback';
 import type { Env } from '../../_shared/types';
 
-interface CurrentTrack {
-  track: string;
-  artist: string;
-  album: string;
-  album_art?: string;
-  playing: boolean;
-  timestamp: string;
-  progress_ms?: number;
-  duration_ms?: number;
+interface ClickHouseTrackRow {
+  track_id: string;
+  track_name: string;
+  track_uri: string;
+  album_id: string;
+  album_name: string;
+  album_uri: string;
+  album_images: string[];
+  artist_id: string;
+  artist_name: string;
+  artist_uri: string;
+  artists_ids: string[];
+  artists_names: string[];
+  is_playing: boolean;
+  captured_at: string;
+  progress_ms: number;
+  track_duration_ms: number;
+  device_id: string;
+  device_name: string;
+  device_type: string;
+  device_volume_percent: number;
+  context_type: string;
+  context_uri: string;
 }
 
 /**
@@ -33,28 +47,40 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
   const { env } = context;
 
   try {
-    // Query for the most recent track
-    // Assumes you have a table that stores current/recent playback state
-    // Adjust the table name and columns based on your schema
+    // Query for the most recent track from the bronze Kafka table
     const query = `
       SELECT
-        track,
-        artist,
-        album,
-        album_art,
-        playing,
-        timestamp,
+        track_id,
+        track_name,
+        track_uri,
+        album_id,
+        album_name,
+        album_uri,
+        album_images,
+        artist_id,
+        artist_name,
+        artist_uri,
+        artists_ids,
+        artists_names,
+        is_playing,
+        captured_at,
         progress_ms,
-        duration_ms
-      FROM analytics.spotify_current_track
-      ORDER BY timestamp DESC
+        track_duration_ms,
+        device_id,
+        device_name,
+        device_type,
+        device_volume_percent,
+        context_type,
+        context_uri
+      FROM bronze.raw_spotify_current_track_kafka
+      ORDER BY captured_at DESC
       LIMIT 1
     `;
 
-    const results = await queryClickHouse<CurrentTrack>(env, query);
-    const currentTrack = results[0] || null;
+    const results = await queryClickHouse<ClickHouseTrackRow>(env, query);
+    const row = results[0] || null;
 
-    if (!currentTrack) {
+    if (!row) {
       return Response.json({
         type: 'no_track',
         data: {
@@ -67,6 +93,38 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         },
       });
     }
+
+    // Transform to frontend format
+    const currentTrack = {
+      timestamp: row.captured_at,
+      track_id: row.track_id,
+      track_name: row.track_name,
+      track_uri: row.track_uri,
+      artists: row.artists_ids.map((id, idx) => ({
+        id,
+        name: row.artists_names[idx] || '',
+        uri: `spotify:artist:${id}`,
+      })),
+      album: {
+        id: row.album_id,
+        name: row.album_name,
+        uri: row.album_uri,
+        images: row.album_images.map(url => ({ url, height: 0, width: 0 })),
+      },
+      duration_ms: row.track_duration_ms,
+      progress_ms: row.progress_ms,
+      is_playing: row.is_playing,
+      device: {
+        id: row.device_id,
+        name: row.device_name,
+        type: row.device_type,
+        volume_percent: row.device_volume_percent,
+      },
+      context: row.context_type ? {
+        type: row.context_type,
+        uri: row.context_uri,
+      } : null,
+    };
 
     return Response.json({
       type: 'current_track',

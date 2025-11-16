@@ -4,7 +4,7 @@
 CLICKHOUSE_HOST=${CLICKHOUSE_HOST:-"http://localhost:8123"}
 CLICKHOUSE_USER=${CLICKHOUSE_USER:-"admin"}
 CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-"clickhouse08062013"}
-CLICKHOUSE_DB=${CLICKHOUSE_DATABASE:-"analytics_gold"}
+CLICKHOUSE_DB=${CLICKHOUSE_DATABASE:-"gold"}
 OUTPUT_DIR="./public/fallback-data"
 
 echo "🔄 Exporting fallback data from ClickHouse..."

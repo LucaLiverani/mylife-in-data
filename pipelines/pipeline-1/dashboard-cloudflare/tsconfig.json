@@ -29,6 +29,6 @@
     /* Cloudflare Workers */
     "types": ["@cloudflare/workers-types"]
   },
-  "include": ["src", "functions"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

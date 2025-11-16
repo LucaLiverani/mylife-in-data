@@ -27,7 +27,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         unique_artists AS artists,
         total_plays_raw AS songs,
         total_time AS total_hours
-      FROM analytics_gold.gold_spotify_kpis
+      FROM gold.gold_spotify_kpis
       LIMIT 1
     `;
 

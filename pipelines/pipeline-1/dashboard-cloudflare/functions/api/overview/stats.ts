@@ -46,7 +46,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         '0' AS videosWatched,
         '0' AS searchQueries,
         '0' AS citiesVisited
-      FROM analytics_gold.gold_spotify_kpis
+      FROM gold.gold_spotify_kpis
       LIMIT 1
     `;
 
@@ -58,7 +58,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         0 AS youtube,
         0 AS google,
         0 AS maps
-      FROM analytics_gold.gold_spotify_daily_listening
+      FROM gold.gold_spotify_daily_listening
       ORDER BY date DESC
       LIMIT 30
     `;

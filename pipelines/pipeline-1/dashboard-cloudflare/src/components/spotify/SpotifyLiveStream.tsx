@@ -13,8 +13,7 @@ interface SpotifyPlaybackData {
     uri: string;
     images: Array<{ url: string; height: number; width: number }>;
   };
-  duration_ms?: number;
-  progress_ms?: number;
+
   is_playing: boolean;
   device?: {
     id: string;
@@ -29,7 +28,7 @@ interface SpotifyPlaybackData {
 }
 
 const LAST_TRACK_KEY = 'spotify_last_track';
-const POLL_INTERVAL = 5000; // Poll every 5 seconds
+const POLL_INTERVAL = 1000; // Poll every 1 second
 
 export function SpotifyLiveStream() {
   const [currentTrack, setCurrentTrack] = useState<SpotifyPlaybackData | null>(null);
@@ -46,8 +45,6 @@ export function SpotifyLiveStream() {
   });
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [simulatedProgress, setSimulatedProgress] = useState<number>(0);
-  const [receivedAt, setReceivedAt] = useState<number>(Date.now());
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // Polling effect
@@ -89,13 +86,7 @@ export function SpotifyLiveStream() {
           // Update playing state
           setIsPlaying(trackData.is_playing);
 
-          // Update progress
-          if (trackData.is_playing && trackData.progress_ms !== undefined) {
-            setReceivedAt(Date.now());
-            setSimulatedProgress(trackData.progress_ms);
-          } else if (!trackData.is_playing && trackData.progress_ms !== undefined) {
-            setSimulatedProgress(trackData.progress_ms);
-          }
+
         } else if (data.type === 'no_track') {
           setIsConnected(true);
           setCurrentTrack({ ...data.data, track_id: null });
@@ -124,36 +115,6 @@ export function SpotifyLiveStream() {
       }
     };
   }, []);
-
-  // Simulate progress for playing tracks
-  useEffect(() => {
-    if (!isPlaying) {
-      return;
-    }
-
-    const trackToSimulate = currentTrack?.track_id ? currentTrack : lastValidTrack;
-
-    if (!trackToSimulate || !trackToSimulate.duration_ms) {
-      return;
-    }
-
-    const initialProgress = trackToSimulate.progress_ms || 0;
-    const duration = trackToSimulate.duration_ms;
-    const startTime = receivedAt;
-
-    const interval = setInterval(() => {
-      const elapsedSinceReceived = Date.now() - startTime;
-      const newProgress = initialProgress + elapsedSinceReceived;
-
-      if (newProgress < duration) {
-        setSimulatedProgress(newProgress);
-      } else {
-        setSimulatedProgress(duration);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, receivedAt, currentTrack, lastValidTrack]);
 
   if (error) {
     return (
@@ -275,23 +236,6 @@ export function SpotifyLiveStream() {
                 {displayTrack.device.type})
               </p>
             )}
-
-            {displayTrack.duration_ms && (
-              <div className="mt-4">
-                <div className="flex justify-between text-xs text-white/50 mb-1">
-                  <span>{formatTime(simulatedProgress)}</span>
-                  <span>{formatTime(displayTrack.duration_ms)}</span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-1.5">
-                  <div
-                    className="bg-[#1DB954] h-1.5 rounded-full transition-all duration-100"
-                    style={{
-                      width: `${(simulatedProgress / displayTrack.duration_ms) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -299,9 +243,5 @@ export function SpotifyLiveStream() {
   );
 }
 
-function formatTime(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
+
+
