@@ -96,10 +96,11 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
     const reversedData = dataGenResult.reverse();
 
     const dates = reversedData.map(r => r.date);
-    const spotify = reversedData.map(r => r.spotify);
-    const youtube = reversedData.map(r => r.youtube);
-    const google = reversedData.map(r => r.google);
-    const maps = reversedData.map(r => r.maps);
+    // Explicitly convert to numbers to avoid string concatenation issues
+    const spotify = reversedData.map(r => Number(r.spotify) || 0);
+    const youtube = reversedData.map(r => Number(r.youtube) || 0);
+    const google = reversedData.map(r => Number(r.google) || 0);
+    const maps = reversedData.map(r => Number(r.maps) || 0);
 
     const totalEvents = spotify.reduce((a, b) => a + b, 0) +
                         youtube.reduce((a, b) => a + b, 0) +

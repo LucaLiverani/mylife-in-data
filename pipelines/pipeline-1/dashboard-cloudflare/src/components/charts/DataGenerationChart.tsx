@@ -22,13 +22,13 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
     Maps: true,
   });
 
-  // Transform the data for Recharts
+  // Transform the data for Recharts - ensure numeric values
   const chartData = data.dates.map((date, i) => ({
     date: formatChartDate(date),
-    Spotify: data.spotify[i],
-    YouTube: data.youtube[i],
-    Google: data.google[i],
-    Maps: data.maps[i],
+    Spotify: Number(data.spotify[i]) || 0,
+    YouTube: Number(data.youtube[i]) || 0,
+    Google: Number(data.google[i]) || 0,
+    Maps: Number(data.maps[i]) || 0,
   }));
 
   const toggleSeries = (series: keyof typeof visibleSeries) => {
@@ -42,11 +42,11 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
     { name: 'Maps', color: CHART_COLORS.maps },
   ] as const;
 
-  // Calculate KPIs
-  const totalSpotify = data.spotify.reduce((a, b) => a + b, 0);
-  const totalYouTube = data.youtube.reduce((a, b) => a + b, 0);
-  const totalGoogle = data.google.reduce((a, b) => a + b, 0);
-  const totalMaps = data.maps.reduce((a, b) => a + b, 0);
+  // Calculate KPIs - ensure values are numbers to prevent string concatenation
+  const totalSpotify = data.spotify.reduce((a, b) => Number(a) + Number(b), 0);
+  const totalYouTube = data.youtube.reduce((a, b) => Number(a) + Number(b), 0);
+  const totalGoogle = data.google.reduce((a, b) => Number(a) + Number(b), 0);
+  const totalMaps = data.maps.reduce((a, b) => Number(a) + Number(b), 0);
 
   const mostActive = [
     { name: 'Spotify', total: totalSpotify, color: CHART_COLORS.spotify },
@@ -63,12 +63,12 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
         <div className="flex gap-8">
           <div>
             <p className="text-xs text-white/50 mb-1">This Month</p>
-            <p className="text-2xl font-bold text-white">{totalEvents}</p>
+            <p className="text-2xl font-bold text-white">{parseInt(totalEvents).toLocaleString()}</p>
             <p className="text-xs text-white/40">events</p>
           </div>
           <div>
             <p className="text-xs text-white/50 mb-1">Daily Average</p>
-            <p className="text-2xl font-bold text-white">{avgPerDay}</p>
+            <p className="text-2xl font-bold text-white">{parseInt(avgPerDay).toLocaleString()}</p>
             <p className="text-xs text-white/40">events/day</p>
           </div>
         </div>
