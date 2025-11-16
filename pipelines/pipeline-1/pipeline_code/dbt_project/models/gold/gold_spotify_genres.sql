@@ -54,4 +54,4 @@ SELECT
 FROM genre_plays
 WHERE genre != ''
 ORDER BY play_count DESC
-LIMIT 10;
+LIMIT 10
