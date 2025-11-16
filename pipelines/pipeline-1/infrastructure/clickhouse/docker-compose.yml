@@ -44,7 +44,7 @@ services:
       resources:
         limits:
           cpus: '4'
-          memory: 4G
+          memory: 16G
     ulimits:
       nofile:
         soft: 262144
