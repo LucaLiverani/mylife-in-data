@@ -79,4 +79,3 @@ SELECT
 
 FROM ranked_artists
 ORDER BY rank
-LIMIT 100

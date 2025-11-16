@@ -29,13 +29,13 @@ models:
     silver:
       +materialized: view
       +schema: silver
-      +database: analytics
+      +database: silver
 
     # Gold layer - aggregated, dashboard-ready data
     gold:
       +materialized: table
       +schema: gold
-      +database: analytics
+      +database: gold
       # Refresh gold tables on each run
       +on_schema_change: "sync_all_columns"
 
