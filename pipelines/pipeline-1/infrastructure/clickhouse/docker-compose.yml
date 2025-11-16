@@ -8,7 +8,7 @@ services:
 
   # ClickHouse Server
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:24.8-alpine
     container_name: clickhouse
     hostname: clickhouse
     depends_on:
@@ -52,7 +52,7 @@ services:
 
   # ClickHouse Keeper - ZooKeeper replacement for coordination
   clickhouse-keeper:
-    image: clickhouse/clickhouse-keeper:latest
+    image: clickhouse/clickhouse-keeper:24.8-alpine
     container_name: clickhouse-keeper
     hostname: clickhouse-keeper
     ports:
