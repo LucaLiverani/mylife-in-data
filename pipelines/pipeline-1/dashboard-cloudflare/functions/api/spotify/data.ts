@@ -100,11 +100,18 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         uniqueArtists: parseInt(String(kpis?.unique_artists || 0), 10).toString(),
         avgDaily: kpis?.avg_daily || '0 hrs',
       },
-      topArtists: topArtists || [],
-      genres: genres || [],
+      topArtists: topArtists.map(artist => ({
+        ...artist,
+        plays: Number(artist.plays) || 0,
+        hours: Number(artist.hours) || 0,
+      })),
+      genres: genres.map(genre => ({
+        name: genre.name,
+        value: Number(genre.value) || 0,
+      })),
       timeSeries: {
         dates: timeSeries.map(d => d.date),
-        values: timeSeries.map(d => d.hours),
+        values: timeSeries.map(d => Number(d.hours) || 0),
       },
     };
 
