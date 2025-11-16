@@ -1,0 +1,9 @@
+name = "mylife-in-data"
+compatibility_date = "2024-11-16"
+pages_build_output_dir = "dist"
+
+# Secrets - Set these with: npx wrangler pages secret put <NAME>
+# CLICKHOUSE_HOST (set via secrets)
+# CLICKHOUSE_USER (set via secrets)
+# CLICKHOUSE_PASSWORD (set via secrets)
+# CLICKHOUSE_DATABASE (set via secrets)
