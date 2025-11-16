@@ -58,7 +58,7 @@ with DAG(
         task_id='dbt_deps',
         bash_command=f"""
         cd {DBT_PROJECT_DIR} && \
-        dbt deps --profiles-dir {DBT_PROFILES_DIR} || true
+        dbt deps --profiles-dir {DBT_PROFILES_DIR} --target prod || true
         """,
     )
 
@@ -67,7 +67,7 @@ with DAG(
         task_id='dbt_run',
         bash_command=f"""
         cd {DBT_PROJECT_DIR} && \
-        dbt run --profiles-dir {DBT_PROFILES_DIR}
+        dbt run --profiles-dir {DBT_PROFILES_DIR} --target prod
         """,
     )
 
@@ -76,7 +76,7 @@ with DAG(
         task_id='dbt_test',
         bash_command=f"""
         cd {DBT_PROJECT_DIR} && \
-        dbt test --profiles-dir {DBT_PROFILES_DIR} || true
+        dbt test --profiles-dir {DBT_PROFILES_DIR} --target prod || true
         """,
         # Don't fail DAG if tests fail, just log warnings
     )

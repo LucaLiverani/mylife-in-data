@@ -1,37 +1,15 @@
-# dbt Profile for ClickHouse Connection
 spotify_analytics:
+  target: dev
   outputs:
     dev:
       type: clickhouse
-      schema: analytics
-      host: clickhouse
-      port: 9000
+      host: localhost
+      port: 8123
       user: admin
       password: clickhouse08062013
-      database: analytics
-      # ClickHouse-specific settings
-      secure: false
-      verify: false
-      connect_timeout: 10
-      send_receive_timeout: 300
-      sync_request_timeout: 5
-      compress_block_size: 1048576
-      compression: lz4
-
     prod:
       type: clickhouse
-      schema: analytics
       host: clickhouse
       port: 9000
       user: admin
       password: clickhouse08062013
-      database: analytics
-      secure: false
-      verify: false
-      connect_timeout: 10
-      send_receive_timeout: 300
-      sync_request_timeout: 5
-      compress_block_size: 1048576
-      compression: lz4
-
-  target: dev
