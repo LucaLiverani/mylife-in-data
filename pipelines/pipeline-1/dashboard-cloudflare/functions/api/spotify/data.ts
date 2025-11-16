@@ -49,7 +49,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         unique_artists_raw AS unique_artists,
         total_time,
         avg_daily
-      FROM analytics_gold.gold_spotify_kpis
+      FROM gold.gold_spotify_kpis
       LIMIT 1
     `;
 
@@ -60,7 +60,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         plays,
         hours,
         genre
-      FROM analytics_gold.gold_spotify_top_artists
+      FROM gold.gold_spotify_top_artists
       ORDER BY rank
       LIMIT 10
     `;
@@ -69,7 +69,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       SELECT
         name,
         value
-      FROM analytics_gold.gold_spotify_genres
+      FROM gold.gold_spotify_genres
       ORDER BY rank
       LIMIT 20
     `;
@@ -78,7 +78,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       SELECT
         date,
         hours
-      FROM analytics_gold.gold_spotify_daily_listening
+      FROM gold.gold_spotify_daily_listening
       ORDER BY date
     `;
 

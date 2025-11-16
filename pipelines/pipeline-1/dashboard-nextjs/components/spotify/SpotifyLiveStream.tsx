@@ -86,7 +86,7 @@ export function SpotifyLiveStream() {
 
         eventSource.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data);
+            const data = JSON.parse(event.data) as SpotifyPlaybackData;
 
             // Ignore connection messages
             if (data.type === 'connected') {
@@ -95,7 +95,7 @@ export function SpotifyLiveStream() {
             }
 
             // Handle actual track data
-            const trackData = data as SpotifyPlaybackData;
+            const trackData = data;
             setCurrentTrack(trackData);
 
             // Save as last valid track if it has track info
