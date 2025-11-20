@@ -69,8 +69,6 @@ WITH raw_tracks AS (
         AND track_name != ''
         AND artist_id != ''
         AND played_at IS NOT NULL
-        -- Only include recent data (configurable via var)
-        AND played_at >= now() - INTERVAL {{ var('lookback_days', 365) }} DAY
 )
 
 SELECT

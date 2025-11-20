@@ -3,8 +3,7 @@ version: 2
 models:
   - name: silver_spotify_tracks
     description: >
-      Cleaned and deduplicated Spotify listening history.
-      Removes duplicates and adds derived time dimensions.
+      Cleaned and deduplicated Spotify listening history. Removes duplicates and adds derived time dimensions.
     columns:
       - name: track_id
         description: Unique identifier for the track
@@ -35,24 +34,53 @@ models:
         description: Day of week (1=Monday, 7=Sunday)
 
   - name: silver_spotify_artists
-    description: >
-      Latest details for each artist from the Spotify API.
-      Automatically updates when new artist data is ingested.
+    description: >-
+      Latest details for each artist from the Spotify API. Automatically updates when new artist data is ingested.
     columns:
       - name: artist_id
         description: Unique identifier for the artist
         tests:
           - not_null
           - unique
+        data_type: string
       - name: artist_name
         description: Name of the artist
         tests:
           - not_null
+        data_type: string
       - name: popularity
         description: Artist popularity score (0-100)
+        data_type: uint64
       - name: followers_total
         description: Total number of followers on Spotify
+        data_type: uint64
       - name: genres
         description: Array of genres associated with the artist
+        data_type: array(string)
       - name: last_updated
         description: When this artist data was last fetched
+        data_type: datetime64(3)
+      - name: artist_uri
+        data_type: string
+        quote: true
+      - name: artist_type
+        data_type: string
+        quote: true
+      - name: image_url
+        data_type: string
+        quote: true
+      - name: images_urls
+        data_type: array(string)
+        quote: true
+      - name: images_heights
+        data_type: array(uint64)
+        quote: true
+      - name: images_widths
+        data_type: array(uint64)
+        quote: true
+      - name: external_url_spotify
+        data_type: string
+        quote: true
+      - name: source
+        data_type: string
+        quote: true
