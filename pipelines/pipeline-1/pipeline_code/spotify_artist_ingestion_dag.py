@@ -20,23 +20,32 @@ from spotify.spotify_api import get_spotify_client, get_artists
 
 log = logging.getLogger(__name__)
 
-# ============================================================================ 
+# ============================================================================
 # Configuration
-# ============================================================================ 
+# ============================================================================
 
 BUCKET_NAME = "inbound"
 RAW_FILE_FOLDER = "raw/spotify/api/artists"
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_ARTIST_IDS_TOPIC = "spotify.artist_ids"
 KAFKA_ARTISTS_RAW_TOPIC = "spotify.artists.raw"
-CLICKHOUSE_HOST = "clickhouse"
-CLICKHOUSE_PORT = 9000
-CLICKHOUSE_USER = "admin"
-CLICKHOUSE_PASSWORD = "clickhouse08062013"
-CLICKHOUSE_DATABASE = "spotify"
 ARTIST_REFRESH_DAYS = 7  # Re-fetch artists older than this
 
 SPOTIFY_BATCH_SIZE = 50  # Spotify API allows 50 artists per request
+
+
+def get_clickhouse_connection():
+    """Get ClickHouse connection details from Airflow connection."""
+    from airflow.hooks.base import BaseHook
+
+    conn = BaseHook.get_connection('clickhouse_default')
+    return {
+        'host': conn.host,
+        'port': conn.port or 9000,
+        'user': conn.login,
+        'password': conn.password,
+        'database': conn.extra_dejson.get('database', 'bronze')
+    }
 
 default_args = {
     'owner': 'data-engineering',
@@ -91,13 +100,9 @@ def collect_artist_ids_to_fetch(**context):
     # 2. Query ClickHouse for artists needing refresh
     log.info("Querying ClickHouse for stale artists...")
     try:
-        client = ClickHouseClient(
-            host=CLICKHOUSE_HOST,
-            port=CLICKHOUSE_PORT,
-            user=CLICKHOUSE_USER,
-            password=CLICKHOUSE_PASSWORD,
-            database=CLICKHOUSE_DATABASE
-        )
+        # Get connection details from Airflow connection
+        conn_params = get_clickhouse_connection()
+        client = ClickHouseClient(**conn_params)
 
         # Find artists older than refresh period
         refresh_threshold = pendulum.now('UTC').subtract(days=ARTIST_REFRESH_DAYS)

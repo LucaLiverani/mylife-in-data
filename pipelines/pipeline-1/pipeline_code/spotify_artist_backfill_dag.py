@@ -38,12 +38,21 @@ BUCKET_NAME = "inbound"
 RAW_FILE_FOLDER = "raw/spotify/api/artists"
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_ARTISTS_RAW_TOPIC = "spotify.artists.raw"
-CLICKHOUSE_HOST = "clickhouse"
-CLICKHOUSE_PORT = 9000
-CLICKHOUSE_DATABASE = "bronze"
-CLICKHOUSE_USER = "admin"
-CLICKHOUSE_PASSWORD = "clickhouse08062013"
 SPOTIFY_BATCH_SIZE = 50
+
+
+def get_clickhouse_connection():
+    """Get ClickHouse connection details from Airflow connection."""
+    from airflow.hooks.base import BaseHook
+
+    conn = BaseHook.get_connection('clickhouse_default')
+    return {
+        'host': conn.host,
+        'port': conn.port or 9000,
+        'user': conn.login,
+        'password': conn.password,
+        'database': conn.extra_dejson.get('database', 'bronze')
+    }
 
 default_args = {
     'owner': 'data-engineering',
@@ -65,13 +74,9 @@ def extract_artist_ids_from_tracks(**context):
 
     log.info("Connecting to ClickHouse to extract artist IDs...")
 
-    client = ClickHouseClient(
-        host=CLICKHOUSE_HOST,
-        port=CLICKHOUSE_PORT,
-        user=CLICKHOUSE_USER,
-        password=CLICKHOUSE_PASSWORD,
-        database=CLICKHOUSE_DATABASE
-    )
+    # Get connection details from Airflow connection
+    conn_params = get_clickhouse_connection()
+    client = ClickHouseClient(**conn_params)
 
     # Query for all unique artist IDs from tracks
     # Also gets from the artists array for multi-artist tracks
