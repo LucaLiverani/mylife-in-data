@@ -45,8 +45,8 @@ SELECT
 
     parseDateTime64BestEffort(JSONExtractString(raw_json, 'raw_item', 'played_at')) AS played_at,
 
-    parseDateTime64BestEffort(JSONExtractString(raw_json, '_ingestion_metadata', 'ingested_at')) AS ingested_at,
-    parseDateTime64BestEffort(JSONExtractString(raw_json, '_ingestion_metadata', 'execution_date')) AS execution_date,
+    parseDateTime64BestEffortOrNull(JSONExtractString(raw_json, '_ingestion_metadata', 'ingested_at')) AS ingested_at,
+    parseDateTime64BestEffortOrNull(JSONExtractString(raw_json, '_ingestion_metadata', 'execution_date')) AS execution_date,
     JSONExtractString(raw_json, '_ingestion_metadata', 'dag_id') AS dag_id,
     JSONExtractString(raw_json, '_ingestion_metadata', 'run_id') AS run_id,
     JSONExtractString(raw_json, '_ingestion_metadata', 'source') AS source,
