@@ -35,6 +35,15 @@ x-airflow-common: &airflow-common
     REDIS_PASSWORD: ${REDIS_PASSWORD}
     MINIO_ROOT_USER: ${MINIO_ROOT_USER}
     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    # ClickHouse for dbt
+    CLICKHOUSE_HOST_DEV: ${CLICKHOUSE_HOST_DEV}
+    CLICKHOUSE_PORT_DEV: ${CLICKHOUSE_PORT_DEV}
+    CLICKHOUSE_HOST_PROD: ${CLICKHOUSE_HOST_PROD}
+    CLICKHOUSE_PORT_PROD: ${CLICKHOUSE_PORT_PROD}
+    CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+    CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
+    DBT_TARGET: prod
     # Metrics
     AIRFLOW__METRICS__STATSD_ON: 'true'
     AIRFLOW__METRICS__STATSD_HOST: statsd-exporter
@@ -72,7 +81,8 @@ services:
       sh -c "
         chown -R 50000:${AIRFLOW_GID:-1000} /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
         chmod -R 775 /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
-        find /opt/airflow/dags -type f -exec chmod 664 {} \; &&
+        find /opt/airflow/dags -type f -not -path '*/venv/bin/*' -exec chmod 664 {} \; &&
+        find /opt/airflow/dags -type f -path '*/venv/bin/*' -not -name 'activate*' -not -name 'Activate.ps1' -exec chmod 775 {} \; &&
         echo 'Permissions fixed! User 50000 and group ${AIRFLOW_GID:-1000} can edit files.'
         "
     environment:
@@ -187,7 +197,18 @@ services:
           --conn-host kafka \
           --conn-port 9092 \
           --conn-extra '{"bootstrap.servers": "kafka:9092", "group.id": "airflow"}' || echo "Kafka connection failed"
-        
+
+        # ClickHouse connection
+        echo "🔗 Setting up ClickHouse connection..."
+        airflow connections delete clickhouse_default 2>/dev/null || true
+        airflow connections add clickhouse_default \
+          --conn-type generic \
+          --conn-host clickhouse \
+          --conn-port 9000 \
+          --conn-login admin \
+          --conn-password clickhouse08062013 \
+          --conn-extra '{"database": "bronze"}' || echo "ClickHouse connection failed"
+
         echo "Airflow initialization complete!"
     environment:
       <<: *airflow-common-env
