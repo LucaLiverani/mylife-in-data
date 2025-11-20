@@ -50,7 +50,7 @@ def extract_raw_spotify_data(**context):
     - For scheduled runs, uses the logical_date as the 'after' timestamp.
     - For manual runs, fetches the last 50 tracks.
     """
-    logical_date = context['logical_date']
+    logical_date = context.get('logical_date')
     run_id = context['run_id']
     ti = context['task_instance']
 
@@ -59,10 +59,14 @@ def extract_raw_spotify_data(**context):
     # Handle manual vs. scheduled runs
     if run_id and run_id.startswith("manual__"):
         log.info("Manual run detected. Fetching last 50 played tracks.")
-        # For manual runs, get the most recent 50 tracks
+        # For manual runs, get the most recent 50 tracks, use current time as logical_date
+        if not logical_date:
+            logical_date = pendulum.now('UTC')
         raw_response = get_recently_played_tracks(sp)
     else:
         # For scheduled runs, use the logical date window
+        if not logical_date:
+            raise AirflowException("logical_date is required for scheduled runs")
         after_timestamp = int(logical_date.timestamp() * 1000)
         log.info(f"Scheduled run. Extracting data after: {logical_date}")
         raw_response = get_recently_played_tracks(sp, after=after_timestamp)
@@ -127,7 +131,7 @@ def consolidate_raw_to_jsonl(**context):
     - Compresses with gzip
     """
     ti = context['task_instance']
-    logical_date = context['logical_date']
+    logical_date = context.get('logical_date') or pendulum.now('UTC')
     s3_hook = S3Hook(aws_conn_id="minio_s3")
 
     raw_items = ti.xcom_pull(task_ids='extract_raw_data', key='raw_items')
@@ -140,7 +144,6 @@ def consolidate_raw_to_jsonl(**context):
 
     # Group items by date (from played_at in raw item)
     from collections import defaultdict
-    import pendulum
 
     items_by_date = defaultdict(list)
 
@@ -363,7 +366,7 @@ def publish_artist_ids(**context):
     Runs in parallel with track consolidation and publishing.
     """
     ti = context['task_instance']
-    logical_date = context['logical_date']
+    logical_date = context.get('logical_date') or pendulum.now('UTC')
 
     raw_items = ti.xcom_pull(task_ids='extract_raw_data', key='raw_items')
 
