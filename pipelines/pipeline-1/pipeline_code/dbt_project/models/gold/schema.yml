@@ -76,3 +76,301 @@ models:
         description: When track was played
       - name: recency_rank
         description: Rank by recency (1 = most recent)
+
+  # Google Maps Models
+
+  - name: gold_maps_most_visited_places
+    description: >
+      Aggregated location visit data showing most frequently visited places
+      with visit patterns, temporal metrics, and behavioral insights.
+    columns:
+      - name: location_name
+        description: Name of the location
+        data_type: string
+        tests:
+          - not_null
+      - name: location_address
+        description: Address of the location
+        data_type: string
+      - name: location_url
+        description: Google Maps URL
+        data_type: string
+      - name: latitude
+        description: Latitude coordinate
+        data_type: float64
+      - name: longitude
+        description: Longitude coordinate
+        data_type: float64
+      - name: total_visits
+        description: Total number of visits to this location
+        data_type: uint64
+      - name: unique_visit_days
+        description: Number of unique days visited
+        data_type: uint64
+      - name: unique_visit_months
+        description: Number of unique months visited
+        data_type: uint64
+      - name: avg_visits_per_month
+        description: Average visits per month
+        data_type: float64
+      - name: avg_days_between_visits
+        description: Average days between consecutive visits
+        data_type: float64
+      - name: first_visit
+        description: Timestamp of first visit
+        data_type: datetime64(3)
+      - name: last_visit
+        description: Timestamp of last visit
+        data_type: datetime64(3)
+      - name: days_since_last_visit
+        description: Days since the most recent visit
+        data_type: int32
+      - name: weekend_visits
+        description: Number of visits on weekends
+        data_type: uint64
+      - name: weekday_visits
+        description: Number of visits on weekdays
+        data_type: uint64
+      - name: weekend_visit_pct
+        description: Percentage of visits occurring on weekends
+        data_type: float64
+      - name: most_common_time_of_day
+        description: Most frequent time period for visits (Morning/Afternoon/Evening/Night)
+        data_type: string
+      - name: visit_rank
+        description: Ranking by total visits (1 = most visited)
+        data_type: uint64
+      - name: recency_score
+        description: Score indicating how recent visits are (0-1, higher = more recent)
+        data_type: float64
+      - name: visit_frequency_category
+        description: Category based on visit frequency (Very Frequent/Frequent/Regular/Occasional/Rare)
+        data_type: string
+      - name: recency_category
+        description: Category based on recency (Current Favorite/Recent/Past Favorite/Historical)
+        data_type: string
+
+  - name: gold_maps_location_timeline
+    description: >
+      Sequential timeline of location activities with journey patterns,
+      dwell time estimates, distances traveled, and estimated travel modes.
+    columns:
+      - name: activity_id
+        description: Unique activity identifier
+        data_type: uint64
+        tests:
+          - not_null
+      - name: activity_time
+        description: Timestamp of the activity
+        data_type: datetime64(3)
+      - name: location_name
+        description: Name of the location
+        data_type: string
+      - name: prev_location_name
+        description: Previous location in the timeline
+        data_type: string
+      - name: next_location_name
+        description: Next location in the timeline
+        data_type: string
+      - name: minutes_until_next_activity
+        description: Time spent at location (minutes until next activity)
+        data_type: int32
+      - name: dwell_time_category
+        description: Categorized dwell time (Quick Stop/Short Visit/Medium Stay/Long Stay/Extended Stay)
+        data_type: string
+      - name: distance_to_next_km
+        description: Distance to next location in kilometers
+        data_type: float64
+      - name: movement_type
+        description: Type of movement (Same Location/Different Location/Last Activity)
+        data_type: string
+      - name: avg_speed_kmh
+        description: Average speed to next location in km/h
+        data_type: float64
+      - name: estimated_travel_mode
+        description: Estimated mode of travel (Walking/Cycling/Driving/Transit/Fast Transit/Stationary)
+        data_type: string
+      - name: minutes_since_prev_activity
+        description: Time since previous activity
+        data_type: int32
+
+  - name: gold_maps_activity_patterns
+    description: >
+      Temporal patterns of location activities by hour, day, week, and month
+      showing activity distribution and trends over time.
+    columns:
+      - name: activity_date
+        description: Date of activity
+        data_type: date
+        tests:
+          - not_null
+      - name: year
+        description: Year
+        data_type: uint16
+      - name: quarter
+        description: Quarter (1-4)
+        data_type: uint8
+      - name: month
+        description: Month number (1-12)
+        data_type: uint8
+      - name: day_of_week
+        description: Day of week (1=Monday, 7=Sunday)
+        data_type: uint8
+      - name: day_name
+        description: Day name
+        data_type: string
+      - name: activity_hour
+        description: Hour of day (0-23)
+        data_type: uint8
+      - name: time_of_day
+        description: Time period (Morning/Afternoon/Evening/Night)
+        data_type: string
+      - name: is_weekend
+        description: Weekend flag (1=weekend, 0=weekday)
+        data_type: uint8
+      - name: total_activities
+        description: Total activities for this time period
+        data_type: uint64
+      - name: unique_locations_visited
+        description: Number of unique locations visited
+        data_type: uint64
+      - name: daily_total_activities
+        description: Total activities for the entire day
+        data_type: uint64
+      - name: weekly_total_activities
+        description: Total activities for the entire week
+        data_type: uint64
+      - name: monthly_total_activities
+        description: Total activities for the entire month
+        data_type: uint64
+
+  - name: gold_maps_hourly_heatmap
+    description: >
+      Heatmap-ready dataset showing activity intensity by hour and day of week
+      with normalized scores for visualization.
+    columns:
+      - name: day_of_week
+        description: Day of week (1=Monday, 7=Sunday)
+        data_type: uint8
+      - name: day_name
+        description: Day name
+        data_type: string
+      - name: activity_hour
+        description: Hour of day (0-23)
+        data_type: uint8
+      - name: time_of_day
+        description: Time period classification
+        data_type: string
+      - name: activity_count
+        description: Number of activities in this hour/day combination
+        data_type: uint64
+      - name: unique_locations
+        description: Number of unique locations visited
+        data_type: uint64
+      - name: days_with_activity
+        description: Number of days with activity at this hour/day combination
+        data_type: uint64
+      - name: avg_activities_per_occurrence
+        description: Average activities per occurrence
+        data_type: float64
+      - name: intensity_score
+        description: Normalized intensity score (0-100) for heatmap visualization
+        data_type: float64
+      - name: z_score
+        description: Statistical z-score for comparison
+        data_type: float64
+      - name: intensity_category
+        description: Category (Very High/High/Medium/Low/Very Low)
+        data_type: string
+
+  - name: gold_maps_geographic_range
+    description: >
+      Geographic range and travel distance analysis showing daily, weekly,
+      and monthly travel patterns with home base calculations.
+    columns:
+      - name: activity_date
+        description: Date of activity
+        data_type: date
+        tests:
+          - not_null
+      - name: daily_activities
+        description: Number of activities on this date
+        data_type: uint64
+      - name: daily_unique_locations
+        description: Number of unique locations visited
+        data_type: uint64
+      - name: avg_distance_from_home_km
+        description: Average distance from home base in km
+        data_type: float64
+      - name: max_distance_from_home_km
+        description: Maximum distance from home base in km
+        data_type: float64
+      - name: total_distance_traveled_km
+        description: Total distance traveled during the day in km
+        data_type: float64
+      - name: approx_area_covered_sq_km
+        description: Approximate area covered using bounding box in square km
+        data_type: float64
+      - name: center_latitude
+        description: Center point latitude for the day
+        data_type: float64
+      - name: center_longitude
+        description: Center point longitude for the day
+        data_type: float64
+      - name: travel_range_category
+        description: Category (Long Distance/Regional/Extended Local/Local/Immediate Vicinity)
+        data_type: string
+      - name: exploration_score
+        description: Exploration ratio (unique locations / total activities)
+        data_type: float64
+      - name: monthly_total_distance_km
+        description: Total distance traveled in the month
+        data_type: float64
+
+  - name: gold_maps_location_clusters
+    description: >
+      Geographic clustering of locations into areas/neighborhoods
+      to identify hotspots and regional activity patterns.
+    columns:
+      - name: cluster_id
+        description: Unique cluster identifier
+        data_type: string
+        tests:
+          - not_null
+          - unique
+      - name: cluster_center_lat
+        description: Center latitude of the cluster
+        data_type: float64
+      - name: cluster_center_lon
+        description: Center longitude of the cluster
+        data_type: float64
+      - name: total_visits
+        description: Total visits to locations in this cluster
+        data_type: uint64
+      - name: unique_locations_in_cluster
+        description: Number of distinct locations in cluster
+        data_type: uint64
+      - name: unique_visit_days
+        description: Number of days with visits to this cluster
+        data_type: uint64
+      - name: locations_list
+        description: Pipe-separated list of location names in cluster
+        data_type: string
+      - name: first_visit
+        description: Timestamp of first visit to cluster
+        data_type: datetime64(3)
+      - name: last_visit
+        description: Timestamp of last visit to cluster
+        data_type: datetime64(3)
+      - name: days_since_last_visit
+        description: Days since most recent visit to cluster
+        data_type: int32
+      - name: cluster_rank
+        description: Ranking by total visits
+        data_type: uint64
+      - name: cluster_category
+        description: Category (Major Hotspot/Frequent Area/Regular Area/Occasional Area/Rarely Visited)
+        data_type: string
+      - name: recency_category
+        description: Recency classification (Recent/Somewhat Recent/Past Year/Historical)
+        data_type: string
