@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: bronze_google_maps_activities
+    description: >
+      Raw Google Maps activity data loaded from MinIO S3 bucket.
+      Extracts and parses JSONL.gz files containing location history,
+      activity timestamps, and associated metadata from Google Takeout exports.
+    columns:
+      - name: header
+        description: Activity header from Google Maps
+        data_type: string
+      - name: title
+        description: Activity title/description
+        data_type: string
+      - name: activity_time
+        description: Timestamp when the activity occurred
+        data_type: datetime64(3)
+        tests:
+          - not_null
+      - name: activity_date
+        description: Date of the activity (derived from activity_time)
+        data_type: date
+      - name: products
+        description: Array of Google products associated with this activity
+        data_type: array(string)
+      - name: activity_controls
+        description: Array of activity control settings
+        data_type: array(string)
+      - name: location_name
+        description: Name of the location/place
+        data_type: string
+        tests:
+          - not_null
+      - name: location_url
+        description: Google Maps URL for the location
+        data_type: string
+      - name: location_source_url
+        description: Source URL for the location reference
+        data_type: string
+      - name: location_address
+        description: Address of the location
+        data_type: string
+      - name: latitude
+        description: Latitude coordinate of the location
+        data_type: float64
+      - name: longitude
+        description: Longitude coordinate of the location
+        data_type: float64
+      - name: export_timestamp
+        description: When this data was exported from Google
+        data_type: datetime64(3)
+      - name: export_job_id
+        description: Unique identifier for the export job
+        data_type: string
+      - name: export_date
+        description: Date of the export
+        data_type: date
+      - name: source
+        description: Source system (e.g., 'google')
+        data_type: string
+      - name: resource
+        description: Resource type (e.g., 'maps')
+        data_type: string
+      - name: record_count
+        description: Number of records in the export
+        data_type: uint64
+      - name: raw_json
+        description: Original raw JSON string for reference
+        data_type: string
