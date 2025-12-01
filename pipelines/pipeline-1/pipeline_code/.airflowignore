@@ -1,7 +1,11 @@
-venv/
+^venv/.*
+^.*venv.*
 __pycache__/
 .*\.pyc$
 .*\.pyo$
-.git/
-.gitignore
-scripts/venv
+^\.git/
+^\.gitignore
+^data/.*
+^tokens/.*
+^scripts/.*
+^.*\.md$
