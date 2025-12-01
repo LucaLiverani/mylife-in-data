@@ -6,6 +6,10 @@ airflow_variables.json
 tokens
 logs
 
+# Google OAuth credentials
+client_secrets.json
+.google_portability_token.pickle
+
 # dbt artifacts
 dbt_project/profiles.yml
 dbt_project/.user.yml
