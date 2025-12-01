@@ -8,6 +8,11 @@ apache-airflow-providers-standard>=1.0.0
 boto3>=1.34.8
 botocore>=1.34.8
 
+# PyArrow (optional - needed for Parquet/Arrow operations)
+# Install pre-built binary to avoid cmake build issues
+# Uncomment if you need Parquet support or Arrow-backed DataFrames
+# pyarrow>=14.0.1
+
 # Kafka
 kafka-python==2.2.15
 
@@ -21,6 +26,10 @@ dbt-clickhouse==1.9.6
 
 # Spotify API
 spotipy==2.23.0
+
+# Google Data Portability API
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.100.0
 
 # Utilities
 pendulum>=3.1.0
