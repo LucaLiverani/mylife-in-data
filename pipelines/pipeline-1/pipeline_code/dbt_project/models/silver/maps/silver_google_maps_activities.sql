@@ -31,6 +31,7 @@ WITH raw_activities AS (
         location_url,
         location_source_url,
         location_address,
+        location_source,
         latitude,
         longitude,
 
@@ -49,9 +50,8 @@ WITH raw_activities AS (
 
     FROM {{ ref('bronze_google_maps_activities') }}
     WHERE
-        -- Filter out invalid data
+        -- Filter out invalid data (keep all activities, even without specific location)
         activity_time IS NOT NULL
-        AND location_name != ''
 ),
 
 deduplicated AS (
@@ -66,6 +66,7 @@ deduplicated AS (
         location_url,
         location_source_url,
         location_address,
+        location_source,
         latitude,
         longitude,
         export_timestamp,
@@ -121,6 +122,7 @@ SELECT
     location_url,
     location_source_url,
     location_address,
+    location_source,
     latitude,
     longitude,
 
@@ -129,6 +131,55 @@ SELECT
         WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 1
         ELSE 0
     END AS has_coordinates,
+
+    -- Activity type classification (based on title pattern)
+    CASE
+        -- Map interactions
+        WHEN title = 'Explored on Google Maps' THEN 'explore'
+        WHEN title = 'Used Maps' THEN 'app_usage'
+        WHEN title LIKE 'Opened My Maps map:%' THEN 'custom_map'
+
+        -- Search and navigation
+        WHEN title LIKE 'Searched for%' THEN 'search'
+        WHEN title LIKE 'Directions to%' THEN 'directions'
+        WHEN title LIKE 'Viewed%' THEN 'view'
+
+        -- User contributions
+        WHEN title LIKE 'Reviewed%' THEN 'review'
+        WHEN title LIKE 'Saved%' THEN 'save'
+        WHEN title LIKE 'Added photo%' THEN 'photo'
+        WHEN title LIKE 'Edited%' THEN 'edit'
+        WHEN title LIKE 'Contributed%' THEN 'contribution'
+
+        -- Notifications and system
+        WHEN title LIKE '%notification%' THEN 'notification'
+
+        -- Direct place names (no action prefix) - likely just viewed/browsed
+        WHEN title != '' AND title NOT LIKE '%:%' AND title NOT LIKE 'Searched%'
+             AND title NOT LIKE 'Directions%' THEN 'place_view'
+
+        ELSE 'other'
+    END AS activity_type,
+
+    -- Likely visit indicator (heuristic based on multiple factors)
+    CASE
+        -- Definite visits (high confidence)
+        WHEN title LIKE 'Reviewed%' OR title LIKE 'Added photo%' THEN 1  -- Reviewed/added photo = definitely visited
+        WHEN location_source LIKE '%your places (Home)%' OR location_source LIKE '%your places (Work)%' THEN 1  -- Home/Work = visited
+
+        -- Probable visits (medium confidence)
+        WHEN title LIKE 'Directions to%' AND location_source LIKE '%your device%' THEN 1  -- Got directions + device location = likely visited
+
+        -- Unlikely visits (low confidence)
+        WHEN title LIKE 'Searched for%' THEN 0  -- Just searched, didn't visit
+        WHEN title LIKE 'Directions to%' THEN 0  -- Got directions only = maybe visited
+        WHEN title = 'Explored on Google Maps' THEN 0  -- Just browsing
+        WHEN title = 'Used Maps' THEN 0  -- General app usage
+        WHEN title LIKE 'Opened My Maps map:%' THEN 0  -- Viewing custom map
+
+        -- Unknown/ambiguous
+        ELSE 0
+    END AS likely_visit,
 
     -- Products (keep as array for now)
     products,

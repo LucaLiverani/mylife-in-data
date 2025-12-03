@@ -23,9 +23,6 @@ WITH raw_artists AS (
         followers_total,
         genres,
         image_url,
-        images_urls,
-        images_heights,
-        images_widths,
         external_url_spotify,
         ingested_at,
         execution_date,
@@ -40,7 +37,7 @@ WITH raw_artists AS (
             ORDER BY ingested_at DESC
         ) AS row_num
 
-    FROM bronze.raw_spotify_artists
+    FROM {{ ref('bronze_spotify_artists') }}
     WHERE
         artist_id != ''
         AND artist_name != ''
@@ -55,9 +52,6 @@ SELECT
     followers_total,
     genres,
     image_url,
-    images_urls,
-    images_heights,
-    images_widths,
     external_url_spotify,
     ingested_at AS last_updated,
     source

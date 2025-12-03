@@ -1,10 +1,10 @@
-# dbt Project Configuration for Spotify Analytics
-name: 'spotify_analytics'
+# dbt Project Configuration for MyLife Analytics
+name: 'mylife_analytics'
 version: '1.0.0'
 config-version: 2
 
 # Project profile (defined in profiles.yml)
-profile: 'spotify_analytics'
+profile: 'mylife_analytics'
 
 # Source and target directories
 model-paths: ["models"]
@@ -21,23 +21,38 @@ clean-targets:
 
 # Model configurations
 models:
-  spotify_analytics:
+  mylife_analytics:
     # Materialization defaults
     +materialized: view
+
+    # Bronze layer - raw data from sources
+    bronze:
+      +materialized: view
+      +schema: bronze
+      spotify:
+        +tags: ["spotify", "bronze", "source"]
+      maps:
+        +tags: ["maps", "bronze", "source"]
 
     # Silver layer - cleaned, deduplicated data
     silver:
       +materialized: view
       +schema: silver
-      +database: silver
+      spotify:
+        +tags: ["spotify", "silver", "cleaned"]
+      maps:
+        +tags: ["maps", "silver", "cleaned"]
 
     # Gold layer - aggregated, dashboard-ready data
     gold:
       +materialized: table
       +schema: gold
-      +database: gold
       # Refresh gold tables on each run
       +on_schema_change: "sync_all_columns"
+      spotify:
+        +tags: ["spotify", "gold", "dashboard"]
+      maps:
+        +tags: ["maps", "gold", "dashboard"]
 
 # Tests
 tests:

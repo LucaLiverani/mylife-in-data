@@ -8,9 +8,9 @@
 /*
     Silver Layer: Spotify Tracks
 
-    Cleans and deduplicates raw track data from bronze layer.
+    Cleans and deduplicates track data from bronze layer.
     - Removes duplicates based on played_at timestamp
-    - Standardizes data types
+    - Adds derived time dimensions
     - Filters out invalid/test data
 */
 
@@ -38,10 +38,6 @@ WITH raw_tracks AS (
         artist_name,
         artist_uri,
 
-        -- All artists (for multi-artist tracks)
-        artists_ids,
-        artists_names,
-
         -- Context (where it was played)
         context_type,
         context_uri,
@@ -62,7 +58,7 @@ WITH raw_tracks AS (
             ORDER BY ingested_at DESC
         ) AS row_num
 
-    FROM bronze.raw_spotify_tracks
+    FROM {{ ref('bronze_spotify_tracks') }}
     WHERE
         -- Filter out invalid data
         track_id != ''
@@ -91,12 +87,10 @@ SELECT
     album_release_date,
     album_uri,
 
-    -- Artist info
+    -- Artist info (primary artist)
     artist_id,
     artist_name,
     artist_uri,
-    artists_ids,
-    artists_names,
 
     -- Context
     context_type,
