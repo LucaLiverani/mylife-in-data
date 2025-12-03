@@ -40,6 +40,11 @@ echo "Starting ClickHouse..."
 (cd "$SCRIPT_DIR/clickhouse" && docker-compose up -d)
 sleep 10
 
+# Start Monitoring
+echo "Starting Monitoring stack..."
+(cd "$SCRIPT_DIR/monitoring" && docker-compose up -d)
+sleep 10
+
 echo ""
 echo "Data Platform Started Successfully!"
 echo ""
@@ -50,6 +55,12 @@ echo "   Kafka UI:          http://localhost:8090"
 echo "   Schema Registry:   http://localhost:8081"
 echo "   ClickHouse HTTP:   http://localhost:8123"
 echo "   ClickHouse Native: http://localhost:9200"
+echo ""
+echo "Monitoring URLs:"
+echo "   Prometheus:        http://localhost:9090"
+echo "   Grafana:           http://localhost:3001"
+echo "   cAdvisor:          http://localhost:8082"
+echo "   Node Exporter:     http://localhost:9100"
 echo ""
 # echo "View status: ./status.sh"
 # echo "View logs:   ./logs.sh [storage|kafka|airflow] [service-name]"

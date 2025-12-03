@@ -30,15 +30,21 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
+    command:
+      - '--store_container_labels=true'
+      - '--docker=unix:///var/run/docker.sock'
     ports:
       - "8082:8080"  # Changed from 8081 to 8082 (8081 is schema-registry)
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Explicit Docker socket access
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
     networks:
       - data-platform-network
 
@@ -57,6 +63,24 @@ services:
       - /:/rootfs:ro
     networks:
       - data-platform-network
+
+  container-name-exporter:
+    image: python:3.11-slim
+    container_name: container-name-exporter
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        pip install --quiet docker &&
+        python3 /app/container-name-exporter.py
+    ports:
+      - "9104:9104"
+    volumes:
+      - ./container-name-exporter.py:/app/container-name-exporter.py:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - data-platform-network
+    restart: unless-stopped
 
 networks:
   data-platform-network:
