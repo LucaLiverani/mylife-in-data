@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: bronze_spotify_tracks
+    description: >
+      Raw Spotify listening history with minimal transformations.
+      Reads from raw_spotify_tracks table populated by Airflow ingestion DAG.
+    columns:
+      - name: track_id
+        description: Spotify track identifier
+        data_type: string
+        tests:
+          - not_null
+      - name: track_name
+        description: Name of the track
+        data_type: string
+      - name: artist_id
+        description: Primary artist Spotify ID
+        data_type: string
+      - name: artist_name
+        description: Primary artist name
+        data_type: string
+      - name: played_at
+        description: Timestamp when track was played
+        data_type: datetime64(3)
+        tests:
+          - not_null
+      - name: track_duration_ms
+        description: Track length in milliseconds
+        data_type: uint32
+      - name: ingested_at
+        description: When this record was ingested by Airflow
+        data_type: datetime64(3)
+      - name: source
+        description: Source system (spotify)
+        data_type: string
+
+  - name: bronze_spotify_artists
+    description: >
+      Raw artist details from Spotify API with minimal transformations.
+      Reads from raw_spotify_artists table populated by Airflow enrichment DAG.
+    columns:
+      - name: artist_id
+        description: Spotify artist identifier
+        data_type: string
+        tests:
+          - not_null
+      - name: artist_name
+        description: Artist name
+        data_type: string
+      - name: popularity
+        description: Spotify popularity score (0-100)
+        data_type: uint64
+      - name: followers_total
+        description: Total Spotify followers
+        data_type: uint64
+      - name: genres
+        description: Array of genre tags
+        data_type: array(string)
+      - name: ingested_at
+        description: When this record was ingested by Airflow
+        data_type: datetime64(3)
+      - name: source
+        description: Source system (spotify)
+        data_type: string

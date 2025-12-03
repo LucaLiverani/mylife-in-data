@@ -27,6 +27,12 @@ Bronze (Raw) → Silver (Cleaned) → Gold (Aggregated)
 
 ## Setup
 
+### 0. Fix local permissions
+
+```bash
+cd ../infrastructure/airflow & docker-compose run --rm fix-permissions
+```
+
 ### 1. Install dbt Dependencies
 
 The required packages are in `requirements.txt`:

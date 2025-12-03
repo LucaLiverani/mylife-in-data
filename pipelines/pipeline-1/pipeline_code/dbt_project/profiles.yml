@@ -1,4 +1,4 @@
-spotify_analytics:
+mylife_analytics:
   target: "{{ env_var('DBT_TARGET', 'dev') }}"
   outputs:
     dev:
