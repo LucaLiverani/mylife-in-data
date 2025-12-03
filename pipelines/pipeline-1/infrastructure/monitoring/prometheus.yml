@@ -1,8 +1,26 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: 'data-platform'
+    environment: 'local'
 
 scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Container name mappings
+  - job_name: 'container-names'
+    static_configs:
+      - targets: ['container-name-exporter:9104']
+    metric_relabel_configs:
+      # Copy systemd_id to id so we can join with cAdvisor metrics
+      - source_labels: [systemd_id]
+        target_label: id
+        action: replace
+
   # Container metrics (all containers)
   - job_name: 'cadvisor'
     static_configs:
@@ -13,19 +31,50 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  # Airflow metrics (only if statsd-exporter is running)
+  # Airflow metrics via StatsD exporter
   - job_name: 'airflow'
     static_configs:
       - targets: ['statsd-exporter:9102']
 
-  # Kafka JMX metrics (only if jmx-exporter is running)
-  - job_name: 'kafka-jmx'
+  # Kafka JMX metrics via JMX exporter
+  - job_name: 'kafka'
     static_configs:
       - targets: ['jmx-exporter:5556']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'kafka-cluster'
 
-  # MinIO metrics (try public endpoint first)
+  # Note: Zookeeper and Kafka Connect are monitored via cAdvisor
+  # For detailed JMX metrics, you would need to add separate JMX exporters
+
+  # MinIO metrics
   - job_name: 'minio'
     metrics_path: /minio/v2/metrics/cluster
     scheme: http
     static_configs:
       - targets: ['minio:9000']
+
+  # ClickHouse metrics
+  - job_name: 'clickhouse'
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['clickhouse:8123']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'clickhouse'
+
+  # ClickHouse system metrics (alternative endpoint)
+  - job_name: 'clickhouse-system'
+    metrics_path: /
+    params:
+      query: ['SELECT * FROM system.metrics FORMAT Prometheus']
+    scheme: http
+    static_configs:
+      - targets: ['clickhouse:8123']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'clickhouse-system'
