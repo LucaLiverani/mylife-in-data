@@ -32,10 +32,8 @@ interface OverviewData {
 interface TravelData {
   locations: Array<{ name: string; lat: number; lng: number; date: string; duration: string }>;
   stats: {
-    totalDistance: string;
-    countries: string;
-    cities: string;
-    longestTrip: string;
+    totalActivities: string;
+    uniqueDestinations: string;
   };
 }
 

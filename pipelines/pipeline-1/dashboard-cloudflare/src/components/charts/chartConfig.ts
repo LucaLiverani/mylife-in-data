@@ -3,10 +3,10 @@
  */
 
 export const CHART_COLORS = {
-  spotify: '#1DB954',
+  spotify: '#1DB954', // Green for Spotify
   youtube: '#FF0000',
   google: '#4285F4',
-  maps: '#A855F7',
+  maps: '#A855F7',    // Purple for Maps
   // Gradient shades for multi-series charts
   spotifyShades: ['#1DB954', '#1ED760', '#1AA34A', '#168B3E', '#117A32'],
 } as const;

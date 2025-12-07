@@ -36,7 +36,7 @@ export_query() {
 
 # Overview stats
 export_query "overview-stats" \
-  "SELECT * FROM ${CLICKHOUSE_DB}.gold_spotify_kpis LIMIT 1 FORMAT JSONEachRow"
+  "SELECT * FROM ${CLICKHOUSE_DB}.gold_home_daily_data_generation ORDER BY date DESC LIMIT 30 FORMAT JSONEachRow"
 
 # Spotify KPIs
 export_query "spotify-kpis" \
@@ -60,7 +60,7 @@ export_query "spotify-recent" \
 
 # Daily listening for overview
 export_query "daily-listening" \
-  "SELECT date, play_count AS spotify, 0 AS youtube, 0 AS google, 0 AS maps FROM ${CLICKHOUSE_DB}.gold_spotify_daily_listening ORDER BY date DESC LIMIT 30 FORMAT JSONEachRow"
+  "SELECT date, spotify, youtube, google, maps FROM ${CLICKHOUSE_DB}.gold_home_daily_data_generation ORDER BY date DESC LIMIT 30 FORMAT JSONEachRow"
 
 echo ""
 echo "✅ Fallback data export complete!"
