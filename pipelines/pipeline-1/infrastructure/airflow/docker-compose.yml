@@ -1,5 +1,3 @@
-version: '3.8'
-
 x-airflow-common: &airflow-common
   build:
     context: ../..  # Go to project root
@@ -63,7 +61,7 @@ x-airflow-common: &airflow-common
     - ./logs:/opt/airflow/logs
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
-  user: "${AIRFLOW_UID:-50000}:0"
+  user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-1000}"
   networks:
     - default
     - data-platform-network
@@ -77,14 +75,15 @@ services:
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./plugins:/opt/airflow/plugins
-    command: >
-      sh -c "
-        chown -R 50000:${AIRFLOW_GID:-1000} /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
+    command:
+      - "sh"
+      - "-c"
+      - |
+        chown -R ${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-1000} /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
         chmod -R 775 /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
         find /opt/airflow/dags -type f -not -path '*/venv/bin/*' -exec chmod 664 {} \; &&
         find /opt/airflow/dags -type f -path '*/venv/bin/*' -not -name 'activate*' -not -name 'Activate.ps1' -exec chmod 775 {} \; &&
-        echo 'Permissions fixed! User 50000 and group ${AIRFLOW_GID:-1000} can edit files.'
-        "
+        echo 'Permissions fixed! User ${AIRFLOW_UID:-50000} and group ${AIRFLOW_GID:-1000} can edit files.'
     environment:
       AIRFLOW_GID: ${AIRFLOW_GID:-1000}
     networks:
@@ -133,90 +132,16 @@ services:
       retries: 5
       start_period: 30s
 
-  # Airflow Init
   airflow-init:
     <<: *airflow-common
     container_name: airflow-init
-    entrypoint: /bin/bash
-    command:
-      - -c
-      - |
-        set -e
-        echo "Starting Airflow 3.x initialization..."
-
-        # Wait for postgres
-        echo "⏳ Waiting for database..."
-        for i in {1..30}; do
-          if pg_isready -h postgres -p 5432 -U ${POSTGRES_USER}; then
-            echo "PostgreSQL is ready!"
-            break
-          fi
-          sleep 2
-        done
-
-        # Test connection
-        echo "🔌 Testing database connection..."
-        psql "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}" -c "SELECT 1"
-
-        # Migration warning
-        echo "⚠️  Migrating to Airflow 3.x - database will be upgraded automatically"
-        echo "⚠️  Make sure you have a database backup before proceeding!"
-
-        # Initialize database (handles 2.x -> 3.x migration)
-        echo "📊 Initializing Airflow database (migrating if needed)..."
-        airflow db migrate
-
-        # Reserialize DAGs for Airflow 3.x
-        echo "🔄 Reserializing DAGs for Airflow 3.x..."
-        airflow dags reserialize || echo "⚠️  Warning: DAG reserialization had issues (this is OK for first-time setup)"
-        
-        # Create admin user (FAB command for Airflow 3.x)
-        echo "👤 Creating admin user..."
-        airflow fab users create \
-          --username ${AIRFLOW_ADMIN_USERNAME} \
-          --password ${AIRFLOW_ADMIN_PASSWORD} \
-          --firstname Admin \
-          --lastname User \
-          --role Admin \
-          --email ${AIRFLOW_ADMIN_EMAIL} 2>&1 || echo "User already exists"
-        
-        # MinIO connection
-        echo "🔗 Setting up MinIO connection..."
-        airflow connections delete minio_s3 2>/dev/null || true
-        airflow connections add minio_s3 \
-          --conn-type aws \
-          --conn-login ${MINIO_ROOT_USER} \
-          --conn-password ${MINIO_ROOT_PASSWORD} \
-          --conn-extra '{"endpoint_url": "http://minio:9000", "region_name": "us-east-1"}' || echo "MinIO connection failed"
-        
-        # Kafka connection
-        echo "🔗 Setting up Kafka connection..."
-        airflow connections delete kafka_default 2>/dev/null || true
-        airflow connections add kafka_default \
-          --conn-type generic \
-          --conn-host kafka \
-          --conn-port 9092 \
-          --conn-extra '{"bootstrap.servers": "kafka:9092", "group.id": "airflow"}' || echo "Kafka connection failed"
-
-        # ClickHouse connection
-        echo "🔗 Setting up ClickHouse connection..."
-        airflow connections delete clickhouse_default 2>/dev/null || true
-        airflow connections add clickhouse_default \
-          --conn-type generic \
-          --conn-host clickhouse \
-          --conn-port 9000 \
-          --conn-login admin \
-          --conn-password clickhouse08062013 \
-          --conn-extra '{"database": "bronze"}' || echo "ClickHouse connection failed"
-
-        echo "Airflow initialization complete!"
-    environment:
-      <<: *airflow-common-env
+    command: ["python", "/tmp/airflow_init_script.py"]
     volumes:
       - ../../pipeline_code:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./plugins:/opt/airflow/plugins
+      - ./airflow_init_script.py:/tmp/airflow_init_script.py
     depends_on:
       postgres:
         condition: service_healthy

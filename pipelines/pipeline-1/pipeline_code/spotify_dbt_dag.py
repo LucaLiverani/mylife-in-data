@@ -42,7 +42,7 @@ with DAG(
     default_args=default_args,
     description="Run dbt transformations for Spotify data product (bronze → silver → gold)",
     schedule="*/15 * * * *",  # Run every 15 minutes
-    start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
+    start_date=pendulum.now("UTC"),
     catchup=False,
     max_active_runs=1,
     tags=["dbt", "transformation", "spotify", "data-product"],

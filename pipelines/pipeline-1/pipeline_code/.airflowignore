@@ -9,3 +9,5 @@ __pycache__/
 ^tokens/.*
 ^scripts/.*
 ^.*\.md$
+/dbt_project/.venv
+/scripts/.venv
