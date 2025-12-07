@@ -42,7 +42,11 @@ BUCKET_NAME = "inbound"
 RAW_FILE_FOLDER = "raw/google"
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 
-CLIENT_SECRETS_PATH = 'client_secrets.json'
+# Use absolute paths relative to this DAG file
+import os as _os
+DAG_DIR = _os.path.dirname(__file__)
+CLIENT_SECRETS_PATH = _os.path.join(DAG_DIR, 'client_secrets.json')
+TOKEN_CACHE_PATH = _os.path.join(DAG_DIR, 'tokens', '.google_portability_token.pickle')
 
 # Minimum age before checking job (avoid premature checks)
 MIN_JOB_AGE_MINUTES = 5
@@ -136,7 +140,8 @@ def check_job_status(**context):
     # Initialize client
     client = get_client_local(
         scopes=['youtube_activity', 'maps_activity'],
-        client_secrets_file=CLIENT_SECRETS_PATH
+        client_secrets_file=CLIENT_SECRETS_PATH,
+        token_cache_path=TOKEN_CACHE_PATH
     )
 
     completed_jobs = []
@@ -232,7 +237,8 @@ def download_and_extract(**context):
     # Initialize client
     client = get_client_local(
         scopes=['youtube_activity', 'maps_activity'],
-        client_secrets_file=CLIENT_SECRETS_PATH
+        client_secrets_file=CLIENT_SECRETS_PATH,
+        token_cache_path=TOKEN_CACHE_PATH
     )
 
     extracted_data = []
