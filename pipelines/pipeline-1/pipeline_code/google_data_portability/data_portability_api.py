@@ -258,6 +258,7 @@ class DataPortabilityClient:
 def get_client_local(
     scopes: Optional[List[str]] = None,
     client_secrets_file: str = 'client_secrets.json',
+    token_cache_path: str = 'tokens/.google_portability_token.pickle',
     port: int = 8888
 ) -> DataPortabilityClient:
     """
@@ -266,6 +267,7 @@ def get_client_local(
     Args:
         scopes: List of scope keys to request (e.g., ['youtube_activity', 'maps_activity'])
         client_secrets_file: Path to OAuth client secrets file
+        token_cache_path: Path to store the token cache
         port: Port for OAuth callback server (default: 8888)
 
     Returns:
@@ -273,6 +275,7 @@ def get_client_local(
     """
     return DataPortabilityClient(
         client_secrets_file=client_secrets_file,
+        token_cache_path=token_cache_path,
         scopes=scopes,
         port=port
     )

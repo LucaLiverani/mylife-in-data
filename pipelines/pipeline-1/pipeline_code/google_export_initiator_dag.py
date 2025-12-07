@@ -6,7 +6,7 @@ Initiates export jobs for Google services (YouTube, Maps).
 Jobs are long-running (hours to days), so this DAG just starts them
 and stores job metadata for the monitor DAG to process.
 
-Run: Weekly or manual trigger
+Run: Daily at midnight UTC (incremental exports of last 3 days)
 """
 from __future__ import annotations
 
@@ -83,7 +83,10 @@ def authenticate_google(**context):
 def reset_authorization_if_needed(**context):
     """
     Reset authorization to clear any conflicting jobs.
-    Only runs if there's a 409 Conflict detected previously.
+    Only runs if manually triggered via Airflow Variable.
+
+    Note: This cancels in-progress exports. Use only when needed.
+    Set Variable 'google_portability_needs_reset' to 'true' to trigger.
     """
     ti = context['task_instance']
 
@@ -149,11 +152,20 @@ def initiate_export(resource: str, **context):
             port=8888
         )
 
-        # Initiate export
+        # Calculate time range for incremental export (last 3 days)
+        end_time_dt = pendulum.now('UTC')
+        start_time_dt = end_time_dt.subtract(days=3)
+
+        start_time = start_time_dt.format('YYYY-MM-DD') + 'T00:00:00Z'
+        end_time = end_time_dt.format('YYYY-MM-DD') + 'T23:59:59Z'
+
+        log.info(f"Export time range: {start_time} to {end_time}")
+
+        # Initiate export with time filters
         response = client.initiate_archive(
             resources=[resource],
-            start_time=None,  # Full export
-            end_time=None
+            start_time=start_time,
+            end_time=end_time
         )
 
         job_id = response.get('archiveJobId')
@@ -185,14 +197,17 @@ def initiate_export(resource: str, **context):
         # Check for 409 Conflict
         if '409' in error_msg and 'Conflict' in error_msg:
             log.warning(f"Conflict detected for {resource} - job already running")
+            log.info("Skipping this run. The monitor DAG will handle the existing export.")
+            log.info("Next daily run will start a new export once the current one completes.")
 
-            # Set flag for next run to reset
-            Variable.set('google_portability_needs_reset', 'true')
-
-            raise AirflowException(
-                f"Export already in progress for {resource}. "
-                f"Next run will reset authorization."
-            )
+            # Return a placeholder to indicate we skipped
+            return {
+                'job_id': None,
+                'resource': resource,
+                'status': 'SKIPPED_CONFLICT',
+                'reason': 'export_already_in_progress',
+                'timestamp': pendulum.now('UTC').isoformat(),
+            }
         else:
             log.error(f"Failed to initiate export: {e}")
             raise AirflowException(f"Failed to initiate export for {resource}: {e}")
@@ -219,8 +234,12 @@ def save_job_metadata(**context):
         )
 
         if job_metadata:
-            pending_jobs.append(job_metadata)
-            log.info(f"Collected job metadata for {resource}: {job_metadata['job_id']}")
+            # Skip jobs that had conflicts (no job_id means skipped)
+            if job_metadata.get('job_id') is not None:
+                pending_jobs.append(job_metadata)
+                log.info(f"Collected job metadata for {resource}: {job_metadata['job_id']}")
+            else:
+                log.info(f"Skipped {resource} - export already in progress")
 
     if not pending_jobs:
         log.warning("No jobs were initiated successfully")
@@ -256,12 +275,12 @@ def save_job_metadata(**context):
 with DAG(
     dag_id="google_export_initiator",
     default_args=default_args,
-    description="Initiate Google Data Portability exports (YouTube, Maps)",
-    schedule=None,  # Manual trigger or weekly via external scheduler
+    description="Initiate Google Data Portability exports (YouTube, Maps) - Last 3 days",
+    schedule="0 0 * * *",  # Daily at midnight UTC
     start_date=pendulum.datetime(2025, 12, 1, tz="UTC"),
     catchup=False,
     max_active_runs=1,
-    tags=["google", "data-portability", "export", "initiator"],
+    tags=["google", "data-portability", "export", "initiator", "incremental"],
     params={
         'resources': ['myactivity.maps'],  # Only Maps for this run
     },
