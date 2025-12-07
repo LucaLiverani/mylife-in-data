@@ -21,7 +21,7 @@ from airflow.models import Variable
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowException
 
-from google_data_portability.data_portability_api import get_client_local
+from google_data_portability.data_portability_api import DataPortabilityClient
 
 log = logging.getLogger(__name__)
 
@@ -32,11 +32,15 @@ log = logging.getLogger(__name__)
 # Resources to export (can be configured per run)
 DEFAULT_RESOURCES = ['myactivity.youtube', 'myactivity.maps']
 
-CLIENT_SECRETS_PATH = 'client_secrets.json'
+# Use absolute paths relative to this DAG file
+import os
+DAG_DIR = os.path.dirname(__file__)
+CLIENT_SECRETS_PATH = os.path.join(DAG_DIR, 'client_secrets.json')
+TOKEN_CACHE_PATH = os.path.join(DAG_DIR, 'tokens', '.google_portability_token.pickle')
 
 default_args = {
     'owner': 'data-engineering',
-    'retries': 2,
+    'retries': 1,
     'retry_delay': timedelta(minutes=5),
     'execution_timeout': timedelta(minutes=15),
 }
@@ -54,9 +58,10 @@ def authenticate_google(**context):
 
     try:
         # Initialize client (will auto-refresh token if needed)
-        client = get_client_local(
+        client = DataPortabilityClient(
             scopes=['youtube_activity', 'maps_activity'],
             client_secrets_file=CLIENT_SECRETS_PATH,
+            token_cache_path=TOKEN_CACHE_PATH,
             port=8888
         )
 
@@ -89,9 +94,11 @@ def reset_authorization_if_needed(**context):
         log.info("Resetting authorization to clear conflicts...")
 
         try:
-            client = get_client_local(
+            client = DataPortabilityClient(
                 scopes=['youtube_activity', 'maps_activity'],
-                client_secrets_file=CLIENT_SECRETS_PATH
+                client_secrets_file=CLIENT_SECRETS_PATH,
+                token_cache_path=TOKEN_CACHE_PATH,
+                port=8888
             )
 
             client.reset_authorization()
@@ -135,9 +142,11 @@ def initiate_export(resource: str, **context):
         else:
             scopes = ['youtube_activity', 'maps_activity']
 
-        client = get_client_local(
+        client = DataPortabilityClient(
             scopes=scopes,
-            client_secrets_file=CLIENT_SECRETS_PATH
+            client_secrets_file=CLIENT_SECRETS_PATH,
+            token_cache_path=TOKEN_CACHE_PATH,
+            port=8888
         )
 
         # Initiate export
@@ -254,7 +263,7 @@ with DAG(
     max_active_runs=1,
     tags=["google", "data-portability", "export", "initiator"],
     params={
-        'resources': DEFAULT_RESOURCES,  # Can override at trigger time
+        'resources': ['myactivity.maps'],  # Only Maps for this run
     },
 ) as dag:
 
@@ -272,11 +281,11 @@ with DAG(
 
     # Initiate exports (dynamic based on params)
     # For now, hardcoded for YouTube and Maps
-    initiate_youtube_task = PythonOperator(
-        task_id='initiate_myactivity_youtube_export',
-        python_callable=initiate_export,
-        op_kwargs={'resource': 'myactivity.youtube'},
-    )
+    # initiate_youtube_task = PythonOperator(
+    #     task_id='initiate_myactivity_youtube_export',
+    #     python_callable=initiate_export,
+    #     op_kwargs={'resource': 'myactivity.youtube'},
+    # )
 
     initiate_maps_task = PythonOperator(
         task_id='initiate_myactivity_maps_export',
@@ -292,4 +301,4 @@ with DAG(
     )
 
     # Dependencies
-    auth_task >> reset_task >> [initiate_youtube_task, initiate_maps_task] >> save_metadata_task
+    auth_task >> reset_task >> initiate_maps_task >> save_metadata_task
