@@ -44,9 +44,15 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         total_plays_raw AS songsStreamed,
         unique_artists_raw AS artistsListened,
         '0' AS videosWatched,
-        '0' AS searchQueries,
-        '0' AS citiesVisited
+        '0' AS searchQueries
       FROM gold.gold_spotify_kpis
+      LIMIT 1
+    `;
+
+    const mapsSummaryQuery = `
+      SELECT
+        unique_destinations AS citiesVisited
+      FROM gold.gold_maps_kpis
       LIMIT 1
     `;
 
@@ -54,20 +60,24 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
     const dataGenQuery = `
       SELECT
         date,
-        play_count AS spotify,
-        0 AS youtube,
-        0 AS google,
-        0 AS maps
-      FROM gold.gold_spotify_daily_listening
+        spotify,
+        youtube,
+        google,
+        maps
+      FROM gold.gold_home_daily_data_generation
       ORDER BY date DESC
       LIMIT 30
     `;
 
     // Execute queries in parallel
-    const [summaryResult, dataGenResult] = await Promise.all([
-      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; searchQueries: string; citiesVisited: string }>(
+    const [summaryResult, mapsSummaryResult, dataGenResult] = await Promise.all([
+      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; searchQueries: string }>(
         env,
         summaryQuery
+      ),
+      queryClickHouse<{ citiesVisited: string }>(
+        env,
+        mapsSummaryQuery
       ),
       queryClickHouse<{ date: string; spotify: number; youtube: number; google: number; maps: number }>(
         env,
@@ -81,6 +91,9 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       artistsListened: '0',
       videosWatched: '0',
       searchQueries: '0',
+    };
+
+    const mapsSummary = mapsSummaryResult[0] || {
       citiesVisited: '0',
     };
 
@@ -89,7 +102,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       artistsListened: parseInt(String(rawSummary.artistsListened), 10).toString(),
       videosWatched: rawSummary.videosWatched,
       searchQueries: rawSummary.searchQueries,
-      citiesVisited: rawSummary.citiesVisited,
+      citiesVisited: parseInt(String(mapsSummary.citiesVisited), 10).toString(),
     };
 
     // Reverse to show oldest to newest
