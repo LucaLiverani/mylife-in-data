@@ -11,15 +11,27 @@ import { travelAPI } from '@/lib/api';
 
 interface TravelData {
   stats: {
-    totalDistance: string;
-    countries: string;
-    cities: string;
-    longestTrip: string;
+    totalActivities: string;
+    totalDirections: string;
+    totalSearches: string;
+    totalExplorations: string;
+    likelyVisits: string;
+    uniqueDestinations: string;
+    daysWithActivity: string;
+    daysTracked: string;
+    avgActivitiesPerDay: string;
+    directionsPct: string;
+    searchPct: string;
+    explorePct: string;
+    firstActivity: string;
+    lastActivity: string;
   };
   locations: Array<{ name: string; lat: number; lng: number; duration: string }>;
   charts: {
     hourlyActivity: Array<{ hour: string; activities: number }>;
-    topDestinations: Array<{ rank: number; city: string; visits: number; days: number }>;
+    lastActivities: Array<{ time: string; location: string; type: string; timeOfDay: string }>;
+    topDestinations: Array<{ destination: string; count: number; type: string }>;
+    dailyActivity: Array<{ date: string; directions: number; searches: number; explorations: number; other: number }>;
   };
 }
 
@@ -34,8 +46,8 @@ export default function MapsPage() {
         setLoading(true);
         const result = await travelAPI.getData() as TravelData;
         // Check if the data is essentially empty
-        if (parseInt(result.stats.cities) === 0 && result.locations.length === 0) {
-          setError('No specific location data available in your Google Maps history.');
+        if (parseInt(result.stats.totalActivities) === 0) {
+          setError('No Google Maps activity data available.');
         } else {
           setTravelData(result);
           setError(null);
@@ -110,25 +122,36 @@ export default function MapsPage() {
             {/* KPI Section */}
             <section className="mb-12">
               <FadeIn delay={0.1}>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <h2 className="text-2xl font-bold mb-4">Overview</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
                   <KPIMetric
-                    label="Total Distance"
-                    value={travelData.stats.totalDistance}
+                    label="Total Activities"
+                    value={travelData.stats.totalActivities}
                     color="#A855F7"
                   />
                   <KPIMetric
-                    label="Countries"
-                    value={travelData.stats.countries}
+                    label="Directions"
+                    value={travelData.stats.totalDirections}
+                    color="#10b981"
+                  />
+                  <KPIMetric
+                    label="Searches"
+                    value={travelData.stats.totalSearches}
+                    color="#3b82f6"
+                  />
+                  <KPIMetric
+                    label="Explorations"
+                    value={travelData.stats.totalExplorations}
+                    color="#f59e0b"
+                  />
+                  <KPIMetric
+                    label="Destinations"
+                    value={travelData.stats.uniqueDestinations}
                     color="#A855F7"
                   />
                   <KPIMetric
-                    label="Cities"
-                    value={travelData.stats.cities}
-                    color="#A855F7"
-                  />
-                  <KPIMetric
-                    label="Longest Trip"
-                    value={travelData.stats.longestTrip}
+                    label="Avg/Day"
+                    value={travelData.stats.avgActivitiesPerDay}
                     color="#A855F7"
                   />
                 </div>

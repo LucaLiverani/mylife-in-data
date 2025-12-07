@@ -162,8 +162,8 @@ export default function Home() {
                 title="Maps"
                 iconName="map"
                 stats={[
-                  { label: 'Cities', value: travelData?.stats.cities || '0' },
-                  { label: 'Countries', value: travelData?.stats.countries || '0' }
+                  { label: 'Activities', value: travelData?.stats.totalActivities || '0' },
+                  { label: 'Destinations', value: travelData?.stats.uniqueDestinations || '0' }
                 ]}
                 color="#A855F7"
                 href="/maps"
