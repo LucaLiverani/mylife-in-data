@@ -34,8 +34,8 @@ SELECT
     -- Activity details
     JSONExtractString(raw_json, 'activity', 'header') AS header,
     JSONExtractString(raw_json, 'activity', 'title') AS title,
-    parseDateTime64BestEffort(JSONExtractString(raw_json, 'activity', 'time')) AS activity_time,
-    toDate(parseDateTime64BestEffort(JSONExtractString(raw_json, 'activity', 'time'))) AS activity_date,
+    parseDateTime64BestEffortOrNull(JSONExtractString(raw_json, 'activity', 'time')) AS activity_time,
+    toDate(parseDateTime64BestEffortOrNull(JSONExtractString(raw_json, 'activity', 'time'))) AS activity_date,
     JSONExtractArrayRaw(JSONExtractString(raw_json, 'activity', 'products')) AS products,
     JSONExtractArrayRaw(JSONExtractString(raw_json, 'activity', 'activityControls')) AS activity_controls,
 
@@ -68,7 +68,7 @@ SELECT
     ) AS longitude,
 
     -- Export metadata
-    parseDateTime64BestEffort(JSONExtractString(raw_json, '_export_metadata', 'export_timestamp')) AS export_timestamp,
+    parseDateTime64BestEffortOrNull(JSONExtractString(raw_json, '_export_metadata', 'export_timestamp')) AS export_timestamp,
     JSONExtractString(raw_json, '_export_metadata', 'export_job_id') AS export_job_id,
     toDate(JSONExtractString(raw_json, '_export_metadata', 'export_date')) AS export_date,
     JSONExtractString(raw_json, '_export_metadata', 'source') AS source,
