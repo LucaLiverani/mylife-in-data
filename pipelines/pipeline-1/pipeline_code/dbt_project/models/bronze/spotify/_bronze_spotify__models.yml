@@ -1,5 +1,83 @@
 version: 2
 
+sources:
+  - name: bronze
+    description: Bronze layer raw data tables
+    schema: bronze
+    tables:
+      - name: raw_spotify_current_track_kafka
+        description: >
+          Real-time Spotify current track data from Kafka stream.
+          Contains the most recently playing track with full metadata.
+          Used for live dashboard updates.
+        columns:
+          - name: track_id
+            description: Spotify track identifier
+            data_type: string
+          - name: track_name
+            description: Name of the track
+            data_type: string
+          - name: track_uri
+            description: Spotify URI for the track
+            data_type: string
+          - name: album_id
+            description: Album identifier
+            data_type: string
+          - name: album_name
+            description: Album name
+            data_type: string
+          - name: album_uri
+            description: Spotify URI for the album
+            data_type: string
+          - name: album_images
+            description: Array of album cover image URLs
+            data_type: array(string)
+          - name: artist_id
+            description: Primary artist identifier
+            data_type: string
+          - name: artist_name
+            description: Primary artist name
+            data_type: string
+          - name: artist_uri
+            description: Spotify URI for the artist
+            data_type: string
+          - name: artists_ids
+            description: Array of all artist IDs (for multi-artist tracks)
+            data_type: array(string)
+          - name: artists_names
+            description: Array of all artist names
+            data_type: array(string)
+          - name: is_playing
+            description: Whether the track is currently playing
+            data_type: bool
+          - name: captured_at
+            description: Timestamp when this state was captured
+            data_type: datetime64(3)
+          - name: progress_ms
+            description: Current playback position in milliseconds
+            data_type: uint32
+          - name: track_duration_ms
+            description: Total track duration in milliseconds
+            data_type: uint32
+          - name: device_id
+            description: Playback device identifier
+            data_type: string
+          - name: device_name
+            description: Name of the playback device
+            data_type: string
+          - name: device_type
+            description: Type of device (computer, smartphone, etc.)
+            data_type: string
+          - name: device_volume_percent
+            description: Current device volume (0-100)
+            data_type: uint8
+          - name: context_type
+            description: Playback context type (playlist, album, etc.)
+            data_type: string
+          - name: context_uri
+            description: Spotify URI for the playback context
+            data_type: string
+
 models:
   - name: bronze_spotify_tracks
     description: >
