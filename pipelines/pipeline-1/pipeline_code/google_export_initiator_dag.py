@@ -153,8 +153,9 @@ def initiate_export(resource: str, **context):
         )
 
         # Calculate time range for incremental export (last 3 days)
-        end_time_dt = pendulum.now('UTC')
-        start_time_dt = end_time_dt.subtract(days=3)
+        # Use yesterday as end date to avoid "future time" errors
+        end_time_dt = pendulum.now('UTC').subtract(days=1)
+        start_time_dt = end_time_dt.subtract(days=2)  # 3 days total (including end day)
 
         start_time = start_time_dt.format('YYYY-MM-DD') + 'T00:00:00Z'
         end_time = end_time_dt.format('YYYY-MM-DD') + 'T23:59:59Z'
@@ -282,7 +283,7 @@ with DAG(
     max_active_runs=1,
     tags=["google", "data-portability", "export", "initiator", "incremental"],
     params={
-        'resources': ['myactivity.maps'],  # Only Maps for this run
+        'resources': ['myactivity.youtube', 'myactivity.maps'],  # YouTube and Maps
     },
 ) as dag:
 
@@ -298,13 +299,12 @@ with DAG(
         python_callable=reset_authorization_if_needed,
     )
 
-    # Initiate exports (dynamic based on params)
-    # For now, hardcoded for YouTube and Maps
-    # initiate_youtube_task = PythonOperator(
-    #     task_id='initiate_myactivity_youtube_export',
-    #     python_callable=initiate_export,
-    #     op_kwargs={'resource': 'myactivity.youtube'},
-    # )
+    # Initiate exports for YouTube and Maps
+    initiate_youtube_task = PythonOperator(
+        task_id='initiate_myactivity_youtube_export',
+        python_callable=initiate_export,
+        op_kwargs={'resource': 'myactivity.youtube'},
+    )
 
     initiate_maps_task = PythonOperator(
         task_id='initiate_myactivity_maps_export',
@@ -320,4 +320,5 @@ with DAG(
     )
 
     # Dependencies
-    auth_task >> reset_task >> initiate_maps_task >> save_metadata_task
+    # Run YouTube and Maps exports in parallel after authentication
+    auth_task >> reset_task >> [initiate_youtube_task, initiate_maps_task] >> save_metadata_task
