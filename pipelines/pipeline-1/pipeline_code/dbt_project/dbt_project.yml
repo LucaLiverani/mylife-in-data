@@ -53,6 +53,8 @@ models:
         +tags: ["spotify", "gold", "dashboard"]
       maps:
         +tags: ["maps", "gold", "dashboard"]
+      home:
+        +tags: ["home", "gold", "dashboard"]
 
 # Tests
 tests:
