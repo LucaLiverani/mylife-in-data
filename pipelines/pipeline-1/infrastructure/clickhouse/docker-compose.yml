@@ -1,5 +1,3 @@
-version: '3.8'
-
 # ClickHouse Analytics Database
 # High-performance columnar OLAP database with MinIO S3 integration
 # Enables fast analytics queries on data stored in MinIO

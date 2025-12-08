@@ -16,7 +16,7 @@ fi
 
 # Start storage (MinIO)
 echo "Starting storage layer..."
-(cd "$SCRIPT_DIR/storage" && docker-compose up -d)
+(cd "$SCRIPT_DIR/storage" && docker compose up -d)
 
 # Wait for MinIO
 echo "Waiting for MinIO to be ready..."
@@ -24,7 +24,7 @@ sleep 10
 
 # Start Kafka
 echo "Starting Kafka ecosystem..."
-(cd "$SCRIPT_DIR/kafka" && docker-compose up -d)
+(cd "$SCRIPT_DIR/kafka" && docker compose up -d)
 
 # Wait for Kafka
 echo "Waiting for Kafka to be ready..."
@@ -32,17 +32,17 @@ sleep 15
 
 # Start Airflow
 echo "Starting Airflow..."
-(cd "$SCRIPT_DIR/airflow" && docker-compose up -d)
+(cd "$SCRIPT_DIR/airflow" && docker compose up -d)
 sleep 15
 
 # Start ClickHouse
 echo "Starting ClickHouse..."
-(cd "$SCRIPT_DIR/clickhouse" && docker-compose up -d)
+(cd "$SCRIPT_DIR/clickhouse" && docker compose up -d)
 sleep 10
 
 # Start Monitoring
 echo "Starting Monitoring stack..."
-(cd "$SCRIPT_DIR/monitoring" && docker-compose up -d)
+(cd "$SCRIPT_DIR/monitoring" && docker compose up -d)
 sleep 10
 
 echo ""

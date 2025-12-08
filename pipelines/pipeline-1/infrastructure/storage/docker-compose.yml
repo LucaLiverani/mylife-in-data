@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Storage Layer - MinIO S3-compatible object storage + Iceberg REST Catalog
 # This provides shared storage for Airflow logs, Kafka data, ingestion pipelines, and Iceberg tables
 
