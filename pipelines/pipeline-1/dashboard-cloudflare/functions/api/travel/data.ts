@@ -6,7 +6,9 @@
  * - gold_maps_kpis: Overall statistics and KPIs
  * - gold_maps_location_timeline: Location visits with timeline data
  * - gold_maps_hourly_heatmap: Activity patterns by hour and day
- * - gold_maps_most_visited_places: Top destinations by visit count
+ * - gold_maps_top_destinations: Top destinations by activity type
+ * - gold_maps_daily_activity_breakdown: Daily activity breakdown
+ * - gold_maps_recent_activities: Recent activity timeline
  */
 
 import { queryClickHouse } from '../../_shared/clickhouse';
@@ -64,91 +66,43 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
   const { env } = context;
 
   try {
-    // Query 1: Get KPIs from gold_maps_kpis
+    // Query 1: Get KPIs from dashboard view
     const kpisQuery = `
-      SELECT
-        total_activities,
-        total_directions,
-        total_searches,
-        total_explorations,
-        total_likely_visits,
-        days_with_activity,
-        unique_destinations,
-        toString(first_activity) AS first_activity,
-        toString(last_activity) AS last_activity,
-        days_tracked,
-        avg_activities_per_day,
-        directions_pct,
-        search_pct,
-        explore_pct
-      FROM gold.gold_maps_kpis
+      SELECT *
+      FROM gold.gold_maps_kpis_dashboard
       LIMIT 1
     `;
 
-    // Query 2: Get recent locations from gold_maps_location_timeline
+    // Query 2: Get recent locations from dashboard view
     const locationsQuery = `
-      SELECT
-        location_name AS name,
-        latitude AS lat,
-        longitude AS lng,
-        dwell_time_category,
-        distance_to_next_km,
-        concat(
-          toString(minutes_until_next_activity DIV 60), 'h ',
-          toString(minutes_until_next_activity % 60), 'm'
-        ) AS duration
-      FROM gold.gold_maps_location_timeline
-      WHERE latitude IS NOT NULL
-        AND longitude IS NOT NULL
-        AND location_name IS NOT NULL
-        AND location_name != ''
-      ORDER BY activity_time DESC
+      SELECT *
+      FROM gold.gold_maps_locations_dashboard
       LIMIT 500
     `;
 
-    // Query 3: Get hourly activity from gold_maps_hourly_heatmap
+    // Query 3: Get hourly activity from dashboard view
     const hourlyActivityQuery = `
-      SELECT
-        concat(toString(activity_hour), ':00') AS hour,
-        sum(activity_count) AS activities
-      FROM gold.gold_maps_hourly_heatmap
-      GROUP BY activity_hour
-      ORDER BY activity_hour
+      SELECT *
+      FROM gold.gold_maps_hourly_activity_dashboard
     `;
 
-    // Query 4: Get last 10 activities
+    // Query 4: Get last 10 activities from dashboard view
     const lastActivitiesQuery = `
-      SELECT
-        toString(activity_time) AS time,
-        COALESCE(NULLIF(title, ''), 'Unknown activity') AS location,
-        activity_type AS type,
-        time_of_day AS timeOfDay
-      FROM silver.silver_google_maps_activities
-      ORDER BY activity_time DESC
+      SELECT *
+      FROM gold.gold_maps_recent_activities
       LIMIT 10
     `;
 
-    // Query 5: Get daily activity breakdown by type (last 30 days)
+    // Query 5: Get daily activity breakdown from dashboard view (last 30 days)
     const dailyActivityQuery = `
-      SELECT
-        toString(activity_date) AS date,
-        directions,
-        searches,
-        explorations,
-        place_views + app_usage + views + reviews + saves + other AS other
-      FROM gold.gold_maps_daily_activity_breakdown
-      WHERE activity_date >= today() - 30
-      ORDER BY activity_date ASC
+      SELECT *
+      FROM gold.gold_maps_daily_activity_dashboard
     `;
 
-    // Query 6: Get top 10 destinations (searches + directions)
+    // Query 6: Get top 10 destinations from dashboard view
     const topDestinationsQuery = `
-      SELECT
-        destination,
-        request_count AS count,
-        activity_type AS type
-      FROM gold.gold_maps_top_destinations
-      ORDER BY request_count DESC
+      SELECT *
+      FROM gold.gold_maps_destinations_dashboard
       LIMIT 10
     `;
 

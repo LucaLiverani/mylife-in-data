@@ -23,8 +23,16 @@ interface SpotifyFullData {
   };
 }
 
+interface RecentTrack {
+  track: string;
+  artist: string;
+  time: string;
+  albumArt: string;
+}
+
 export default function SpotifyPage() {
   const [data, setData] = useState<SpotifyFullData | null>(null);
+  const [recentTracks, setRecentTracks] = useState<RecentTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,8 +40,12 @@ export default function SpotifyPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const result = await spotifyAPI.getData() as SpotifyFullData;
-        setData(result);
+        const [fullData, recent] = await Promise.all([
+          spotifyAPI.getData() as Promise<SpotifyFullData>,
+          spotifyAPI.getRecent() as Promise<RecentTrack[]>,
+        ]);
+        setData(fullData);
+        setRecentTracks(recent);
         setError(null);
       } catch (err) {
         console.error('Failed to fetch Spotify data:', err);
@@ -135,7 +147,7 @@ export default function SpotifyPage() {
 
         {/* Charts Section */}
         <FadeIn delay={0.3}>
-          <SpotifyCharts data={data} />
+          <SpotifyCharts data={data} recentTracks={recentTracks} />
         </FadeIn>
       </div>
     </div>

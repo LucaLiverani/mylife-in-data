@@ -44,42 +44,26 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
     // These are pre-aggregated and optimized for dashboard queries
 
     const kpisQuery = `
-      SELECT
-        total_plays_raw AS songs_streamed,
-        unique_artists_raw AS unique_artists,
-        total_time,
-        avg_daily
-      FROM gold.gold_spotify_kpis
+      SELECT *
+      FROM gold.gold_spotify_kpis_dashboard
       LIMIT 1
     `;
 
     const topArtistsQuery = `
-      SELECT
-        rank,
-        name,
-        plays,
-        hours,
-        genre
+      SELECT *
       FROM gold.gold_spotify_top_artists
-      ORDER BY rank
       LIMIT 10
     `;
 
     const genresQuery = `
-      SELECT
-        name,
-        value
+      SELECT *
       FROM gold.gold_spotify_genres
-      ORDER BY rank
       LIMIT 20
     `;
 
     const timeSeriesQuery = `
-      SELECT
-        date,
-        hours
+      SELECT *
       FROM gold.gold_spotify_daily_listening
-      ORDER BY date
     `;
 
     // Execute all queries in parallel

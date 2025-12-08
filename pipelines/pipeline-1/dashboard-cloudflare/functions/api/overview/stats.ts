@@ -38,46 +38,26 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
 
   const { data, isFromCache, error } = await queryWithFallback(
     async () => {
-    // Get summary stats from existing gold tables
+    // Get summary stats from dashboard view
     const summaryQuery = `
-      SELECT
-        total_plays_raw AS songsStreamed,
-        unique_artists_raw AS artistsListened,
-        '0' AS videosWatched,
-        '0' AS searchQueries
-      FROM gold.gold_spotify_kpis
-      LIMIT 1
-    `;
-
-    const mapsSummaryQuery = `
-      SELECT
-        unique_destinations AS citiesVisited
-      FROM gold.gold_maps_kpis
+      SELECT *
+      FROM gold.gold_home_overview_stats
       LIMIT 1
     `;
 
     // Get daily listening data for the chart (last 30 days)
     const dataGenQuery = `
-      SELECT
-        date,
-        spotify,
-        youtube,
-        google,
-        maps
+      SELECT *
       FROM gold.gold_home_daily_data_generation
       ORDER BY date DESC
       LIMIT 30
     `;
 
     // Execute queries in parallel
-    const [summaryResult, mapsSummaryResult, dataGenResult] = await Promise.all([
-      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; searchQueries: string }>(
+    const [summaryResult, dataGenResult] = await Promise.all([
+      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; searchQueries: string; citiesVisited: string }>(
         env,
         summaryQuery
-      ),
-      queryClickHouse<{ citiesVisited: string }>(
-        env,
-        mapsSummaryQuery
       ),
       queryClickHouse<{ date: string; spotify: number; youtube: number; google: number; maps: number }>(
         env,
@@ -91,9 +71,6 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       artistsListened: '0',
       videosWatched: '0',
       searchQueries: '0',
-    };
-
-    const mapsSummary = mapsSummaryResult[0] || {
       citiesVisited: '0',
     };
 
@@ -102,7 +79,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       artistsListened: parseInt(String(rawSummary.artistsListened), 10).toString(),
       videosWatched: rawSummary.videosWatched,
       searchQueries: rawSummary.searchQueries,
-      citiesVisited: parseInt(String(mapsSummary.citiesVisited), 10).toString(),
+      citiesVisited: parseInt(String(rawSummary.citiesVisited), 10).toString(),
     };
 
     // Reverse to show oldest to newest

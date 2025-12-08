@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CHART_COLORS, CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatChartDate } from './chartConfig';
 
 interface MapsData {
@@ -150,25 +150,7 @@ export function MapsCharts({ data }: { data: MapsData }) {
 
           {/* Chart */}
           <ResponsiveContainer width="100%" height={TIME_SERIES_CHART_HEIGHT}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorDirections" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorSearches" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorExplorations" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorOther" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <LineChart data={chartData}>
               <CartesianGrid {...CHART_STYLES.cartesianGrid} />
               <XAxis
                 dataKey="date"
@@ -185,54 +167,46 @@ export function MapsCharts({ data }: { data: MapsData }) {
                 cursor={CHART_STYLES.tooltip.cursor}
               />
               {visibleSeries.Directions && (
-                <Area
+                <Line
                   type="monotone"
                   dataKey="Directions"
-                  stackId="1"
                   stroke="#10b981"
                   strokeWidth={2}
-                  fill="url(#colorDirections)"
                   dot={{ fill: '#10b981', r: 3 }}
                   activeDot={{ r: 5 }}
                 />
               )}
               {visibleSeries.Searches && (
-                <Area
+                <Line
                   type="monotone"
                   dataKey="Searches"
-                  stackId="1"
                   stroke="#3b82f6"
                   strokeWidth={2}
-                  fill="url(#colorSearches)"
                   dot={{ fill: '#3b82f6', r: 3 }}
                   activeDot={{ r: 5 }}
                 />
               )}
               {visibleSeries.Explorations && (
-                <Area
+                <Line
                   type="monotone"
                   dataKey="Explorations"
-                  stackId="1"
                   stroke="#f59e0b"
                   strokeWidth={2}
-                  fill="url(#colorExplorations)"
                   dot={{ fill: '#f59e0b', r: 3 }}
                   activeDot={{ r: 5 }}
                 />
               )}
               {visibleSeries.Other && (
-                <Area
+                <Line
                   type="monotone"
                   dataKey="Other"
-                  stackId="1"
                   stroke="#8b5cf6"
                   strokeWidth={2}
-                  fill="url(#colorOther)"
                   dot={{ fill: '#8b5cf6', r: 3 }}
                   activeDot={{ r: 5 }}
                 />
               )}
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </Card>
       </section>
