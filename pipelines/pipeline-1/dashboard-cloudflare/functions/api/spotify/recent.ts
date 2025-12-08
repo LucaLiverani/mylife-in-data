@@ -25,13 +25,8 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
   try {
     // Query pre-aggregated gold recent tracks table
     const query = `
-      SELECT
-        track,
-        artist,
-        played_at,
-        album_art
+      SELECT *
       FROM gold.gold_spotify_recent_tracks
-      ORDER BY recency_rank
       LIMIT 50
     `;
 

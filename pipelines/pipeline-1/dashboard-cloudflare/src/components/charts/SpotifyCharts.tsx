@@ -18,11 +18,19 @@ interface SpotifyFullData {
   };
 }
 
-interface SpotifyChartsProps {
-  data: SpotifyFullData;
+interface RecentTrack {
+  track: string;
+  artist: string;
+  time: string;
+  albumArt: string;
 }
 
-export function SpotifyCharts({ data }: SpotifyChartsProps) {
+interface SpotifyChartsProps {
+  data: SpotifyFullData;
+  recentTracks: RecentTrack[];
+}
+
+export function SpotifyCharts({ data, recentTracks }: SpotifyChartsProps) {
   return (
     <>
       {/* Charts Section */}
@@ -95,32 +103,40 @@ export function SpotifyCharts({ data }: SpotifyChartsProps) {
                 contentStyle={CHART_STYLES.tooltip.contentStyle}
                 labelFormatter={(value) => `Date: ${value}`}
               />
-              <Line type="monotone" dataKey="hours" stroke={CHART_COLORS.spotify} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="hours" stroke={CHART_COLORS.spotify} strokeWidth={2} dot={{ fill: CHART_COLORS.spotify, r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
       </section>
 
-      {/* Top Artists Details */}
+      {/* Recent Tracks */}
       <section>
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-          <h2 className="text-2xl font-bold mb-6">Artist Details</h2>
+          <h2 className="text-2xl font-bold mb-6">Recently Played</h2>
           <div className="space-y-4">
-            {data.topArtists.map((artist) => (
+            {recentTracks.slice(0, 10).map((track, index) => (
               <div
-                key={artist.rank}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
+                key={index}
+                className="flex items-center gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
               >
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl font-bold text-[#1DB954] w-8">#{artist.rank}</div>
-                  <div>
-                    <div className="font-semibold text-lg">{artist.name}</div>
-                    <div className="text-sm text-white/60">{artist.genre}</div>
-                  </div>
+                {/* Album Art */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={track.albumArt}
+                    alt={`${track.track} album art`}
+                    className="w-16 h-16 rounded-md object-cover"
+                  />
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold">{artist.plays.toLocaleString()} plays</div>
-                  <div className="text-sm text-white/60">{artist.hours} hours</div>
+
+                {/* Track Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-lg truncate">{track.track}</div>
+                  <div className="text-sm text-white/60 truncate">{track.artist}</div>
+                </div>
+
+                {/* Time */}
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm text-[#1DB954]">{track.time}</div>
                 </div>
               </div>
             ))}

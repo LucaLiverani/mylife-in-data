@@ -21,13 +21,10 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
   const { env } = context;
 
   try {
-    // Query pre-aggregated gold KPIs table - use raw values for integers
+    // Query pre-aggregated gold KPIs dashboard view
     const query = `
-      SELECT
-        unique_artists AS artists,
-        total_plays_raw AS songs,
-        total_time AS total_hours
-      FROM gold.gold_spotify_kpis
+      SELECT *
+      FROM gold.gold_spotify_kpis_summary
       LIMIT 1
     `;
 

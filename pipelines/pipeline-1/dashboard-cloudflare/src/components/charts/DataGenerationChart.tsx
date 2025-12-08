@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CHART_COLORS, CHART_STYLES, formatChartDate } from './chartConfig';
 
 interface DataGenerationChartProps {
@@ -102,25 +102,7 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
       {/* Chart */}
       <div className="flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="colorSpotify" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.spotify} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={CHART_COLORS.spotify} stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorYouTube" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.youtube} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={CHART_COLORS.youtube} stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorGoogle" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.google} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={CHART_COLORS.google} stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorMaps" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={CHART_COLORS.maps} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={CHART_COLORS.maps} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
+          <LineChart data={chartData}>
             <CartesianGrid {...CHART_STYLES.cartesianGrid} />
             <XAxis
               dataKey="date"
@@ -137,54 +119,46 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
               cursor={CHART_STYLES.tooltip.cursor}
             />
             {visibleSeries.Spotify && (
-              <Area
+              <Line
                 type="monotone"
                 dataKey="Spotify"
-                stackId="1"
                 stroke={CHART_COLORS.spotify}
                 strokeWidth={2}
-                fill="url(#colorSpotify)"
                 dot={{ fill: CHART_COLORS.spotify, r: 3 }}
                 activeDot={{ r: 5 }}
               />
             )}
             {visibleSeries.YouTube && (
-              <Area
+              <Line
                 type="monotone"
                 dataKey="YouTube"
-                stackId="1"
                 stroke={CHART_COLORS.youtube}
                 strokeWidth={2}
-                fill="url(#colorYouTube)"
                 dot={{ fill: CHART_COLORS.youtube, r: 3 }}
                 activeDot={{ r: 5 }}
               />
             )}
             {visibleSeries.Google && (
-              <Area
+              <Line
                 type="monotone"
                 dataKey="Google"
-                stackId="1"
                 stroke={CHART_COLORS.google}
                 strokeWidth={2}
-                fill="url(#colorGoogle)"
                 dot={{ fill: CHART_COLORS.google, r: 3 }}
                 activeDot={{ r: 5 }}
               />
             )}
             {visibleSeries.Maps && (
-              <Area
+              <Line
                 type="monotone"
                 dataKey="Maps"
-                stackId="1"
                 stroke={CHART_COLORS.maps}
                 strokeWidth={2}
-                fill="url(#colorMaps)"
                 dot={{ fill: CHART_COLORS.maps, r: 3 }}
                 activeDot={{ r: 5 }}
               />
             )}
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>
