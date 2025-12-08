@@ -64,6 +64,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
     const timeSeriesQuery = `
       SELECT *
       FROM gold.gold_spotify_daily_listening
+      ORDER BY date ASC
     `;
 
     // Execute all queries in parallel

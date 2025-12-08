@@ -47,8 +47,8 @@ default_args = {
 def extract_raw_spotify_data(**context):
     """
     Extract raw JSON response from Spotify API.
-    - For scheduled runs, uses the logical_date as the 'after' timestamp.
-    - For manual runs, fetches the last 50 tracks.
+    - Always fetches the last 50 tracks (both manual and scheduled runs)
+    - Deduplication is handled in consolidation and publishing steps
     """
     logical_date = context.get('logical_date')
     run_id = context['run_id']
@@ -56,20 +56,12 @@ def extract_raw_spotify_data(**context):
 
     sp = get_spotify_client()
 
-    # Handle manual vs. scheduled runs
-    if run_id and run_id.startswith("manual__"):
-        log.info("Manual run detected. Fetching last 50 played tracks.")
-        # For manual runs, get the most recent 50 tracks, use current time as logical_date
-        if not logical_date:
-            logical_date = pendulum.now('UTC')
-        raw_response = get_recently_played_tracks(sp)
-    else:
-        # For scheduled runs, use the logical date window
-        if not logical_date:
-            raise AirflowException("logical_date is required for scheduled runs")
-        after_timestamp = int(logical_date.timestamp() * 1000)
-        log.info(f"Scheduled run. Extracting data after: {logical_date}")
-        raw_response = get_recently_played_tracks(sp, after=after_timestamp)
+    # Always fetch last 50 tracks to avoid missing data between runs
+    if not logical_date:
+        logical_date = pendulum.now('UTC')
+
+    log.info("Fetching last 50 played tracks from Spotify API")
+    raw_response = get_recently_played_tracks(sp)
 
     if not raw_response or not raw_response.get('items'):
         log.info("No items returned from API")
@@ -281,13 +273,13 @@ def publish_raw_to_kafka(**context):
     Runs in parallel with JSONL consolidation.
     """
     ti = context['task_instance']
-    
+
     raw_items = ti.xcom_pull(task_ids='extract_raw_data', key='raw_items')
-    
+
     if not raw_items:
         log.info("No items to publish to Kafka")
         return {'status': 'skipped', 'published': 0}
-    
+
     log.info(f"Publishing {len(raw_items)} raw items to Kafka...")
     
     # Initialize Kafka producer
@@ -309,7 +301,7 @@ def publish_raw_to_kafka(**context):
             try:
                 # Key = played_at (for partitioning)
                 key = item['raw_item'].get('played_at', f"unknown_{success_count}")
-                
+
                 # Get timestamp
                 timestamp_ms = None
                 if 'played_at' in item['raw_item']:
@@ -318,7 +310,7 @@ def publish_raw_to_kafka(**context):
                         timestamp_ms = int(dt.timestamp() * 1000)
                     except:
                         pass
-                
+
                 # Send to Kafka
                 producer.send(
                     topic=KAFKA_TOPIC,
@@ -326,16 +318,16 @@ def publish_raw_to_kafka(**context):
                     key=key,
                     timestamp_ms=timestamp_ms
                 )
-                
+
                 success_count += 1
-                
+
             except KafkaError as e:
                 error_count += 1
                 log.error(f"Failed to publish item: {e}")
                 continue
-        
+
         producer.flush(timeout=30)
-        
+
         result = {
             'status': 'success' if error_count == 0 else 'partial_success',
             'topic': KAFKA_TOPIC,
@@ -343,11 +335,11 @@ def publish_raw_to_kafka(**context):
             'failed': error_count,
             'total': len(raw_items),
         }
-        
+
         ti.xcom_push(key='kafka_result', value=result)
-        
+
         log.info(f"Published {success_count}/{len(raw_items)} items to Kafka")
-        
+
         if error_count > len(raw_items) * 0.1:
             raise AirflowException(f"Too many Kafka failures: {error_count}/{len(raw_items)}")
         
@@ -511,7 +503,7 @@ def validate_outputs(**context):
 # ============================================================================ 
 
 with DAG(
-    dag_id="spotify_raw_ingestion_jsonl",
+    dag_id="spotify_ingestion",
     default_args=default_args,
     description="Extract RAW Spotify data to daily JSONL files (consolidated)",
     schedule="*/15 * * * *",
