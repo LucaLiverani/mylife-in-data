@@ -145,17 +145,24 @@ class DataPortabilityClient:
 
         payload = {"resources": resources}
 
-        # Add time filters if provided
-        if start_time or end_time:
-            time_filter = {}
-            if start_time:
-                time_filter['startTime'] = start_time
-            if end_time:
-                time_filter['endTime'] = end_time
-            payload['timeFilter'] = time_filter
+        # Add time filters if provided (top-level parameters, not nested)
+        if start_time:
+            payload['startTime'] = start_time
+        if end_time:
+            payload['endTime'] = end_time
 
         response = requests.post(url, headers=self._get_headers(), json=payload)
-        response.raise_for_status()
+
+        # Better error handling to capture Google's error details
+        if not response.ok:
+            error_details = response.text
+            try:
+                error_json = response.json()
+                error_details = json.dumps(error_json, indent=2)
+            except:
+                pass
+            print(f"API Error Response ({response.status_code}): {error_details}")
+            response.raise_for_status()
 
         result = response.json()
         print(f"Archive job initiated: {result.get('archiveJobId')}")
