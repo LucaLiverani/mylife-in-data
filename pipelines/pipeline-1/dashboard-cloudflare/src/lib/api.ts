@@ -27,3 +27,7 @@ export const spotifyAPI = {
 export const travelAPI = {
   getData: () => fetchAPI('/api/travel/data'),
 };
+
+export const youtubeAPI = {
+  getData: () => fetchAPI('/api/youtube/data'),
+};
