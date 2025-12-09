@@ -155,7 +155,7 @@ def initiate_export(resource: str, **context):
         # Calculate time range for incremental export (last 3 days)
         # Use yesterday as end date to avoid "future time" errors
         end_time_dt = pendulum.now('UTC').subtract(days=1)
-        start_time_dt = end_time_dt.subtract(days=2)  # 3 days total (including end day)
+        start_time_dt = end_time_dt.subtract(days=30)  # 3 days total (including end day)
 
         start_time = start_time_dt.format('YYYY-MM-DD') + 'T00:00:00Z'
         end_time = end_time_dt.format('YYYY-MM-DD') + 'T23:59:59Z'
