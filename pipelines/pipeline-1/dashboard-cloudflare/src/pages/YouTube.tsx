@@ -1,39 +1,106 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { ParticleBackground } from '@/components/animations/ParticleBackground';
 import { KPIMetric } from '@/components/KPIMetric';
 import { YouTubeCharts } from '@/components/charts/YouTubeCharts';
+import { youtubeAPI } from '@/lib/api';
 
-// Mock data
-const mockData = {
+interface DailyActivityBreakdown {
+  date: string;
+  watched: number;
+  searches: number;
+  visits: number;
+  subscriptions: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  ads: number;
+  other: number;
+  totalActivities: number;
+  uniqueVideos: number;
+  dayName: string;
+  isWeekend: boolean;
+}
+
+interface YouTubeFullData {
   kpis: {
-    totalVideos: '3,456',
-    totalHours: '892 hrs',
-    channels: '156',
-    avgDaily: '2.4 hrs',
-  },
-  topChannels: [
-    { name: 'Fireship', videos: 247, hours: 82.3, category: 'Tech' },
-    { name: 'Web Dev Simplified', videos: 198, hours: 66.1, category: 'Tech' },
-    { name: 'Traversy Media', videos: 156, hours: 52.0, category: 'Tech' },
-    { name: 'Jack Herrington', videos: 143, hours: 47.7, category: 'Tech' },
-    { name: 'Hussein Nasser', videos: 128, hours: 42.7, category: 'Tech' },
-  ],
-  categories: [
-    { name: 'Technology', value: 45 },
-    { name: 'Education', value: 25 },
-    { name: 'Entertainment', value: 15 },
-    { name: 'Music', value: 10 },
-    { name: 'Gaming', value: 5 },
-  ],
-  watchTime: Array.from({ length: 30 }, (_, i) => ({
-    date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    hours: Math.random() * 4 + 1,
-  })),
-};
+    totalVideos: string;
+    totalWatched: string;
+    totalSearches: string;
+    totalAdsWatched: string;
+    totalActivities: string;
+    avgVideosPerDay: string;
+    avgActivitiesPerDay: string;
+    adsPercentage: string;
+    totalVisits: string;
+    totalSubscriptions: string;
+    totalLikes: string;
+    firstActivityDate: string;
+    lastActivityDate: string;
+    daysSpan: number;
+  };
+  topVideos: Array<{ rank: number; title: string; videoId: string; watchCount: number; category: string }>;
+  activityTypes: Array<{ name: string; value: number; count: number }>;
+  dailyActivityBreakdown: DailyActivityBreakdown[];
+  recentVideos: Array<{ title: string; time: string; relativeTime: string; timeOfDay: string; isFromAds: boolean }>;
+  hourlyActivity: Array<{ hour: string; activities: number }>;
+}
 
 export default function YouTubePage() {
+  const [data, setData] = useState<YouTubeFullData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const result = await youtubeAPI.getData() as YouTubeFullData;
+        setData(result);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch YouTube data:', err);
+        setError('Failed to load YouTube data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white">
+        <ParticleBackground />
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#FF0000] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Loading YouTube data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white">
+        <ParticleBackground />
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-xl text-red-400">{error || 'No data available'}</p>
+            <Link to="/" className="mt-4 inline-block text-[#FF0000] hover:underline">
+              Return to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white">
       <ParticleBackground />
@@ -58,26 +125,37 @@ export default function YouTubePage() {
         {/* KPI Section */}
         <section className="mb-12">
           <FadeIn delay={0.1}>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <h2 className="text-2xl font-bold mb-4">Overview</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
               <KPIMetric
                 label="Total Videos"
-                value={mockData.kpis.totalVideos}
+                value={data.kpis.totalVideos}
                 color="#FF0000"
               />
               <KPIMetric
-                label="Watch Time"
-                value={mockData.kpis.totalHours}
+                label="Videos Watched"
+                value={data.kpis.totalWatched}
                 color="#FF0000"
               />
               <KPIMetric
-                label="Channels"
-                value={mockData.kpis.channels}
+                label="Searches"
+                value={data.kpis.totalSearches}
+                color="#3b82f6"
+              />
+              <KPIMetric
+                label="Ads Watched"
+                value={data.kpis.totalAdsWatched}
+                color="#f59e0b"
+              />
+              <KPIMetric
+                label="Avg/Day"
+                value={data.kpis.avgVideosPerDay}
                 color="#FF0000"
               />
               <KPIMetric
-                label="Avg Daily"
-                value={mockData.kpis.avgDaily}
-                color="#FF0000"
+                label="Ads %"
+                value={`${data.kpis.adsPercentage}%`}
+                color="#f59e0b"
               />
             </div>
           </FadeIn>
@@ -85,7 +163,7 @@ export default function YouTubePage() {
 
         {/* Charts Section */}
         <FadeIn delay={0.2}>
-          <YouTubeCharts data={mockData} />
+          <YouTubeCharts data={data} />
         </FadeIn>
       </div>
     </div>
