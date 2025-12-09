@@ -19,6 +19,7 @@ kafka-python==2.2.15
 # ClickHouse
 clickhouse-driver==0.2.9
 clickhouse-cityhash==1.0.2.4
+clickhouse-connect>=0.6.0
 
 # dbt
 dbt-core==1.9.10
@@ -27,9 +28,12 @@ dbt-clickhouse==1.9.6
 # Spotify API
 spotipy==2.23.0
 
-# Google Data Portability API
+# Google Data Portability API & YouTube Data API v3
+google-auth>=2.23.0
 google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.1.1
 google-api-python-client>=2.100.0
+isodate>=0.6.1
 
 # Utilities
 pendulum>=3.1.0

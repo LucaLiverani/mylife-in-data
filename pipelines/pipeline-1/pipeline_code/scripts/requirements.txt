@@ -2,3 +2,14 @@ kafka-python
 spotipy
 python-dotenv
 apache-airflow
+
+# YouTube Data API v3
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# Additional dependencies for YouTube enrichment
+isodate>=0.6.1  # For parsing ISO 8601 durations (PT15M33S)
+clickhouse-connect>=0.6.0  # For ClickHouse queries
+boto3>=1.28.0  # For MinIO/S3 storage
