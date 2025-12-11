@@ -9,6 +9,7 @@ export const CHART_COLORS = {
   maps: '#A855F7',    // Purple for Maps
   // Gradient shades for multi-series charts
   spotifyShades: ['#1DB954', '#1ED760', '#1AA34A', '#168B3E', '#117A32'],
+  youtubeShades: ['#FF0000', '#FF3333', '#FF6666', '#FF9999', '#FFCCCC'],
 } as const;
 
 export const CHART_STYLES = {
