@@ -17,6 +17,10 @@ export const overviewAPI = {
   getStats: () => fetchAPI('/api/overview/stats'),
 };
 
+export const homeAPI = {
+  getRecentEvents: () => fetchAPI('/api/home/recent-events'),
+};
+
 export const spotifyAPI = {
   getData: () => fetchAPI('/api/spotify/data'),
   getRecent: () => fetchAPI('/api/spotify/recent'),
