@@ -15,6 +15,7 @@ interface OverviewStats {
     songsStreamed: string;
     artistsListened: string;
     videosWatched: string;
+    youtubeChannels: string;
     searchQueries: string;
     citiesVisited: string;
   };
@@ -55,7 +56,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
 
     // Execute queries in parallel
     const [summaryResult, dataGenResult] = await Promise.all([
-      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; searchQueries: string; citiesVisited: string }>(
+      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; youtubeChannels: string; searchQueries: string; citiesVisited: string }>(
         env,
         summaryQuery
       ),
@@ -70,6 +71,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       songsStreamed: '0',
       artistsListened: '0',
       videosWatched: '0',
+      youtubeChannels: '0',
       searchQueries: '0',
       citiesVisited: '0',
     };
@@ -78,6 +80,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       songsStreamed: parseInt(String(rawSummary.songsStreamed), 10).toString(),
       artistsListened: parseInt(String(rawSummary.artistsListened), 10).toString(),
       videosWatched: rawSummary.videosWatched,
+      youtubeChannels: rawSummary.youtubeChannels,
       searchQueries: rawSummary.searchQueries,
       citiesVisited: parseInt(String(rawSummary.citiesVisited), 10).toString(),
     };
@@ -118,6 +121,7 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         songsStreamed: '0',
         artistsListened: '0',
         videosWatched: '0',
+        youtubeChannels: '0',
         searchQueries: '0',
         citiesVisited: '0',
       },
