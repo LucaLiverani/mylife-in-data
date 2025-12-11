@@ -7,43 +7,53 @@ import { KPIMetric } from '@/components/KPIMetric';
 import { YouTubeCharts } from '@/components/charts/YouTubeCharts';
 import { youtubeAPI } from '@/lib/api';
 
-interface DailyActivityBreakdown {
+interface DailyWatchTimeBreakdown {
   date: string;
-  watched: number;
-  searches: number;
-  visits: number;
-  subscriptions: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  ads: number;
-  other: number;
-  totalActivities: number;
-  uniqueVideos: number;
+  watchedHours: number;
+  searchesHours: number;
+  visitsHours: number;
+  adsHours: number;
+  otherHours: number;
+  totalHours: number;
+  watchedCount: number;
+  searchesCount: number;
+  visitsCount: number;
+  adsCount: number;
   dayName: string;
   isWeekend: boolean;
 }
 
 interface YouTubeFullData {
   kpis: {
-    totalVideos: string;
-    totalWatched: string;
+    videosWatched: string;
     totalSearches: string;
     totalAdsWatched: string;
-    totalActivities: string;
-    avgVideosPerDay: string;
-    avgActivitiesPerDay: string;
     adsPercentage: string;
-    totalVisits: string;
-    totalSubscriptions: string;
-    totalLikes: string;
+    totalWatchTime: string;
+    totalChannels: string;
+    avgWatchTimePerDay: number;
+    enrichmentPercentage: string;
     firstActivityDate: string;
     lastActivityDate: string;
-    daysSpan: number;
   };
-  topVideos: Array<{ rank: number; title: string; videoId: string; watchCount: number; category: string }>;
-  activityTypes: Array<{ name: string; value: number; count: number }>;
-  dailyActivityBreakdown: DailyActivityBreakdown[];
+  topChannels: Array<{
+    channelId: string;
+    channelTitle: string;
+    watchCount: number;
+    totalWatchTime: string;
+    watchTimeHours: number;
+    category: string;
+    uniqueVideos: number;
+  }>;
+  categoryBreakdown: Array<{
+    name: string;
+    watchCount: number;
+    watchTime: string;
+    watchPercentage: number;
+    timePercentage: number;
+    uniqueChannels: number;
+  }>;
+  dailyWatchTimeBreakdown: DailyWatchTimeBreakdown[];
   recentVideos: Array<{ title: string; time: string; relativeTime: string; timeOfDay: string; isFromAds: boolean }>;
   hourlyActivity: Array<{ hour: string; activities: number }>;
 }
@@ -128,13 +138,18 @@ export default function YouTubePage() {
             <h2 className="text-2xl font-bold mb-4">Overview</h2>
             <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
               <KPIMetric
-                label="Total Videos"
-                value={data.kpis.totalVideos}
+                label="Watch Time"
+                value={data.kpis.totalWatchTime}
+                color="#FF0000"
+              />
+              <KPIMetric
+                label="Total Channels"
+                value={data.kpis.totalChannels}
                 color="#FF0000"
               />
               <KPIMetric
                 label="Videos Watched"
-                value={data.kpis.totalWatched}
+                value={data.kpis.videosWatched}
                 color="#FF0000"
               />
               <KPIMetric
@@ -146,11 +161,6 @@ export default function YouTubePage() {
                 label="Ads Watched"
                 value={data.kpis.totalAdsWatched}
                 color="#f59e0b"
-              />
-              <KPIMetric
-                label="Avg/Day"
-                value={data.kpis.avgVideosPerDay}
-                color="#FF0000"
               />
               <KPIMetric
                 label="Ads %"
