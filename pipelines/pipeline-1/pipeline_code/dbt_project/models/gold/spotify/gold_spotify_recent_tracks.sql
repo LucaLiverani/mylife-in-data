@@ -49,7 +49,17 @@ with_artist_details AS (
         rt.context_type,
         rt.context_uri,
 
-        ROW_NUMBER() OVER (ORDER BY rt.played_at DESC) AS recency_rank
+        ROW_NUMBER() OVER (ORDER BY rt.played_at DESC) AS recency_rank,
+
+        -- Calculate relative time
+        CASE
+            WHEN dateDiff('hour', rt.played_at, now()) < 1 THEN 'Just now'
+            WHEN dateDiff('hour', rt.played_at, now()) < 24 THEN concat(toString(dateDiff('hour', rt.played_at, now())), ' hours ago')
+            WHEN dateDiff('hour', rt.played_at, now()) < 48 THEN 'Yesterday'
+            WHEN dateDiff('day', rt.played_at, now()) < 7 THEN concat(toString(dateDiff('day', rt.played_at, now())), ' days ago')
+            WHEN dateDiff('day', rt.played_at, now()) < 30 THEN concat(toString(dateDiff('week', rt.played_at, now())), ' weeks ago')
+            ELSE concat(toString(dateDiff('month', rt.played_at, now())), ' months ago')
+        END AS relative_time
 
     FROM recent_tracks rt
     LEFT JOIN {{ ref('silver_spotify_artists') }} ad
@@ -67,6 +77,7 @@ SELECT
     genres,
     context_type,
     recency_rank,
+    relative_time,
     now() AS updated_at
 
 FROM with_artist_details

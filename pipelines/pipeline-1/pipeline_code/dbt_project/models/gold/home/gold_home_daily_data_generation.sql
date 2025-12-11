@@ -13,6 +13,7 @@
 
     Combines:
     - Spotify: Daily play counts
+    - YouTube: Total daily activities (watched + searches + visits + ads)
     - Google Maps: Total daily activities
 
     Dashboard Use:
@@ -26,6 +27,13 @@ WITH spotify_daily AS (
     FROM {{ ref('gold_spotify_daily_listening') }}
 ),
 
+youtube_daily AS (
+    SELECT
+        date,
+        (watched_count + searches_count + visits_count + ads_count) AS youtube_activities
+    FROM {{ ref('gold_youtube_daily_watch_time_breakdown') }}
+),
+
 maps_daily AS (
     SELECT
         activity_date AS date,
@@ -35,26 +43,28 @@ maps_daily AS (
 
 all_sources AS (
     SELECT
-        COALESCE(s.date, m.date) AS date,
+        COALESCE(s.date, y.date, m.date) AS date,
         s.spotify_plays,
+        y.youtube_activities,
         m.maps_activities
     FROM spotify_daily s
-    FULL OUTER JOIN maps_daily m ON s.date = m.date
+    FULL OUTER JOIN youtube_daily y ON s.date = y.date
+    FULL OUTER JOIN maps_daily m ON COALESCE(s.date, y.date) = m.date
 )
 
 SELECT
     toString(date) AS date,
-    
+
     -- Individual source counts (coalesce to 0 if null)
     COALESCE(spotify_plays, 0) AS spotify,
+    COALESCE(youtube_activities, 0) AS youtube,
     COALESCE(maps_activities, 0) AS maps,
-    
-    -- Hardcoded placeholders for future sources
-    0 AS youtube,
+
+    -- Hardcoded placeholder for future sources
     0 AS google,
 
     -- Total daily events
-    COALESCE(spotify_plays, 0) + COALESCE(maps_activities, 0) AS total_events,
+    COALESCE(spotify_plays, 0) + COALESCE(youtube_activities, 0) + COALESCE(maps_activities, 0) AS total_events,
 
     now() AS updated_at
 
