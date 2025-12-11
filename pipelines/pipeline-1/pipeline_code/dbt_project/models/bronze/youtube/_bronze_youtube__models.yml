@@ -1,0 +1,119 @@
+version: 2
+
+models:
+  - name: bronze_youtube_watch_history
+    description: >
+      Raw YouTube watch history data loaded from MinIO S3 bucket.
+      Extracts and parses JSONL.gz files containing watch activities,
+      searches, and other interactions from Google Takeout exports.
+    columns:
+      - name: header
+        description: Activity header from YouTube
+        data_type: string
+      - name: title
+        description: Activity title/description (e.g., "Watched VIDEO_TITLE")
+        data_type: string
+      - name: activity_time
+        description: Timestamp when the activity occurred
+        data_type: datetime64(3)
+        tests:
+          - not_null
+      - name: activity_date
+        description: Date of the activity (derived from activity_time)
+        data_type: date
+      - name: title_url
+        description: YouTube video URL
+        data_type: string
+      - name: description
+        description: Additional activity description
+        data_type: string
+      - name: products
+        description: Array of Google products associated with this activity
+        data_type: array(string)
+      - name: activity_controls
+        description: Array of activity control settings
+        data_type: array(string)
+      - name: details
+        description: Array of additional details (e.g., "From Google Ads")
+        data_type: array(string)
+      - name: export_timestamp
+        description: When this data was exported from Google
+        data_type: datetime64(3)
+      - name: export_job_id
+        description: Unique identifier for the export job
+        data_type: string
+      - name: export_date
+        description: Date of the export
+        data_type: date
+      - name: source
+        description: Source system (e.g., 'google')
+        data_type: string
+      - name: resource
+        description: Resource type (e.g., 'youtube')
+        data_type: string
+      - name: record_count
+        description: Number of records in the export
+        data_type: uint64
+      - name: dag_id
+        description: Airflow DAG ID that processed this export
+        data_type: string
+      - name: run_id
+        description: Airflow run ID for this export
+        data_type: string
+      - name: raw_json
+        description: Original raw JSON string for reference
+        data_type: string
+
+  - name: bronze_youtube_video_metadata
+    description: >
+      Enriched YouTube video metadata from YouTube Data API v3.
+      Contains detailed information about videos including channel data,
+      duration, category, statistics, and engagement metrics.
+    columns:
+      - name: video_id
+        description: YouTube video ID
+        data_type: string
+        tests:
+          - not_null
+      - name: channel_id
+        description: Channel ID that published the video
+        data_type: string
+      - name: channel_title
+        description: Channel name
+        data_type: string
+      - name: title
+        description: Video title
+        data_type: string
+      - name: description
+        description: Video description
+        data_type: string
+      - name: duration_seconds
+        description: Video duration in seconds
+        data_type: int32
+      - name: category_id
+        description: YouTube category ID (numeric string)
+        data_type: string
+      - name: category_name
+        description: Human-readable category name
+        data_type: string
+      - name: view_count
+        description: Total view count
+        data_type: uint64
+      - name: like_count
+        description: Total like count
+        data_type: uint64
+      - name: comment_count
+        description: Total comment count
+        data_type: uint64
+      - name: published_at
+        description: Video publication timestamp
+        data_type: datetime64(3)
+      - name: published_date
+        description: Video publication date
+        data_type: date
+      - name: enriched_at
+        description: Timestamp when metadata was fetched from YouTube API
+        data_type: datetime64(3)
+      - name: raw_json
+        description: Original raw JSON string for reference
+        data_type: string

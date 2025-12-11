@@ -33,6 +33,8 @@ models:
         +tags: ["spotify", "bronze", "source"]
       maps:
         +tags: ["maps", "bronze", "source"]
+      youtube:
+        +tags: ["youtube", "bronze", "source"]
 
     # Silver layer - cleaned, deduplicated data
     silver:
@@ -42,6 +44,8 @@ models:
         +tags: ["spotify", "silver", "cleaned"]
       maps:
         +tags: ["maps", "silver", "cleaned"]
+      youtube:
+        +tags: ["youtube", "silver", "cleaned"]
 
     # Gold layer - aggregated, dashboard-ready data
     gold:
@@ -53,6 +57,8 @@ models:
         +tags: ["spotify", "gold", "dashboard"]
       maps:
         +tags: ["maps", "gold", "dashboard"]
+      youtube:
+        +tags: ["youtube", "gold", "dashboard"]
       home:
         +tags: ["home", "gold", "dashboard"]
 

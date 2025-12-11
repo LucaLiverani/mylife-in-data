@@ -1,0 +1,327 @@
+version: 2
+
+models:
+  - name: gold_youtube_recent_videos
+    description: >
+      Last 100 watched videos for the dashboard timeline.
+      Includes activity details, temporal context, and relative time calculations.
+    columns:
+      - name: activity_id
+        description: Unique activity identifier
+        data_type: uint64
+        tests:
+          - not_null
+      - name: video_id
+        description: YouTube video ID
+        data_type: string
+      - name: title
+        description: Video title
+        data_type: string
+      - name: title_url
+        description: YouTube video URL
+        data_type: string
+      - name: time
+        description: Activity timestamp (string formatted)
+        data_type: string
+      - name: date
+        description: Activity date (string formatted)
+        data_type: string
+      - name: activity_hour
+        description: Hour of day (0-23)
+        data_type: uint8
+      - name: time_of_day
+        description: Time period classification
+        data_type: string
+      - name: day_name
+        description: Day name
+        data_type: string
+      - name: is_weekend
+        description: Weekend flag (1=weekend, 0=weekday)
+        data_type: uint8
+      - name: activity_type
+        description: Activity type
+        data_type: string
+      - name: description
+        description: Activity description
+        data_type: string
+      - name: is_from_ads
+        description: Flag if video was from ads
+        data_type: uint8
+      - name: products_list
+        description: Comma-separated list of Google products
+        data_type: string
+      - name: details_list
+        description: Comma-separated list of details
+        data_type: string
+      - name: recency_rank
+        description: Ranking by recency (1 = most recent)
+        data_type: uint64
+      - name: relative_time
+        description: Human-readable relative time (e.g., "2 days ago")
+        data_type: string
+      - name: updated_at
+        description: Timestamp when this model was last updated
+        data_type: datetime64(3)
+
+  - name: gold_youtube_hourly_activity
+    description: >
+      Aggregated watch activity by hour of day showing viewing patterns
+      and peak usage times with activity type breakdown.
+    columns:
+      - name: activity_hour
+        description: Hour of day (0-23)
+        data_type: uint8
+        tests:
+          - not_null
+      - name: hour
+        description: Formatted hour (e.g., "14:00")
+        data_type: string
+      - name: total_activities
+        description: Total activities in this hour
+        data_type: uint64
+      - name: watched_count
+        description: Number of videos watched in this hour
+        data_type: uint64
+      - name: search_count
+        description: Number of searches in this hour
+        data_type: uint64
+      - name: ad_views_count
+        description: Number of ad views in this hour
+        data_type: uint64
+      - name: unique_videos
+        description: Number of unique videos watched
+        data_type: uint64
+      - name: unique_days
+        description: Number of unique days with activity
+        data_type: uint64
+      - name: time_of_day_label
+        description: Time period label (Morning/Afternoon/Evening/Night)
+        data_type: string
+      - name: avg_activities_per_day
+        description: Average activities per day for this hour
+        data_type: float64
+      - name: updated_at
+        description: Timestamp when this model was last updated
+        data_type: datetime64(3)
+
+  - name: gold_youtube_top_channels
+    description: >
+      Top YouTube channels by watch count and total watch time with
+      engagement metrics and viewing patterns.
+    columns:
+      - name: channel_id
+        description: YouTube channel ID
+        data_type: string
+        tests:
+          - not_null
+      - name: channel_title
+        description: Channel name
+        data_type: string
+      - name: watch_count
+        description: Number of unique videos watched from this channel
+        data_type: uint64
+      - name: total_watch_time_seconds
+        description: Total watch time in seconds (assuming 60% completion rate)
+        data_type: float64
+      - name: avg_video_duration_seconds
+        description: Average video duration in seconds
+        data_type: float64
+      - name: total_watch_time_formatted
+        description: Formatted total watch time (e.g., "5h 30m")
+        data_type: string
+      - name: avg_duration_formatted
+        description: Formatted average duration (e.g., "15m 20s")
+        data_type: string
+      - name: avg_view_count
+        description: Average view count across watched videos
+        data_type: float64
+      - name: avg_like_count
+        description: Average like count across watched videos
+        data_type: float64
+      - name: avg_comment_count
+        description: Average comment count across watched videos
+        data_type: float64
+      - name: avg_like_rate
+        description: Average like rate percentage
+        data_type: float64
+      - name: primary_category
+        description: Primary category for this channel
+        data_type: string
+      - name: first_watched
+        description: Date of first video watched from this channel
+        data_type: date
+      - name: last_watched
+        description: Date of last video watched from this channel
+        data_type: date
+      - name: unique_videos_watched
+        description: Number of unique videos watched (same as watch_count)
+        data_type: uint64
+
+  - name: gold_youtube_category_breakdown
+    description: >
+      Watch activity breakdown by video category showing content preferences
+      and engagement metrics by category type.
+    columns:
+      - name: category_name
+        description: YouTube category name
+        data_type: string
+        tests:
+          - not_null
+      - name: category_id
+        description: YouTube category ID
+        data_type: string
+      - name: watch_count
+        description: Number of videos watched in this category
+        data_type: uint64
+      - name: total_watch_time_seconds
+        description: Total watch time in seconds
+        data_type: uint64
+      - name: avg_video_duration_seconds
+        description: Average video duration in seconds
+        data_type: float64
+      - name: total_watch_time_formatted
+        description: Formatted total watch time (e.g., "10h 45m")
+        data_type: string
+      - name: watch_percentage
+        description: Percentage of total watches in this category
+        data_type: float64
+      - name: time_percentage
+        description: Percentage of total watch time in this category
+        data_type: float64
+      - name: avg_view_count
+        description: Average view count for videos in this category
+        data_type: float64
+      - name: avg_like_rate
+        description: Average like rate percentage
+        data_type: float64
+      - name: unique_channels
+        description: Number of unique channels watched in this category
+        data_type: uint64
+      - name: unique_videos
+        description: Number of unique videos watched in this category
+        data_type: uint64
+
+  - name: gold_youtube_kpis_with_watch_time
+    description: >
+      Comprehensive YouTube KPIs including watch time metrics from enriched data.
+      Combines activity counts with actual video duration data for insights.
+    columns:
+      - name: total_activities
+        description: Total number of all YouTube activities
+        data_type: uint64
+      - name: videos_watched
+        description: Total videos watched
+        data_type: uint64
+      - name: total_searches
+        description: Total searches performed
+        data_type: uint64
+      - name: total_visits
+        description: Total page visits
+        data_type: uint64
+      - name: total_ads_watched
+        description: Total ads watched
+        data_type: uint64
+      - name: total_other
+        description: Total other activities
+        data_type: uint64
+      - name: total_watch_time_seconds
+        description: Total watch time in seconds (enriched data only)
+        data_type: uint64
+      - name: avg_watch_time_seconds
+        description: Average watch time per video in seconds
+        data_type: float64
+      - name: total_watch_time_formatted
+        description: Formatted total watch time (e.g., "150h 30m")
+        data_type: string
+      - name: avg_watch_time_formatted
+        description: Formatted average watch time (e.g., "12m 45s")
+        data_type: string
+      - name: unique_channels
+        description: Number of unique channels watched
+        data_type: uint64
+      - name: unique_videos
+        description: Number of unique videos watched
+        data_type: uint64
+      - name: unique_categories
+        description: Number of unique categories watched
+        data_type: uint64
+      - name: avg_view_count
+        description: Average view count across watched videos
+        data_type: float64
+      - name: avg_like_count
+        description: Average like count across watched videos
+        data_type: float64
+      - name: avg_like_rate
+        description: Average like rate percentage
+        data_type: float64
+      - name: first_activity_date
+        description: Date of first recorded activity
+        data_type: date
+      - name: last_activity_date
+        description: Date of last recorded activity
+        data_type: date
+      - name: total_days_tracked
+        description: Total number of days with activity
+        data_type: uint64
+      - name: avg_activities_per_day
+        description: Average activities per day
+        data_type: float64
+      - name: avg_watched_per_day
+        description: Average videos watched per day
+        data_type: float64
+      - name: avg_watch_time_per_day_seconds
+        description: Average watch time per day in seconds
+        data_type: float64
+      - name: ads_percentage
+        description: Percentage of videos that were ads
+        data_type: float64
+      - name: enrichment_percentage
+        description: Percentage of activities with enriched metadata
+        data_type: float64
+
+  - name: gold_youtube_daily_watch_time_breakdown
+    description: >
+      Daily breakdown of watch time and activity patterns showing trends
+      over time with day-level granularity.
+    columns:
+      - name: activity_date
+        description: Date of activity
+        data_type: date
+        tests:
+          - not_null
+      - name: total_videos_watched
+        description: Number of videos watched on this date
+        data_type: uint64
+      - name: total_watch_time_seconds
+        description: Total watch time in seconds
+        data_type: uint64
+      - name: total_watch_time_formatted
+        description: Formatted total watch time
+        data_type: string
+      - name: avg_video_duration_seconds
+        description: Average video duration in seconds
+        data_type: float64
+      - name: unique_channels
+        description: Number of unique channels watched
+        data_type: uint64
+      - name: unique_categories
+        description: Number of unique categories watched
+        data_type: uint64
+      - name: day_of_week
+        description: Day of week (1=Monday, 7=Sunday)
+        data_type: uint8
+      - name: day_name
+        description: Day name
+        data_type: string
+      - name: is_weekend
+        description: Weekend flag (1=weekend, 0=weekday)
+        data_type: uint8
+      - name: year
+        description: Year
+        data_type: uint16
+      - name: month
+        description: Month number (1-12)
+        data_type: uint8
+      - name: quarter
+        description: Quarter (1-4)
+        data_type: uint8

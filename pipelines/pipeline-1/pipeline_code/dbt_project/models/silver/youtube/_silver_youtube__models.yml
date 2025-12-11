@@ -1,0 +1,274 @@
+version: 2
+
+models:
+  - name: silver_youtube_watch_history
+    description: >
+      Cleaned and enriched YouTube watch history with temporal attributes
+      and activity classification. Removes duplicates and adds derived dimensions for analysis.
+    columns:
+      - name: activity_id
+        description: Unique identifier generated from activity details
+        data_type: uint64
+        tests:
+          - not_null
+          - unique
+      - name: header
+        description: Activity header from YouTube
+        data_type: string
+      - name: title
+        description: Activity title/description
+        data_type: string
+      - name: activity_time
+        description: Timestamp when the activity occurred
+        data_type: datetime64(3)
+        tests:
+          - not_null
+      - name: activity_date
+        description: Date of the activity
+        data_type: date
+      - name: title_url
+        description: YouTube video URL
+        data_type: string
+      - name: description
+        description: Additional activity description
+        data_type: string
+      - name: video_id
+        description: Extracted YouTube video ID from URL
+        data_type: string
+      - name: activity_hour
+        description: Hour of day (0-23)
+        data_type: uint8
+      - name: day_of_week
+        description: Day of week (1=Monday, 7=Sunday)
+        data_type: uint8
+      - name: day_name
+        description: Name of the day (e.g., 'Monday')
+        data_type: string
+      - name: week_start
+        description: Start date of the week
+        data_type: date
+      - name: month_start
+        description: Start date of the month
+        data_type: date
+      - name: year
+        description: Year of the activity
+        data_type: uint16
+      - name: month
+        description: Month number (1-12)
+        data_type: uint8
+      - name: quarter
+        description: Quarter number (1-4)
+        data_type: uint8
+      - name: time_of_day
+        description: Time period classification (Morning/Afternoon/Evening/Night)
+        data_type: string
+      - name: is_weekend
+        description: Flag indicating if activity occurred on weekend (1=yes, 0=no)
+        data_type: uint8
+      - name: activity_type
+        description: Type of activity (watched/search/visit/subscribe/like/comment/share/other)
+        data_type: string
+      - name: products
+        description: Array of Google products associated with this activity
+        data_type: array(string)
+      - name: products_list
+        description: Comma-separated list of Google products
+        data_type: string
+      - name: activity_controls
+        description: Array of activity control settings
+        data_type: array(string)
+      - name: activity_controls_list
+        description: Comma-separated list of activity controls
+        data_type: string
+      - name: details
+        description: Array of additional details
+        data_type: array(string)
+      - name: details_list
+        description: Comma-separated list of details
+        data_type: string
+      - name: is_from_ads
+        description: Flag indicating if video was from Google Ads (1=yes, 0=no)
+        data_type: uint8
+      - name: export_timestamp
+        description: When this data was exported from Google
+        data_type: datetime64(3)
+      - name: export_job_id
+        description: Unique identifier for the export job
+        data_type: string
+      - name: export_date
+        description: Date of the export
+        data_type: date
+      - name: source
+        description: Source system (e.g., 'google')
+        data_type: string
+      - name: resource
+        description: Resource type (e.g., 'youtube')
+        data_type: string
+      - name: record_count
+        description: Number of records in the export
+        data_type: uint64
+      - name: dag_id
+        description: Airflow DAG ID that processed this export
+        data_type: string
+      - name: run_id
+        description: Airflow run ID for this export
+        data_type: string
+
+  - name: silver_youtube_watch_history_enriched
+    description: >
+      YouTube watch history enriched with video metadata from YouTube Data API v3.
+      Joins watch history with detailed video information including channel, duration,
+      category, and engagement statistics.
+    columns:
+      - name: activity_id
+        description: Unique activity identifier
+        data_type: uint64
+        tests:
+          - not_null
+      - name: header
+        description: Activity header
+        data_type: string
+      - name: title
+        description: Activity title
+        data_type: string
+      - name: activity_time
+        description: Timestamp of the activity
+        data_type: datetime64(3)
+      - name: activity_date
+        description: Date of the activity
+        data_type: date
+      - name: title_url
+        description: YouTube video URL
+        data_type: string
+      - name: description
+        description: Activity description
+        data_type: string
+      - name: video_id
+        description: YouTube video ID
+        data_type: string
+      - name: activity_hour
+        description: Hour of day (0-23)
+        data_type: uint8
+      - name: day_of_week
+        description: Day of week (1=Monday, 7=Sunday)
+        data_type: uint8
+      - name: day_name
+        description: Day name
+        data_type: string
+      - name: week_start
+        description: Start date of the week
+        data_type: date
+      - name: month_start
+        description: Start date of the month
+        data_type: date
+      - name: year
+        description: Year
+        data_type: uint16
+      - name: month
+        description: Month number (1-12)
+        data_type: uint8
+      - name: quarter
+        description: Quarter (1-4)
+        data_type: uint8
+      - name: time_of_day
+        description: Time period (Morning/Afternoon/Evening/Night)
+        data_type: string
+      - name: is_weekend
+        description: Weekend flag (1=weekend, 0=weekday)
+        data_type: uint8
+      - name: activity_type
+        description: Activity type classification
+        data_type: string
+      - name: is_from_ads
+        description: Flag if video was from ads (1=yes, 0=no)
+        data_type: uint8
+      - name: products
+        description: Array of Google products
+        data_type: array(string)
+      - name: products_list
+        description: Comma-separated list of products
+        data_type: string
+      - name: activity_controls
+        description: Array of activity controls
+        data_type: array(string)
+      - name: activity_controls_list
+        description: Comma-separated list of activity controls
+        data_type: string
+      - name: details
+        description: Array of additional details
+        data_type: array(string)
+      - name: details_list
+        description: Comma-separated list of details
+        data_type: string
+      - name: channel_id
+        description: YouTube channel ID (from API metadata)
+        data_type: string
+      - name: channel_title
+        description: Channel name (from API metadata)
+        data_type: string
+      - name: duration_seconds
+        description: Video duration in seconds (from API metadata)
+        data_type: int32
+      - name: category_id
+        description: YouTube category ID (from API metadata)
+        data_type: string
+      - name: category_name
+        description: Category name (from API metadata)
+        data_type: string
+      - name: view_count
+        description: Video view count (from API metadata)
+        data_type: uint64
+      - name: like_count
+        description: Video like count (from API metadata)
+        data_type: uint64
+      - name: comment_count
+        description: Video comment count (from API metadata)
+        data_type: uint64
+      - name: video_published_at
+        description: Video publication timestamp
+        data_type: datetime64(3)
+      - name: video_published_date
+        description: Video publication date
+        data_type: date
+      - name: duration_formatted
+        description: Formatted duration (HH:MM:SS)
+        data_type: string
+      - name: duration_category
+        description: Duration classification (shorts/short/medium/long/very_long/unknown)
+        data_type: string
+      - name: like_rate_percent
+        description: Like rate as percentage of views
+        data_type: float64
+      - name: comment_rate_percent
+        description: Comment rate as percentage of views
+        data_type: float64
+      - name: is_enriched
+        description: Flag indicating if metadata was successfully joined (1=yes, 0=no)
+        data_type: uint8
+      - name: metadata_enriched_at
+        description: Timestamp when metadata was fetched from YouTube API
+        data_type: datetime64(3)
+      - name: export_timestamp
+        description: Export timestamp
+        data_type: datetime64(3)
+      - name: export_job_id
+        description: Export job ID
+        data_type: string
+      - name: export_date
+        description: Export date
+        data_type: date
+      - name: source
+        description: Source system
+        data_type: string
+      - name: resource
+        description: Resource type
+        data_type: string
+      - name: record_count
+        description: Record count in export
+        data_type: uint64
+      - name: dag_id
+        description: Airflow DAG ID
+        data_type: string
+      - name: run_id
+        description: Airflow run ID
+        data_type: string
