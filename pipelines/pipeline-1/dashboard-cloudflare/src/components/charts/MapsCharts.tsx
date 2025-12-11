@@ -27,19 +27,51 @@ const formatActivityType = (type: string): string => {
 };
 
 // Helper to get icon for activity type
-const getActivityIcon = (type: string): string => {
-  const iconMap: Record<string, string> = {
-    'directions': '🧭',
-    'search': '🔍',
-    'explore': '🗺️',
-    'place_view': '👁️',
-    'app_usage': '📱',
-    'view': '👀',
-    'review': '⭐',
-    'save': '💾',
-    'other': '📍',
-  };
-  return iconMap[type] || '📍';
+const getActivityIcon = (type: string): JSX.Element => {
+  switch (type) {
+    case 'directions':
+      // Arrow/Navigation icon
+      return (
+        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2L8 14M8 2L4 6M8 2L12 6" stroke="#A855F7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      );
+    case 'search':
+      // Magnifying glass icon
+      return (
+        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+          <circle cx="7" cy="7" r="4" stroke="#A855F7" strokeWidth="1.5" fill="none"/>
+          <path d="M10 10L13 13" stroke="#A855F7" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      );
+    case 'explore':
+      // Compass icon
+      return (
+        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="5" stroke="#A855F7" strokeWidth="1.5" fill="none"/>
+          <path d="M8 3L10 8L8 13L6 8L8 3Z" fill="#A855F7"/>
+        </svg>
+      );
+    case 'place_view':
+    case 'view':
+    case 'app_usage':
+    case 'save':
+    case 'review':
+      // Location pin icon
+      return (
+        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2C6.067 2 4.5 3.567 4.5 5.5C4.5 8.25 8 13 8 13C8 13 11.5 8.25 11.5 5.5C11.5 3.567 9.933 2 8 2ZM8 7C7.172 7 6.5 6.328 6.5 5.5C6.5 4.672 7.172 4 8 4C8.828 4 9.5 4.672 9.5 5.5C9.5 6.328 8.828 7 8 7Z" fill="#A855F7"/>
+        </svg>
+      );
+    default:
+      // Target/circle icon for other types
+      return (
+        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="5" stroke="#A855F7" strokeWidth="1.5" fill="none"/>
+          <circle cx="8" cy="8" r="1.5" fill="#A855F7"/>
+        </svg>
+      );
+  }
 };
 
 // Helper to format time ago
@@ -261,14 +293,16 @@ export function MapsCharts({ data }: { data: MapsData }) {
       <section className="mb-12">
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
           <h2 className="text-2xl font-bold mb-6">Last Activity</h2>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#A855F7]/50 scrollbar-track-transparent">
             {data.lastActivities.map((activity, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="text-2xl">{getActivityIcon(activity.type)}</div>
+                  <div className="w-8 h-8 rounded-lg bg-[#A855F7]/20 flex items-center justify-center flex-shrink-0">
+                    {getActivityIcon(activity.type)}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm truncate">{activity.location}</div>
                     <div className="text-xs text-white/60">{formatActivityType(activity.type)}</div>
