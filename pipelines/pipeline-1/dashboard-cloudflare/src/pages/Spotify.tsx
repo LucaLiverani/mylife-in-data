@@ -27,6 +27,7 @@ interface RecentTrack {
   track: string;
   artist: string;
   time: string;
+  relativeTime: string;
   albumArt: string;
 }
 
