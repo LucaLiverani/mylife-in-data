@@ -7,13 +7,13 @@
 
 import { queryClickHouse } from '../../_shared/clickhouse';
 import type { Env } from '../../_shared/types';
-import { formatDistanceToNow } from 'date-fns';
 
 interface RecentTrack {
   track: string;
   artist: string;
   played_at: string;
   album_art: string;
+  relative_time: string;
 }
 
 /**
@@ -32,11 +32,12 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
 
     const results = await queryClickHouse<RecentTrack>(env, query);
 
-    // Format the results with relative timestamps
+    // Format the results with both relative and actual timestamps
     const formattedResults = results.map(track => ({
       track: track.track,
       artist: track.artist,
-      time: formatDistanceToNow(new Date(track.played_at), { addSuffix: true }),
+      time: track.played_at,
+      relativeTime: track.relative_time,
       albumArt: track.album_art || `https://picsum.photos/seed/${track.artist}/100`,
     }));
 
