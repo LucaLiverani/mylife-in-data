@@ -42,10 +42,30 @@ export function SpotifyCharts({ data, recentTracks }: SpotifyChartsProps) {
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={data.topArtists} layout="vertical">
                 <CartesianGrid {...CHART_STYLES.cartesianGrid} />
-                <XAxis type="number" stroke="#fff" />
+                <XAxis
+                  type="number"
+                  stroke="#fff"
+                  label={{ value: 'Hours', position: 'insideBottom', offset: -5, fill: 'rgba(255, 255, 255, 0.7)' }}
+                />
                 <YAxis type="category" dataKey="name" stroke="#fff" width={120} />
-                <Tooltip contentStyle={CHART_STYLES.tooltip.contentStyle} />
-                <Bar dataKey="plays" fill={CHART_COLORS.spotify} radius={[0, 4, 4, 0]} />
+                <Tooltip
+                  contentStyle={CHART_STYLES.tooltip.contentStyle}
+                  formatter={(value: number, name: string, props: any) => [
+                    `${value.toFixed(1)}h (${props.payload.plays} plays)`,
+                    'Listening Time'
+                  ]}
+                />
+                <Bar
+                  dataKey="hours"
+                  fill={CHART_COLORS.spotify}
+                  radius={[0, 4, 4, 0]}
+                  label={{
+                    position: 'right',
+                    fill: '#fff',
+                    fontSize: 12,
+                    formatter: (value: number) => `${value.toFixed(1)}h`
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -136,7 +156,8 @@ export function SpotifyCharts({ data, recentTracks }: SpotifyChartsProps) {
 
                 {/* Time */}
                 <div className="text-right flex-shrink-0">
-                  <div className="text-sm text-[#1DB954]">{track.time}</div>
+                  <div className="text-sm font-semibold text-[#1DB954]">{track.relativeTime}</div>
+                  <div className="text-xs text-white/60">{track.time}</div>
                 </div>
               </div>
             ))}

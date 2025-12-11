@@ -1,29 +1,43 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CHART_COLORS, CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatChartDate } from './chartConfig';
 
-interface DailyActivityBreakdown {
+interface DailyWatchTimeBreakdown {
   date: string;
-  watched: number;
-  searches: number;
-  visits: number;
-  subscriptions: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  ads: number;
-  other: number;
-  totalActivities: number;
-  uniqueVideos: number;
+  watchedHours: number;
+  searchesHours: number;
+  visitsHours: number;
+  adsHours: number;
+  otherHours: number;
+  totalHours: number;
+  watchedCount: number;
+  searchesCount: number;
+  visitsCount: number;
+  adsCount: number;
   dayName: string;
   isWeekend: boolean;
 }
 
 interface YouTubeData {
-  topVideos: Array<{ rank: number; title: string; videoId: string; watchCount: number; category: string }>;
-  activityTypes: Array<{ name: string; value: number; count: number }>;
-  dailyActivityBreakdown: DailyActivityBreakdown[];
+  topChannels: Array<{
+    channelId: string;
+    channelTitle: string;
+    watchCount: number;
+    totalWatchTime: string;
+    watchTimeHours: number;
+    category: string;
+    uniqueVideos: number;
+  }>;
+  categoryBreakdown: Array<{
+    name: string;
+    watchCount: number;
+    watchTime: string;
+    watchPercentage: number;
+    timePercentage: number;
+    uniqueChannels: number;
+  }>;
+  dailyWatchTimeBreakdown: DailyWatchTimeBreakdown[];
   recentVideos: Array<{ title: string; time: string; relativeTime: string; timeOfDay: string; isFromAds: boolean }>;
   hourlyActivity: Array<{ hour: string; activities: number }>;
 }
@@ -42,13 +56,13 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
   };
 
   // Transform data for chart
-  const chartData = data.dailyActivityBreakdown.map((day) => ({
+  const chartData = data.dailyWatchTimeBreakdown.map((day) => ({
     date: formatChartDate(day.date),
-    Watched: day.watched,
-    Searches: day.searches,
-    Visits: day.visits,
-    Ads: day.ads,
-    Other: day.other + day.subscriptions + day.likes + day.comments + day.shares,
+    Watched: day.watchedHours,
+    Searches: day.searchesHours,
+    Visits: day.visitsHours,
+    Ads: day.adsHours,
+    Other: day.otherHours,
   }));
 
   const series = [
@@ -59,46 +73,54 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
     { name: 'Other', color: '#8b5cf6' },
   ] as const;
 
-  // Calculate totals
-  const totalWatched = data.dailyActivityBreakdown.reduce((a, b) => a + b.watched, 0);
-  const totalSearches = data.dailyActivityBreakdown.reduce((a, b) => a + b.searches, 0);
-  const totalAds = data.dailyActivityBreakdown.reduce((a, b) => a + b.ads, 0);
-  const totalActivities = data.dailyActivityBreakdown.reduce((a, b) => a + b.totalActivities, 0);
-  const avgPerDay = data.dailyActivityBreakdown.length > 0
-    ? (totalActivities / data.dailyActivityBreakdown.length).toFixed(1)
+  // Calculate totals in hours
+  const totalWatchedHours = data.dailyWatchTimeBreakdown.reduce((a, b) => a + b.watchedHours, 0);
+  const totalSearchesHours = data.dailyWatchTimeBreakdown.reduce((a, b) => a + b.searchesHours, 0);
+  const totalAdsHours = data.dailyWatchTimeBreakdown.reduce((a, b) => a + b.adsHours, 0);
+  const totalHours = data.dailyWatchTimeBreakdown.reduce((a, b) => a + b.totalHours, 0);
+  const avgHoursPerDay = data.dailyWatchTimeBreakdown.length > 0
+    ? (totalHours / data.dailyWatchTimeBreakdown.length).toFixed(1)
     : '0';
 
   const mostActive = [
-    { name: 'Watched', total: totalWatched, color: CHART_COLORS.youtube },
-    { name: 'Searches', total: totalSearches, color: '#3b82f6' },
-    { name: 'Ads', total: totalAds, color: '#f59e0b' },
+    { name: 'Watched', total: totalWatchedHours, color: CHART_COLORS.youtube },
+    { name: 'Searches', total: totalSearchesHours, color: '#3b82f6' },
+    { name: 'Ads', total: totalAdsHours, color: '#f59e0b' },
   ].sort((a, b) => b.total - a.total)[0];
+
+  // Prepare data for pie chart
+  const pieData = data.categoryBreakdown.slice(0, 5).map(cat => ({
+    name: cat.name,
+    value: cat.watchCount,
+    watchCount: cat.watchCount,
+    watchTime: cat.watchTime,
+  }));
 
   return (
     <>
-      {/* First: Daily Activity Breakdown - Full Width */}
+      {/* First: Daily Watch Time Breakdown - Full Width */}
       <section className="mb-12">
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-          <h2 className="text-2xl font-bold mb-6">Daily Activity Breakdown (Last 30 Days)</h2>
+          <h2 className="text-2xl font-bold mb-6">Daily Watch Time (Last 30 Days)</h2>
 
           {/* Stats and KPIs */}
           <div className="flex justify-between items-start mb-6">
             <div className="flex gap-8">
               <div>
-                <p className="text-xs text-white/50 mb-1">Total Activities</p>
-                <p className="text-2xl font-bold text-white">{totalActivities.toLocaleString()}</p>
+                <p className="text-xs text-white/50 mb-1">Total Watch Time</p>
+                <p className="text-2xl font-bold text-white">{totalHours.toFixed(1)}h</p>
                 <p className="text-xs text-white/40">last 30 days</p>
               </div>
               <div>
                 <p className="text-xs text-white/50 mb-1">Daily Average</p>
-                <p className="text-2xl font-bold text-white">{avgPerDay}</p>
+                <p className="text-2xl font-bold text-white">{avgHoursPerDay}h</p>
                 <p className="text-xs text-white/40">per day</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-white/50 mb-1">Most Common</p>
+              <p className="text-xs text-white/50 mb-1">Most Time On</p>
               <p className="text-xl font-bold" style={{ color: mostActive.color }}>{mostActive.name}</p>
-              <p className="text-xs text-white/40">{mostActive.total.toLocaleString()} activities</p>
+              <p className="text-xs text-white/40">{mostActive.total.toFixed(1)}h total</p>
             </div>
           </div>
 
@@ -132,7 +154,7 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
                 stroke="#fff"
                 tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
                 tickLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
-                label={{ value: 'Activities', angle: -90, position: 'insideLeft', fill: 'rgba(255, 255, 255, 0.7)' }}
+                label={{ value: 'Hours', angle: -90, position: 'insideLeft', fill: 'rgba(255, 255, 255, 0.7)' }}
               />
               <Tooltip
                 contentStyle={CHART_STYLES.tooltip.contentStyle}
@@ -193,54 +215,78 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
         </Card>
       </section>
 
-      {/* Second: Top Videos and Activity Types */}
+      {/* Second: Top Channels and Category Breakdown */}
       <section className="mb-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Videos */}
+          {/* Top Channels */}
           <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Top 10 Videos</h2>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {data.topVideos.map((video, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
-                >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="text-2xl font-bold text-[#FF0000] w-8">#{video.rank}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">{video.title}</div>
-                      <div className="text-xs text-white/60">{video.category}</div>
-                    </div>
-                  </div>
-                  <div className="text-right ml-4">
-                    <div className="text-lg font-bold text-[#FF0000]">{video.watchCount}</div>
-                    <div className="text-xs text-white/60">watches</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-2xl font-bold mb-6">Top Channels</h2>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={data.topChannels.slice(0, 10)} layout="vertical">
+                <CartesianGrid {...CHART_STYLES.cartesianGrid} />
+                <XAxis
+                  type="number"
+                  stroke="#fff"
+                  label={{ value: 'Hours', position: 'insideBottom', offset: -5, fill: 'rgba(255, 255, 255, 0.7)' }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="channelTitle"
+                  stroke="#fff"
+                  width={120}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={CHART_STYLES.tooltip.contentStyle}
+                  formatter={(value: number, name: string, props: any) => [
+                    `${value.toFixed(1)}h (${props.payload.watchCount} videos)`,
+                    'Watch Time'
+                  ]}
+                />
+                <Bar
+                  dataKey="watchTimeHours"
+                  fill={CHART_COLORS.youtube}
+                  radius={[0, 4, 4, 0]}
+                  label={{
+                    position: 'right',
+                    fill: '#fff',
+                    fontSize: 12,
+                    formatter: (value: number) => `${value.toFixed(1)}h`
+                  }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </Card>
 
-          {/* Activity Types */}
+          {/* Category Breakdown */}
           <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Activity Types</h2>
-            <div className="space-y-4 pt-4">
-              {data.activityTypes.map((type, i: number) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>{type.name}</span>
-                    <span className="text-[#FF0000] font-semibold">{type.value}%</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-[#FF0000] to-[#CC0000] h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${type.value}%` }}
-                    />
-                  </div>
-                  <div className="text-xs text-white/40">{type.count.toLocaleString()} activities</div>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-2xl font-bold mb-6">Category Distribution</h2>
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(entry: unknown) => {
+                    const data = entry as { name: string; value: number; percent?: number };
+                    return `${data.name} ${data.percent ? (data.percent * 100).toFixed(0) : 0}%`;
+                  }}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index: number) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS.youtubeShades[index % 5]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={CHART_STYLES.tooltip.contentStyle}
+                  itemStyle={{ color: '#fff' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </Card>
         </div>
       </section>
@@ -274,14 +320,24 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
       <section className="mb-12">
         <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
           <h2 className="text-2xl font-bold mb-6">Recent Videos</h2>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FF0000]/50 scrollbar-track-transparent">
             {data.recentVideos.map((video, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="text-2xl">{video.isFromAds ? '📺' : '▶️'}</div>
+                  <div className="w-8 h-8 rounded-lg bg-[#FF0000]/20 flex items-center justify-center flex-shrink-0">
+                    {video.isFromAds ? (
+                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="5" width="12" height="6" rx="1" fill="#FF0000"/>
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+                        <path d="M5 3L13 8L5 13V3Z" fill="#FF0000"/>
+                      </svg>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm truncate">{video.title}</div>
                     <div className="text-xs text-white/60">
