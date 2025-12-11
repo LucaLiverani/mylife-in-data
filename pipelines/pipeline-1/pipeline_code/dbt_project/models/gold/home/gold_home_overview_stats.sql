@@ -18,10 +18,15 @@
 WITH spotify_stats AS (
     SELECT
         total_plays_raw AS songsStreamed,
-        unique_artists_raw AS artistsListened,
-        '0' AS videosWatched,
-        '0' AS searchQueries
+        unique_artists_raw AS artistsListened
     FROM {{ ref('gold_spotify_kpis') }}
+),
+
+youtube_stats AS (
+    SELECT
+        videos_watched AS videosWatched,
+        unique_channels AS youtubeChannels
+    FROM {{ ref('gold_youtube_kpis_with_watch_time') }}
 ),
 
 maps_stats AS (
@@ -33,8 +38,10 @@ maps_stats AS (
 SELECT
     s.songsStreamed,
     s.artistsListened,
-    s.videosWatched,
-    s.searchQueries,
+    y.videosWatched,
+    y.youtubeChannels,
+    '0' AS searchQueries,
     m.citiesVisited
 FROM spotify_stats s
+CROSS JOIN youtube_stats y
 CROSS JOIN maps_stats m
