@@ -136,6 +136,38 @@ def initiate_export(resource: str, **context):
 
     log.info(f"Initiating export for resource: {resource}")
 
+    # Check if we've exported this resource within the last 24 hours
+    # Google API allows only 1 export per resource per 24 hours
+    last_export_var_key = f'google_portability_last_export_{resource.replace(".", "_")}'
+
+    try:
+        last_export_time_str = Variable.get(last_export_var_key, default_var=None)
+        if last_export_time_str:
+            last_export_time = pendulum.parse(last_export_time_str)
+            hours_since_last_export = (pendulum.now('UTC') - last_export_time).total_hours()
+
+            if hours_since_last_export < 24:
+                next_export_time = last_export_time.add(hours=24)
+                log.warning(f"Export requested too soon for {resource}")
+                log.info(f"Last export: {last_export_time.to_iso8601_string()}")
+                log.info(f"Hours since last export: {hours_since_last_export:.1f}")
+                log.info(f"Next export available at: {next_export_time.to_iso8601_string()}")
+                log.info("Skipping export to comply with Google's 24-hour rate limit")
+
+                return {
+                    'job_id': None,
+                    'resource': resource,
+                    'status': 'SKIPPED_TOO_SOON',
+                    'reason': 'less_than_24_hours_since_last_export',
+                    'last_export': last_export_time.to_iso8601_string(),
+                    'next_available': next_export_time.to_iso8601_string(),
+                    'timestamp': pendulum.now('UTC').isoformat(),
+                }
+            else:
+                log.info(f"Last export was {hours_since_last_export:.1f} hours ago - OK to proceed")
+    except Exception as e:
+        log.warning(f"Could not check last export time: {e} - proceeding with export")
+
     try:
         # Get appropriate scopes for resource
         if 'youtube' in resource:
@@ -175,11 +207,17 @@ def initiate_export(resource: str, **context):
         log.info(f"  Resource: {resource}")
         log.info(f"  Job ID: {job_id}")
 
+        # Save the export timestamp to prevent duplicate exports within 24 hours
+        export_time = pendulum.now('UTC')
+        last_export_var_key = f'google_portability_last_export_{resource.replace(".", "_")}'
+        Variable.set(last_export_var_key, export_time.to_iso8601_string())
+        log.info(f"Saved last export time: {export_time.to_iso8601_string()}")
+
         # Store job metadata
         job_metadata = {
             'job_id': job_id,
             'resource': resource,
-            'initiated_at': pendulum.now('UTC').isoformat(),
+            'initiated_at': export_time.isoformat(),
             'initiated_by_dag': context['dag'].dag_id,
             'initiated_by_run_id': context['run_id'],
             'status': 'INITIATED',
@@ -209,6 +247,41 @@ def initiate_export(resource: str, **context):
                 'reason': 'export_already_in_progress',
                 'timestamp': pendulum.now('UTC').isoformat(),
             }
+
+        # Check for 429 Rate Limit (Google allows export once per 24 hours)
+        elif '429' in error_msg and ('RESOURCE_EXHAUSTED' in error_msg or 'Too Many Requests' in error_msg):
+            log.warning(f"Rate limit reached for {resource} - already exported within 24 hours")
+            log.info("Google Data Portability API limits: 1 export per resource per 24 hours")
+
+            # Extract next available time from error message
+            import re
+            next_export_match = re.search(r'after (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)', error_msg)
+            next_export_time_str = next_export_match.group(1) if next_export_match else None
+
+            if next_export_time_str:
+                next_export_time = pendulum.parse(next_export_time_str)
+                log.info(f"Next export available at: {next_export_time.to_iso8601_string()}")
+
+                # Update the last export variable to prevent retries before this time
+                last_export_var_key = f'google_portability_last_export_{resource.replace(".", "_")}'
+                # Calculate when the last export happened (24 hours before next available time)
+                last_export_time = next_export_time.subtract(hours=24)
+                Variable.set(last_export_var_key, last_export_time.to_iso8601_string())
+                log.info(f"Updated last export time to: {last_export_time.to_iso8601_string()}")
+            else:
+                log.warning("Could not extract next export time from error message")
+                next_export_time_str = 'unknown'
+
+            # Return a placeholder to indicate we skipped due to rate limit
+            return {
+                'job_id': None,
+                'resource': resource,
+                'status': 'SKIPPED_RATE_LIMIT',
+                'reason': 'already_exported_within_24_hours',
+                'next_available': next_export_time_str,
+                'timestamp': pendulum.now('UTC').isoformat(),
+            }
+
         else:
             log.error(f"Failed to initiate export: {e}")
             raise AirflowException(f"Failed to initiate export for {resource}: {e}")

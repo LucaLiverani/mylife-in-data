@@ -89,18 +89,89 @@ class DataPortabilityClient:
         """
         Handle OAuth authentication flow with token caching.
         Similar to Spotify's token management.
+
+        Improved to handle token rotation and persistence issues.
         """
         # Check if we have cached credentials
         if os.path.exists(self.token_cache_path):
+            print(f"Loading cached token from {self.token_cache_path}")
             with open(self.token_cache_path, 'rb') as token:
                 self.credentials = pickle.load(token)
+
+            # Log token info for debugging (without exposing sensitive data)
+            if self.credentials:
+                has_refresh = bool(self.credentials.refresh_token)
+                is_valid = self.credentials.valid
+                is_expired = self.credentials.expired if hasattr(self.credentials, 'expired') else False
+                print(f"Token state: valid={is_valid}, expired={is_expired}, has_refresh_token={has_refresh}")
 
         # If there are no (valid) credentials available, let the user log in
         if not self.credentials or not self.credentials.valid:
             if self.credentials and self.credentials.expired and self.credentials.refresh_token:
-                print("Refreshing access token...")
-                self.credentials.refresh(Request())
+                print("Access token expired. Refreshing...")
+
+                # Store the old refresh token to detect rotation
+                old_refresh_token = self.credentials.refresh_token
+
+                try:
+                    # Attempt to refresh the token
+                    self.credentials.refresh(Request())
+
+                    # Check if refresh token was rotated (Google sometimes does this)
+                    new_refresh_token = self.credentials.refresh_token
+                    if new_refresh_token != old_refresh_token:
+                        print("Refresh token was rotated by Google")
+
+                    # CRITICAL: Save the refreshed credentials immediately
+                    # This is essential because Google may rotate the refresh token
+                    self._save_credentials()
+                    print(f"✓ Token refreshed and saved to {self.token_cache_path}")
+
+                except Exception as refresh_error:
+                    # Token refresh failed - this is often due to:
+                    # 1. OAuth consent screen in "Testing" mode (tokens expire after 7 days)
+                    # 2. Refresh token revoked by user
+                    # 3. Scope changes
+
+                    error_msg = (
+                        f"Token refresh failed: {refresh_error}\n\n"
+                        "Common causes:\n"
+                        "1. OAuth Consent Screen in 'Testing' mode (tokens expire after 7 days)\n"
+                        "   - Go to: https://console.cloud.google.com/apis/credentials/consent\n"
+                        "   - Change Publishing Status to 'In Production'\n"
+                        "   - Then re-authenticate (tokens last indefinitely in production)\n\n"
+                        "2. Refresh token was revoked\n"
+                        "   - Check: https://myaccount.google.com/permissions\n\n"
+                        "3. Token file may not be writable in this environment\n\n"
+                        "To fix:\n"
+                        "1. Run locally: python google_data_portability/authenticate.py\n"
+                        "2. This will open a browser for re-authentication\n"
+                        "3. Copy the new token to Airflow:\n"
+                        f"   - Local: {self.token_cache_path}\n"
+                        f"   - Airflow: /opt/airflow/dags/tokens/.google_portability_token.pickle\n"
+                        "4. Verify OAuth consent screen is in 'Production' mode\n"
+                    )
+                    raise Exception(error_msg)
             else:
+                # No valid credentials and no refresh token
+                # Check if we're in a non-interactive environment
+                is_interactive = os.isatty(0)
+                if not is_interactive:
+                    error_msg = (
+                        "No valid authentication token found.\n\n"
+                        "Cannot run interactive OAuth flow in non-interactive environment (e.g., Airflow).\n\n"
+                        "To fix this:\n"
+                        "1. Verify OAuth consent screen is in 'Production' mode:\n"
+                        "   - Go to: https://console.cloud.google.com/apis/credentials/consent\n"
+                        "   - Publishing Status should be 'In Production' (not 'Testing')\n\n"
+                        "2. Run locally: python google_data_portability/authenticate.py\n"
+                        "3. This will open a browser for authentication\n"
+                        "4. Copy the generated token to Airflow:\n"
+                        f"   - Local: {self.token_cache_path}\n"
+                        f"   - Airflow: /opt/airflow/dags/tokens/.google_portability_token.pickle\n"
+                    )
+                    raise Exception(error_msg)
+
                 print("Starting OAuth flow...")
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.client_secrets_file,
@@ -108,16 +179,68 @@ class DataPortabilityClient:
                 )
                 self.credentials = flow.run_local_server(port=self.port)
 
-            # Save the credentials for the next run
+                # Save the credentials for the next run
+                self._save_credentials()
+                print(f"✓ Token cached to {self.token_cache_path}")
+
+    def _save_credentials(self):
+        """
+        Save credentials to the token cache file.
+        Separated into its own method for better error handling and reusability.
+        """
+        try:
+            # Ensure directory exists
             os.makedirs(os.path.dirname(self.token_cache_path), exist_ok=True)
-            with open(self.token_cache_path, 'wb') as token:
+
+            # Write to a temporary file first, then atomic rename
+            # This prevents corruption if the process is interrupted
+            temp_path = f"{self.token_cache_path}.tmp"
+            with open(temp_path, 'wb') as token:
                 pickle.dump(self.credentials, token)
-                print(f"Token cached to {self.token_cache_path}")
+
+            # Atomic rename (on POSIX systems)
+            os.replace(temp_path, self.token_cache_path)
+
+            # Verify the file was written correctly
+            if os.path.exists(self.token_cache_path):
+                file_size = os.path.getsize(self.token_cache_path)
+                print(f"Credentials saved successfully ({file_size} bytes)")
+            else:
+                print("WARNING: Token file not found after save attempt!")
+
+        except Exception as e:
+            print(f"ERROR saving credentials: {e}")
+            print(f"Token path: {self.token_cache_path}")
+            print(f"Directory writable: {os.access(os.path.dirname(self.token_cache_path), os.W_OK)}")
+            raise
 
     def _get_headers(self) -> Dict[str, str]:
-        """Get authorization headers with current access token."""
+        """
+        Get authorization headers with current access token.
+        Automatically refreshes token if expired.
+        """
+        # Check if token needs refresh
         if not self.credentials or not self.credentials.valid:
-            self._authenticate()
+            if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+                print("Token expired, refreshing before API call...")
+                old_refresh_token = self.credentials.refresh_token
+
+                try:
+                    self.credentials.refresh(Request())
+
+                    # Save if refresh token was rotated
+                    new_refresh_token = self.credentials.refresh_token
+                    if new_refresh_token != old_refresh_token:
+                        print("Refresh token was rotated during API call")
+                        self._save_credentials()
+
+                except Exception as e:
+                    print(f"Token refresh failed in _get_headers: {e}")
+                    # Re-authenticate from scratch
+                    self._authenticate()
+            else:
+                # No valid credentials at all
+                self._authenticate()
 
         return {
             'Authorization': f'Bearer {self.credentials.token}',
