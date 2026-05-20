@@ -14,7 +14,7 @@ from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
 
-from youtube_enrichment import config
+from ingestion.youtube import config
 
 logger = logging.getLogger(__name__)
 

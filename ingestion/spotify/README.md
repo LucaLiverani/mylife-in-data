@@ -23,11 +23,10 @@ The Spotify DAGs require OAuth authentication. Follow these steps:
 
 ### Step 1: Generate Spotify Token
 
-Run the authentication script **on your local machine** (not in Docker):
+Run the authentication script **on your local machine** (not in Docker), from the repo root:
 
 ```bash
-cd /home/lliverani/projects/mylife-in-data/pipelines/pipeline-1/pipeline_code
-python scripts/authenticate_spotify_for_airflow.py
+python ingestion/spotify/authenticate_for_airflow.py
 ```
 
 This will:
@@ -104,20 +103,24 @@ SPOTIFY_REDIRECT_URI=http://localhost:8888/callback
 ## Code Structure
 
 ```
-spotify/
-├── README.md                       # This file
+ingestion/spotify/
+├── README.md                          # This file
+├── PRODUCER_README.md                 # Real-time current-playing producer
 ├── __init__.py
-├── spotify_api.py                  # Spotify API client functions
-└── airflow_cache_handler.py       # Custom cache handler for Airflow Variables
+├── spotify_api.py                     # Spotify API client functions
+├── airflow_cache_handler.py           # Custom cache handler for Airflow Variables
+├── authenticate_local.py              # Local OAuth flow (writes token to ./tokens/)
+├── authenticate_for_airflow.py        # OAuth flow + outputs token JSON for Airflow Variables
+├── current_playing_producer.py        # Standalone Kafka producer (real-time)
+├── Dockerfile                         # Producer container build
+├── docker-compose.yml                 # Producer container deploy
+└── requirements.txt
 
-../scripts/
-└── authenticate_spotify_for_airflow.py  # Authentication script
-
-../ (DAGs)
-├── spotify_ingestion_dag.py        # Main track ingestion DAG
-├── spotify_artist_ingestion_dag.py # Artist details ingestion DAG
-├── spotify_artist_backfill_dag.py  # One-time artist backfill DAG
-└── spotify_dbt_transformation_dag.py # dbt transformation DAG
+orchestration/dags/
+├── spotify_ingestion_dag.py           # Recently-played track ingestion (every 15 min)
+├── spotify_artist_ingestion_dag.py    # Artist details ingestion (every 6 hours)
+├── spotify_artist_backfill_dag.py     # One-time artist backfill
+└── spotify_dbt_dag.py                 # dbt transformations
 ```
 
 ## Data Flow
@@ -152,6 +155,6 @@ The following changes were made for Airflow 3.x compatibility:
 ## Support
 
 For issues or questions, check:
-- Airflow logs: `infrastructure/airflow/logs/`
+- Airflow logs: `infrastructure/compose/airflow/logs/`
 - DAG run details in Airflow UI
 - Spotify API status: https://status.developer.spotify.com/

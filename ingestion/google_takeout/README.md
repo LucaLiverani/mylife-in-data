@@ -26,23 +26,24 @@ This module provides Python tools to export your behavioral data from Google ser
    - Application type: **Desktop app**
    - Name: "Data Portability Client"
 5. Download credentials JSON file
-6. Save as `pipeline_code/client_secrets.json`
+6. Save as `client_secrets.json` in the repo root
 
-⚠️ **IMPORTANT**: Add `client_secrets.json` to `.gitignore` - never commit credentials!
+**IMPORTANT**: `client_secrets.json` is already in `.gitignore` — never commit credentials.
 
 ### 3. Install Dependencies
 
+From the repo root:
+
 ```bash
-cd /home/lliverani/projects/mylife-in-data/pipelines/pipeline-1/pipeline_code
-pip install google-auth-oauthlib google-api-python-client --upgrade
+pip install -r orchestration/requirements.txt --upgrade
 ```
 
 ### 4. Authenticate
 
-Run the authentication script to create a cached token:
+Run the authentication script to create a cached token (from repo root):
 
 ```bash
-python google_data_portability/authenticate.py
+python ingestion/google_takeout/authenticate.py
 ```
 
 This will:
@@ -57,13 +58,13 @@ This will:
 Export all YouTube viewing history:
 
 ```bash
-python google_data_portability/export_youtube_data.py
+python ingestion/google_takeout/export_youtube_data.py
 ```
 
 Export YouTube data for a specific date range:
 
 ```bash
-python google_data_portability/export_youtube_data.py \
+python ingestion/google_takeout/export_youtube_data.py \
   --start-date 2024-01-01 \
   --end-date 2024-12-31
 ```
@@ -79,13 +80,13 @@ Options:
 Export all Maps location and activity history:
 
 ```bash
-python google_data_portability/export_maps_data.py
+python ingestion/google_takeout/export_maps_data.py
 ```
 
 Export Maps data for a specific date range:
 
 ```bash
-python google_data_portability/export_maps_data.py \
+python ingestion/google_takeout/export_maps_data.py \
   --start-date 2024-01-01 \
   --end-date 2024-12-31
 ```

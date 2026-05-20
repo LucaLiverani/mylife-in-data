@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 import os
 import logging
 from datetime import timedelta
@@ -11,15 +12,14 @@ from airflow.models.dag import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowException
 
-# Add pipeline_code directory to Python path for imports
-pipeline_code_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, pipeline_code_dir)
+# Make repo root importable so absolute imports resolve
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from youtube_enrichment import config
-from youtube_enrichment.youtube_api_client import create_client
-from youtube_enrichment.utils import ClickHouseClient
-from youtube_enrichment.storage import create_storage
-from youtube_enrichment.enrich_youtube_videos import YouTubeEnricher
+from ingestion.youtube import config
+from ingestion.youtube.youtube_api_client import create_client
+from ingestion.youtube.utils import ClickHouseClient
+from ingestion.youtube.storage import create_storage
+from ingestion.youtube.enrich_youtube_videos import YouTubeEnricher
 
 log = logging.getLogger(__name__)
 

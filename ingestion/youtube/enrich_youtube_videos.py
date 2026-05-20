@@ -25,9 +25,9 @@ import logging
 from datetime import datetime
 from typing import List, Dict
 
-from youtube_enrichment import config
-from youtube_enrichment.youtube_api_client import create_client
-from youtube_enrichment.utils import (
+from ingestion.youtube import config
+from ingestion.youtube.youtube_api_client import create_client
+from ingestion.youtube.utils import (
     ClickHouseClient,
     batch_list,
     prioritize_videos,
@@ -35,7 +35,7 @@ from youtube_enrichment.utils import (
     validate_video_metadata,
     sanitize_for_json,
 )
-from youtube_enrichment.storage import create_storage
+from ingestion.youtube.storage import create_storage
 
 # Configure logging
 logging.basicConfig(

@@ -1,0 +1,6 @@
+# Tells Dagster where to find code locations.
+# This points at orchestration/dagster/definitions.py inside the mounted repo.
+load_from:
+  - python_file:
+      relative_path: /opt/dagster/repo/orchestration/dagster/definitions.py
+      working_directory: /opt/dagster/repo

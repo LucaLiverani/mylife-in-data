@@ -1,0 +1,88 @@
+# Dagster — webserver + daemon + Postgres metadata DB
+#
+# Replaces the Airflow stack with a much lighter footprint:
+#   Airflow: webserver + scheduler + worker + triggerer + Postgres + Redis + Celery + statsd  (~3.5 GB)
+#   Dagster: webserver + daemon + Postgres                                                     (~1 GB)
+#
+# This compose is additive — leaves the existing Airflow stack untouched.
+# Port 3000 (webserver) and 5433 (Dagster's own Postgres) chosen so they don't
+# collide with anything already running.
+
+services:
+  dagster-postgres:
+    image: postgres:16-alpine
+    container_name: dagster-postgres
+    environment:
+      POSTGRES_USER: ${DAGSTER_POSTGRES_USER:-dagster}
+      POSTGRES_PASSWORD: ${DAGSTER_POSTGRES_PASSWORD:-dagster}
+      POSTGRES_DB: ${DAGSTER_POSTGRES_DB:-dagster}
+    volumes:
+      - dagster-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+
+  dagster-webserver:
+    build:
+      context: ../../..       # repo root
+      dockerfile: infrastructure/compose/dagster/Dockerfile
+    image: mylife-dagster:latest
+    container_name: dagster-webserver
+    command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/workspace.yaml"]
+    environment: &dagster-env
+      DAGSTER_HOME: /opt/dagster/dagster_home
+      DAGSTER_POSTGRES_USER: ${DAGSTER_POSTGRES_USER:-dagster}
+      DAGSTER_POSTGRES_PASSWORD: ${DAGSTER_POSTGRES_PASSWORD:-dagster}
+      DAGSTER_POSTGRES_DB: ${DAGSTER_POSTGRES_DB:-dagster}
+      DAGSTER_POSTGRES_HOST: dagster-postgres
+      # Pass through warehouse + R2 creds for ops that need them
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-9000}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-bronze}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+    volumes:
+      - dagster-home:/opt/dagster/dagster_home
+      - ../../..:/opt/dagster/repo:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      dagster-postgres:
+        condition: service_healthy
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+
+  dagster-daemon:
+    build:
+      context: ../../..
+      dockerfile: infrastructure/compose/dagster/Dockerfile
+    image: mylife-dagster:latest
+    container_name: dagster-daemon
+    command: ["dagster-daemon", "run"]
+    environment: *dagster-env
+    volumes:
+      - dagster-home:/opt/dagster/dagster_home
+      - ../../..:/opt/dagster/repo:ro
+    depends_on:
+      dagster-postgres:
+        condition: service_healthy
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+
+volumes:
+  dagster-postgres-data:
+  dagster-home:
+
+networks:
+  data-platform-network:
+    external: true

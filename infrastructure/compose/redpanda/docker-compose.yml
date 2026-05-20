@@ -1,0 +1,68 @@
+# Redpanda single-node broker + Console (Kafka API-compatible)
+#
+# Intended as a drop-in replacement for ./kafka. Same data-platform-network,
+# same client port (9092 internal, 9093 external) so existing producers and
+# ClickHouse Kafka engine tables work without changes. ZooKeeper-free.
+#
+# Spin up in parallel with the existing kafka/ stack on different ports during
+# evaluation: just change the published ports below if 9093 is taken.
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:9093
+      # Advertised listeners: clients on the data-platform-network use "redpanda:9092";
+      # host clients use "localhost:9093".
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:9093
+      - --pandaproxy-addr=internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr=internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr=internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --mode=dev-container          # single-node, low memory profile
+      - --smp=1                       # one CPU core (bump on larger VM)
+      - --memory=512M                 # tight footprint for the VM
+      - --default-log-level=warn
+    ports:
+      - "9093:9093"      # external Kafka
+      - "18081:18081"    # external Schema Registry
+      - "18082:18082"    # external HTTP Proxy
+      - "19644:9644"     # Admin API
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    networks:
+      - data-platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: redpanda-console
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_SCHEMAREGISTRY_ENABLED: "true"
+      KAFKA_SCHEMAREGISTRY_URLS: http://redpanda:8081
+    ports:
+      - "8090:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+
+volumes:
+  redpanda-data:
+
+networks:
+  data-platform-network:
+    external: true

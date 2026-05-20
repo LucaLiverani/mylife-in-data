@@ -26,7 +26,7 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from clickhouse_driver import Client as ClickHouseClient
 
-from spotify.spotify_api import get_spotify_client, get_artists
+from ingestion.spotify.spotify_api import get_spotify_client, get_artists
 
 log = logging.getLogger(__name__)
 

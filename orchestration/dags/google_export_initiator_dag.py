@@ -21,7 +21,7 @@ from airflow.models import Variable
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowException
 
-from google_data_portability.data_portability_api import DataPortabilityClient
+from ingestion.google_takeout.data_portability_api import DataPortabilityClient
 
 log = logging.getLogger(__name__)
 

@@ -30,7 +30,7 @@ from airflow.exceptions import AirflowException, AirflowSkipException
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-from google_data_portability.data_portability_api import get_client_local
+from ingestion.google_takeout.data_portability_api import get_client_local
 
 log = logging.getLogger(__name__)
 

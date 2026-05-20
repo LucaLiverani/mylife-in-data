@@ -1,9 +1,10 @@
 x-airflow-common: &airflow-common
   build:
-    context: ../..  # Go to project root
-    dockerfile: infrastructure/airflow/Dockerfile
+    context: ../../..  # repo root
+    dockerfile: infrastructure/compose/airflow/Dockerfile
   environment: &airflow-common-env
-    PYTHONPATH: /opt/airflow/dags
+    PYTHONPATH: /opt/airflow/repo
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/repo/orchestration/dags
     # Core Configuration
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
@@ -57,7 +58,7 @@ x-airflow-common: &airflow-common
       apache-airflow-providers-fab>=1.0.0
       confluent-kafka
   volumes:
-    - ../../pipeline_code:/opt/airflow/dags
+    - ../../..:/opt/airflow/repo
     - ./logs:/opt/airflow/logs
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
@@ -71,7 +72,7 @@ services:
     image: alpine:latest
     user: root
     volumes:
-      - ../../pipeline_code:/opt/airflow/dags
+      - ../../..:/opt/airflow/repo
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./plugins:/opt/airflow/plugins
@@ -79,10 +80,10 @@ services:
       - "sh"
       - "-c"
       - |
-        chown -R ${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-1000} /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
-        chmod -R 775 /opt/airflow/dags /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
-        find /opt/airflow/dags -type f -not -path '*/.venv/bin/*' -exec chmod 664 {} \; &&
-        find /opt/airflow/dags -type f -path '*/.venv/bin/*' -exec chmod 775 {} \; &&
+        chown -R ${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-1000} /opt/airflow/repo /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
+        chmod -R 775 /opt/airflow/repo /opt/airflow/logs /opt/airflow/config /opt/airflow/plugins &&
+        find /opt/airflow/repo -type f -not -path '*/.venv/bin/*' -exec chmod 664 {} \; &&
+        find /opt/airflow/repo -type f -path '*/.venv/bin/*' -exec chmod 775 {} \; &&
         echo 'Permissions fixed! User ${AIRFLOW_UID:-50000} and group ${AIRFLOW_GID:-1000} can edit files.'
     environment:
       AIRFLOW_GID: ${AIRFLOW_GID:-1000}
@@ -137,7 +138,7 @@ services:
     container_name: airflow-init
     command: ["python", "/tmp/airflow_init_script.py"]
     volumes:
-      - ../../pipeline_code:/opt/airflow/dags
+      - ../../..:/opt/airflow/repo
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./plugins:/opt/airflow/plugins

@@ -66,20 +66,19 @@ docker logs airflow-standalone 2>&1 | grep "Simple auth manager | Password"
 | **New package in requirements.txt** | `docker-compose build && docker-compose up -d` |
 | **Config change** | `docker-compose restart airflow-scheduler` |
 | **New Airflow connection** | Nothing if added via UI, or `docker-compose restart` |
-| **Code in spotify/ module** | `docker-compose restart airflow-scheduler airflow-worker` |
+| **Code in `ingestion/` modules** | `docker-compose restart airflow-scheduler airflow-worker` |
 
 ---
 
-## Quick Workflow:
+## Quick Workflow
 
 ```bash
-# Daily work - edit DAGs
-vim ~/projects/.../pipeline_code/spotify_ingestion_dag.py
-# Auto-detected in 30s!
+# Daily work — edit DAGs
+vim orchestration/dags/spotify_ingestion_dag.py
+# Auto-detected in 30s
 
-# Weekly/monthly - add package
-echo "requests==2.31.0" >> ~/projects/.../pipeline_code/requirements.txt
-cd ~/projects/.../infrastructure/airflow
-docker-compose build && docker-compose up -d
-# Takes ~2-3 minutes with caching
+# Weekly/monthly — add a Python package
+echo "requests==2.31.0" >> orchestration/requirements.txt
+(cd infrastructure/compose/airflow && docker compose build && docker compose up -d)
+# Takes ~2–3 minutes with caching
 ```

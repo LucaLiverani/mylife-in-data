@@ -17,7 +17,7 @@ from airflow.exceptions import AirflowException
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-from spotify.spotify_api import get_spotify_client, get_recently_played_tracks
+from ingestion.spotify.spotify_api import get_spotify_client, get_recently_played_tracks
 
 log = logging.getLogger(__name__)
 

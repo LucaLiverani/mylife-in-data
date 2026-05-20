@@ -56,7 +56,7 @@ Complete end-to-end deployment guide for the improved analytics pipeline.
 ### 1.1 Create Bronze Tables
 
 ```bash
-cd /home/lliverani/projects/mylife-in-data/pipelines/pipeline-1/pipeline_code/clickhouse
+cd warehouse/ddl
 
 # Create tracks bronze table
 docker exec -i clickhouse clickhouse-client \
@@ -95,7 +95,7 @@ Expected output:
 ### 2.1 Rebuild Airflow with dbt
 
 ```bash
-cd /home/lliverani/projects/mylife-in-data/pipelines/pipeline-1/infrastructure/airflow
+cd infrastructure/compose/airflow
 
 # Rebuild with updated requirements.txt (includes dbt-clickhouse)
 docker-compose build
@@ -129,7 +129,7 @@ docker exec clickhouse clickhouse-client \
 docker exec -it <airflow-scheduler-container> bash
 
 # Test dbt
-cd /opt/airflow/dags/dbt_project
+cd /opt/airflow/repo/transformations
 dbt debug --profiles-dir .
 ```
 
@@ -162,14 +162,14 @@ docker exec clickhouse clickhouse-client \
   --query "SELECT COUNT(*) FROM analytics.gold_spotify_kpis"
 ```
 
-## Step 4: Next.js Dashboard Setup
+## Step 4: Dashboard Setup (Cloudflare Pages)
 
 ### 4.1 Install Dependencies
 
 ```bash
-cd /home/lliverani/projects/mylife-in-data/pipelines/pipeline-1/dashboard-nextjs
+cd dashboard
 
-# Install ClickHouse client
+# Install dependencies
 npm install
 ```
 
@@ -275,7 +275,7 @@ docker exec clickhouse clickhouse-client \
 2. **Run dbt manually**:
    ```bash
    docker exec -it airflow-scheduler bash
-   cd /opt/airflow/dags/dbt_project
+   cd /opt/airflow/repo/transformations
    dbt run --profiles-dir .
    ```
 

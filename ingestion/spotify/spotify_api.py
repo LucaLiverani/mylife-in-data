@@ -16,7 +16,7 @@ def get_spotify_client():
     scopes = "user-read-recently-played user-read-playback-state user-read-currently-playing"
     
     # Import here to avoid circular dependency
-    from spotify.airflow_cache_handler import AirflowCacheHandler
+    from ingestion.spotify.airflow_cache_handler import AirflowCacheHandler
     cache_handler = AirflowCacheHandler()
     
     auth_manager = SpotifyOAuth(

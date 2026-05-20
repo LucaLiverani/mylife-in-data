@@ -1,13 +1,14 @@
 import os
 import sys
+from pathlib import Path
 import json
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 
 # Add the parent directory to the path to find the spotify module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from spotify.spotify_api import get_spotify_client
+from ingestion.spotify.spotify_api import get_spotify_client
 
 def get_token():
     """

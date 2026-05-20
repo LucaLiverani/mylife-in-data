@@ -6,11 +6,12 @@ Use this if you get a 409 Conflict error when trying to initiate a new export.
 
 import os
 import sys
+from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from google_data_portability.data_portability_api import get_client_local
+from ingestion.google_takeout.data_portability_api import get_client_local
 
 
 def main():

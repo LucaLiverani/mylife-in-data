@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
@@ -8,20 +7,19 @@ RUN apt-get update && apt-get install -y \
     libsnappy-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY producers/requirements.txt /app/requirements.txt
-
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Install Python deps
+COPY ingestion/spotify/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 RUN mkdir -p /app/tokens
 
-COPY spotify/ /app/spotify/
-COPY producers/ /app/producers/
+# Copy the spotify ingestion package preserving the import path
+# (lets `from ingestion.spotify.spotify_api import ...` resolve)
+COPY ingestion/ /app/ingestion/
 
 ENV PYTHONPATH=/app
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD pgrep -f spotify_current_playing_producer.py || exit 1
+  CMD pgrep -f current_playing_producer.py || exit 1
 
-# Run the producer
-CMD ["python", "/app/producers/spotify_current_playing_producer.py"]
+CMD ["python", "/app/ingestion/spotify/current_playing_producer.py"]

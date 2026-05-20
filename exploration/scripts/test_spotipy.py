@@ -6,7 +6,7 @@ import spotipy
 
 
 try:
-    project_root = Path(__file__).resolve().parents[1]
+    project_root = Path(__file__).resolve().parents[2]
 except NameError:
     project_root = Path.cwd().parent
 
@@ -15,7 +15,7 @@ if str(project_root) not in sys.path:
     print(f"Added project root to sys.path: {project_root}")
 
 
-from spotify.spotify_api import get_spotify_local_client, get_recently_played_tracks, get_currently_playing, get_current_track_simplified
+from ingestion.spotify.spotify_api import get_spotify_local_client, get_recently_played_tracks, get_currently_playing, get_current_track_simplified
 
 print("Attempting to authenticate with Spotify...")
 

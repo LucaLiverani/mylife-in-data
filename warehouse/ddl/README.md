@@ -7,7 +7,7 @@ Automatically processes new JSONL files from MinIO/S3 into ClickHouse.
 ### 1. Start Services
 
 ```bash
-cd /home/lliverani/projects/mylife-in-data/pipelines/pipeline-1/infrastructure/clickhouse
+cd infrastructure/compose/clickhouse
 
 # Restart with Keeper enabled
 docker compose down
@@ -101,7 +101,7 @@ docker exec clickhouse clickhouse-client \
 
 ## Managing Credentials
 
-S3 credentials are stored in `../../infrastructure/clickhouse/config/s3_credentials.xml`:
+S3 credentials are stored in `infrastructure/compose/clickhouse/config/s3_credentials.xml`:
 
 ```xml
 <named_collections>

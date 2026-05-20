@@ -1,18 +1,46 @@
+# Python
+*.pyc
+__pycache__/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/venv/
+**/.venv/
+
+# Secrets / env
 **.env
 **.env.local
-*.pyc
-*/**/__pycache__
-*/**/.pytest_cache
-*/**/.mypy_cache
-*/**/.ruff_cache
-**/venv
-*/**/.venv
+.env
+client_secrets.json
+airflow_variables.json
 .spotipy_token_cache
+.google_portability_token.pickle
+tokens/
+**/tokens/
+credentials/*.json
+credentials/*.txt
+!credentials/.gitkeep
 
-# Cloudflare tunnel credentials and config
+# Logs
+logs/
+**/logs/
+
+# Cloudflare tunnel
 **/cloudflared-config.yml
 **/.cloudflared/
+
+# dbt
+transformations/profiles.yml
+transformations/.user.yml
+transformations/target/
+transformations/dbt_packages/
+transformations/logs/
 
 # IDE
 .idea/
 .vscode/
+
+# Legacy data (to be migrated to R2 and removed)
+.legacy-data/*
+!.legacy-data/.gitkeep

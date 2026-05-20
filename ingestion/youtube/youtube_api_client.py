@@ -16,7 +16,7 @@ from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 
-from youtube_enrichment import config
+from ingestion.youtube import config
 
 
 # Configure logging

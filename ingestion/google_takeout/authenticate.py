@@ -10,14 +10,15 @@ is in 'Production' mode (not 'Testing') to avoid token expiration issues.
 
 import os
 import sys
+from pathlib import Path
 import json
 import pickle
 from datetime import datetime
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from google_data_portability.data_portability_api import get_client_local
+from ingestion.google_takeout.data_portability_api import get_client_local
 
 
 def check_existing_token():

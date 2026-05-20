@@ -28,8 +28,8 @@ default_args = {
 }
 
 # dbt project path inside Airflow container
-DBT_PROJECT_DIR = '/opt/airflow/dags/dbt_project'
-DBT_PROFILES_DIR = '/opt/airflow/dags/dbt_project'
+DBT_PROJECT_DIR = '/opt/airflow/repo/transformations'
+DBT_PROFILES_DIR = '/opt/airflow/repo/transformations'
 
 
 def log_dbt_start(**context):

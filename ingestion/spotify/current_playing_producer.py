@@ -4,13 +4,14 @@ import logging
 import os
 import signal
 import sys
+from pathlib import Path
 from datetime import datetime
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from spotify.spotify_api import get_spotify_producer_client, get_currently_playing 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from ingestion.spotify.spotify_api import get_spotify_producer_client, get_currently_playing 
 
 
 logging.basicConfig(

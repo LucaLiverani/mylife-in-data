@@ -55,18 +55,21 @@ done
 
 # Remove containers from compose projects
 echo ""
-echo "🐳 Cleaning up docker-compose projects..."
+echo "Cleaning up docker-compose projects..."
 
-if [ -d "storage" ]; then
-    cd storage && docker-compose down && cd ..
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="$SCRIPT_DIR/compose"
+
+if [ -d "$COMPOSE_DIR/storage" ]; then
+    (cd "$COMPOSE_DIR/storage" && docker compose down)
 fi
 
-if [ -d "kafka" ]; then
-    cd kafka && docker-compose down && cd ..
+if [ -d "$COMPOSE_DIR/kafka" ]; then
+    (cd "$COMPOSE_DIR/kafka" && docker compose down)
 fi
 
-if [ -d "airflow" ]; then
-    cd airflow && docker-compose down && cd ..
+if [ -d "$COMPOSE_DIR/airflow" ]; then
+    (cd "$COMPOSE_DIR/airflow" && docker compose down)
 fi
 
 # Remove dangling containers
@@ -81,18 +84,18 @@ if [ "$REMOVE_VOLUMES" = true ]; then
     echo
     
     if [[ $REPLY == "DELETE" ]]; then
-        echo "💣 Removing volumes..."
-        
-        if [ -d "storage" ]; then
-            cd storage && docker-compose down -v && cd ..
+        echo "Removing volumes..."
+
+        if [ -d "$COMPOSE_DIR/storage" ]; then
+            (cd "$COMPOSE_DIR/storage" && docker compose down -v)
         fi
-        
-        if [ -d "kafka" ]; then
-            cd kafka && docker-compose down -v && cd ..
+
+        if [ -d "$COMPOSE_DIR/kafka" ]; then
+            (cd "$COMPOSE_DIR/kafka" && docker compose down -v)
         fi
-        
-        if [ -d "airflow" ]; then
-            cd airflow && docker-compose down -v && cd ..
+
+        if [ -d "$COMPOSE_DIR/airflow" ]; then
+            (cd "$COMPOSE_DIR/airflow" && docker compose down -v)
         fi
         
         # Remove dangling volumes

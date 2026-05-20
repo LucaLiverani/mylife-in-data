@@ -9,7 +9,7 @@ from typing import List, Dict, Optional, Set
 from datetime import datetime
 import clickhouse_connect
 
-from youtube_enrichment import config
+from ingestion.youtube import config
 
 logger = logging.getLogger(__name__)
 
