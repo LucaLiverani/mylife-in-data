@@ -82,29 +82,22 @@ export default function YouTubePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
-        <div className="relative z-10 flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-channel-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-xl text-signal-white/60">Loading YouTube data...</p>
-          </div>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
+        <p className="font-mono text-sm uppercase tracking-wider text-signal-white/60">Loading the watch log…</p>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
-        <div className="relative z-10 flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <p className="text-xl text-red-400">{error || 'No data available'}</p>
-            <Link to="/" className="mt-4 inline-block text-channel-red hover:underline">
-              Return to Home
-            </Link>
-          </div>
+      <main className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
+        <div className="mx-auto max-w-2xl px-6 py-20">
+          <p className="mb-4 font-mono text-xs uppercase tracking-wider text-trace-down">{error || 'No signal on this channel.'}</p>
+          <Link to="/" className="font-mono text-xs uppercase tracking-wider text-signal-white/60 hover:text-signal-white">
+            Back to console
+          </Link>
         </div>
-      </div>
+      </main>
     );
   }
 

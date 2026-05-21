@@ -39,3 +39,11 @@ export const youtubeAPI = {
 export const calendarAPI = {
   getData: () => fetchAPI('/api/google/calendar'),
 };
+
+export const systemAPI = {
+  getHealth: () => fetchAPI('/api/system/health'),
+};
+
+export const nowAPI = {
+  getTimeline: () => fetchAPI('/api/now/timeline'),
+};

@@ -7,6 +7,8 @@ interface Slice {
   value: number;
   /** Optional precomputed percentage. If absent, derived from values. */
   percentage?: number;
+  // Recharts's ChartDataInput requires an index signature.
+  [k: string]: unknown;
 }
 
 interface ChannelPieProps {
@@ -15,12 +17,17 @@ interface ChannelPieProps {
   data: Slice[];
   /** Optional explicit color map for slices by name; falls back to channel ramp. */
   colorByName?: Record<string, string>;
-  /** Height of the chart area in px. Default 280. */
-  height?: number;
+  /**
+   * Donut canvas height in px, or `'fill'` to expand to the parent's
+   * remaining height (use inside a flex-column Surface). Default `'fill'`.
+   */
+  height?: number | 'fill';
   /** How many slices to render before grouping the rest as "Other". */
   topN?: number;
   /** Whether to render the legend below the donut. */
   legend?: boolean;
+  /** Minimum height in px when height='fill'. Default 220. */
+  minHeight?: number;
 }
 
 /**
@@ -33,9 +40,10 @@ export function ChannelPie({
   channel,
   data,
   colorByName,
-  height = 280,
+  height = 'fill',
   topN = 5,
   legend = true,
+  minHeight = 220,
 }: ChannelPieProps) {
   const ramp = CHANNEL_RAMP[channel];
 
@@ -51,9 +59,14 @@ export function ChannelPie({
   const colorFor = (name: string, i: number): string =>
     colorByName?.[name] ?? ramp[i % ramp.length];
 
+  // When fill, the donut expands; when fixed, it uses the pixel height.
+  const canvasStyle = height === 'fill'
+    ? { flex: '1 1 auto', minHeight, width: '100%' }
+    : { height, width: '100%' };
+
   return (
-    <div>
-      <div style={{ height }}>
+    <div className={height === 'fill' ? 'flex h-full w-full flex-col' : undefined}>
+      <div style={canvasStyle}>
         <ResponsiveContainer>
           <PieChart>
             <Pie

@@ -72,11 +72,13 @@ export function useLiveSpotify(): LiveSpotifyState {
       try {
         const response = await fetch('/api/spotify/current');
         if (!response.ok) throw new Error('Failed to fetch current track');
-        const body = await response.json();
+        const body = (await response.json()) as
+          | { type: 'current_track'; data: SpotifyPlaybackData }
+          | { type: 'no_track'; data: Partial<SpotifyPlaybackData> };
         if (!isActive) return;
 
         if (body.type === 'current_track') {
-          const trackData = body.data as SpotifyPlaybackData;
+          const trackData = body.data;
           setData(trackData);
           setIsConnected(true);
           setError(null);
@@ -87,7 +89,7 @@ export function useLiveSpotify(): LiveSpotifyState {
             catch (err) { console.error('Failed to save track to localStorage:', err); }
           }
         } else if (body.type === 'no_track') {
-          setData({ ...body.data, track_id: null });
+          setData({ ...(body.data as SpotifyPlaybackData), track_id: null });
           setIsConnected(true);
           isPlayingRef.current = false;
         }

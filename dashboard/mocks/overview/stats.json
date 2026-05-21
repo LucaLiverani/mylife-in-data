@@ -286,7 +286,7 @@
       8,
       12
     ],
-    "google": [
+    "calendar": [
       24,
       38,
       31,
@@ -476,5 +476,29 @@
   "_meta": {
     "cached": true,
     "timestamp": "2026-05-21T12:00:00.000Z"
+  },
+  "console": {
+    "noisiestHour": "14:00",
+    "noisiestHourEventCount": 42,
+    "quietStreakMinutes": 17,
+    "daysTracked": 423,
+    "channelDominance": [
+      {
+        "channel": "spotify",
+        "share": 0.42
+      },
+      {
+        "channel": "youtube",
+        "share": 0.28
+      },
+      {
+        "channel": "maps",
+        "share": 0.18
+      },
+      {
+        "channel": "calendar",
+        "share": 0.12
+      }
+    ]
   }
 }

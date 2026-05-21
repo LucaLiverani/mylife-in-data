@@ -65,7 +65,7 @@ function write(relPath, data) {
 const dates = Array.from({ length: DAYS }, (_, i) => isoDate(dateOffset(DAYS - 1 - i)));
 const spotifyDaily = dates.map(() => between(15, 80));
 const youtubeDaily = dates.map(() => between(5, 35));
-const googleDaily = dates.map(() => between(10, 60));
+const calendarDaily = dates.map(() => between(2, 9));
 const mapsDaily = dates.map(() => between(0, 12));
 
 // Pre-computed Hours totals (used by both /api/overview/stats and the per-source pages).
@@ -76,7 +76,7 @@ const youtubeTotalHours = round1(youtubeDaily.reduce((a, b) => a + b, 0) * 0.25)
 const totalEvents =
   spotifyDaily.reduce((a, b) => a + b, 0) +
   youtubeDaily.reduce((a, b) => a + b, 0) +
-  googleDaily.reduce((a, b) => a + b, 0) +
+  calendarDaily.reduce((a, b) => a + b, 0) +
   mapsDaily.reduce((a, b) => a + b, 0);
 
 // ---------- /api/overview/stats ----------
@@ -91,17 +91,30 @@ write('overview/stats.json', {
     artistsListened: 847,
     videosWatched:   youtubeDaily.reduce((a, b) => a + b, 0),
     youtubeChannels: 312,
-    searchQueries:   googleDaily.reduce((a, b) => a + b, 0),
+    calendarEvents:  calendarDaily.reduce((a, b) => a + b, 0),
     citiesVisited:   24,
   },
   dataGeneration: {
     dates,
     spotify: spotifyDaily,
     youtube: youtubeDaily,
-    google: googleDaily,
+    calendar: calendarDaily,
     maps: mapsDaily,
     totalEvents,
     avgPerDay: Math.round(totalEvents / DAYS),
+  },
+  // Producer-console signatures — Home shows these as the "Console" row.
+  console: {
+    noisiestHour:           '14:00',
+    noisiestHourEventCount: 42,
+    quietStreakMinutes:     17,
+    daysTracked:            DAYS,
+    channelDominance: [
+      { channel: 'spotify',  share: 0.42 },
+      { channel: 'youtube',  share: 0.28 },
+      { channel: 'maps',     share: 0.18 },
+      { channel: 'calendar', share: 0.12 },
+    ],
   },
   _meta: { cached: true, timestamp: TODAY.toISOString() },
 });
@@ -354,6 +367,12 @@ write('travel/data.json', {
     explorePct:          18.0,
     firstActivity:       isoDate(dateOffset(DAYS - 1)),
     lastActivity:        isoDate(dateOffset(0)),
+
+    // Producer-console signature row: real movement, not just app activity.
+    kilometersTraveled: 4870,
+    daysAwayFromHome:   27,
+    newPlacesThisYear:  19,
+    longestTripDays:    11,
   },
   locations: PLACES.map((p) => ({
     name: p.name,
@@ -361,6 +380,13 @@ write('travel/data.json', {
     lng: p.lng,
     duration: pick(['2 hours', '1 day', '3 days', '1 week', '2 weeks']),
   })),
+  trips: [
+    { start: '2026-04-21', end: '2026-05-02', destination: 'Tokyo',  days: 11, km: 9460 },
+    { start: '2026-03-14', end: '2026-03-17', destination: 'Berlin', days:  3, km: 1080 },
+    { start: '2026-02-28', end: '2026-03-02', destination: 'Milan',  days:  2, km:  460 },
+    { start: '2026-02-08', end: '2026-02-15', destination: 'Lisbon', days:  7, km: 2730 },
+    { start: '2026-01-19', end: '2026-01-23', destination: 'London', days:  4, km: 1620 },
+  ],
   charts: {
     hourlyActivity: Array.from({ length: 24 }, (_, h) => ({
       hour: `${h.toString().padStart(2, '0')}:00`,
@@ -416,6 +442,24 @@ const calendarMeetingHours = 142;
 // to breathe), not a void.
 const calendarFreeDays = 12;
 
+// Build a 7×24 WeekGrid for the "where the week goes" surface. Low overnight,
+// peak 9-12 + 14-18 weekdays, low weekends.
+const weekGridCells = [];
+for (let d = 0; d < 7; d++) {
+  for (let h = 0; h < 24; h++) {
+    let i = 0;
+    const isWeekend = d >= 5;
+    if (h < 7 || h > 21) i = 0;
+    else if (isWeekend) i = (h >= 10 && h <= 18) ? 0.15 + rand() * 0.25 : 0.05 + rand() * 0.15;
+    else if (h >= 9 && h <= 12) i = 0.65 + rand() * 0.30;
+    else if (h >= 14 && h <= 18) i = 0.60 + rand() * 0.35;
+    else if (h === 8 || h === 13) i = 0.25 + rand() * 0.25;
+    else if (h === 19 || h === 20) i = 0.15 + rand() * 0.25;
+    else i = 0.10 + rand() * 0.15;
+    weekGridCells.push({ day: d, hour: h, intensity: round1(i) });
+  }
+}
+
 write('google/calendar.json', {
   kpis: {
     // Headline pair (Home channel-tile) — depth · breadth for personal life.
@@ -427,7 +471,14 @@ write('google/calendar.json', {
     meetingHours: calendarMeetingHours,
     avgDaily:     round1(calendarTotalEvents / DAYS),
     busiestDay:   'Tue',
+
+    // Producer-console signatures: free time, gaps, fragmentation.
+    freeTimePerDay:          187,   // minutes — avg free time inside 09:00-19:00
+    longestUnscheduledHours: 2.4,   // hours — avg longest contiguous gap per workday
+    weekendLeakage:          4,     // count of weekend events in window
+    fragmentation:           0.42,  // 0=one big block, 1=many tiny pieces
   },
+  weekGrid: weekGridCells,
   busyHours: Array.from({ length: 24 }, (_, h) => ({
     hour: `${h.toString().padStart(2, '0')}:00`,
     events: h < 7 ? 0 : h < 9 ? between(2, 6) : h < 12 ? between(8, 18) : h < 14 ? between(2, 6) : h < 18 ? between(10, 22) : h < 21 ? between(2, 8) : 0,
@@ -485,5 +536,65 @@ write('home/recent-events.json', {
     };
   }),
 });
+
+// ---------- /api/system/health ----------
+write('system/health.json', {
+  generatedAt: TODAY.toISOString(),
+  overall: { status: 'healthy', summary: 'All channels online · last sync 2m ago' },
+  channels: [
+    { channel: 'spotify',  status: 'healthy', lastBatchAgo: '2m ago',  eventsPerHour: 247, errors24h: 0 },
+    { channel: 'youtube',  status: 'healthy', lastBatchAgo: '47m ago', eventsPerHour:  31, errors24h: 0 },
+    { channel: 'maps',     status: 'stale',   lastBatchAgo: '6h ago',  eventsPerHour:  12, errors24h: 0 },
+    { channel: 'calendar', status: 'healthy', lastBatchAgo: '11m ago', eventsPerHour:   4, errors24h: 0 },
+  ],
+  storage: {
+    name: 'ClickHouse',
+    status: 'healthy',
+    queryLatencyP50Ms: 84,
+    queryLatencyP99Ms: 312,
+    rowCount: 1234567,
+    diskUsedMb: 412,
+    diskTotalMb: 51200,
+  },
+  dbt: {
+    lastRunAgo: '47m ago',
+    status: 'healthy',
+    modelCount: 23,
+    testsPass: 41,
+    testsTotal: 41,
+    durationS: 272,
+  },
+  errors24h: [],
+});
+
+// ---------- /api/now/timeline ----------
+{
+  const TIMELINE_SEED = [
+    { dt:   30, channel: 'spotify',  label: 'Now playing',     value: 'Strobe — Deadmau5' },
+    { dt:   95, channel: 'youtube',  label: 'Watched',         value: 'Modular synth basics' },
+    { dt:  240, channel: 'spotify',  label: 'Track ended',     value: 'Tempo Tantrum — RJD2' },
+    { dt:  380, channel: 'calendar', label: 'Meeting started', value: 'Team standup · 30 min' },
+    { dt:  540, channel: 'spotify',  label: 'Liked',           value: 'I Want You — Mitski' },
+    { dt:  720, channel: 'maps',     label: 'Directions',      value: 'Zürich HB → home' },
+    { dt:  980, channel: 'youtube',  label: 'Searched',        value: 'how to lay down vinyl' },
+    { dt: 1240, channel: 'spotify',  label: 'Skipped',         value: 'Generic Lofi Beat 247' },
+    { dt: 1490, channel: 'calendar', label: 'Event ended',     value: 'Lunch (sandwich)' },
+    { dt: 1830, channel: 'spotify',  label: 'Playlist queued', value: 'Deep focus · 47 tracks' },
+    { dt: 2100, channel: 'maps',     label: 'Place visit',     value: 'Café Schober' },
+    { dt: 2700, channel: 'youtube',  label: 'Watched',         value: 'Why your dbt jobs are slow' },
+    { dt: 3300, channel: 'spotify',  label: 'Album opened',    value: 'Random Access Memories' },
+  ];
+  const nowMs = TODAY.getTime();
+  write('now/timeline.json', {
+    generatedAt: TODAY.toISOString(),
+    windowMinutes: 60,
+    events: TIMELINE_SEED.map((e) => ({
+      time: new Date(nowMs - e.dt * 1000).toISOString(),
+      channel: e.channel,
+      label: e.label,
+      value: e.value,
+    })),
+  });
+}
 
 console.log(`\nWrote mocks under ${MOCKS_ROOT}`);

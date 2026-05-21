@@ -1,9 +1,31 @@
 import { useState } from 'react';
 import { Surface } from '@/components/Surface';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { EventRow } from '@/components/EventRow';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TopList } from './TopList';
 import { ChannelHistogram } from './ChannelHistogram';
-import { CHART_COLORS, CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatChartDate } from './chartConfig';
+import { ChannelPie } from './ChannelPie';
+import { CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatChartDate } from './chartConfig';
+import { CHANNEL_HEX } from '@/lib/channels';
+import { cn } from '@/lib/utils';
+
+// Channel-violet owns the page (primary "Directions" series). Other series
+// sit on a signal-white scale so they read as supporting context without
+// competing for identity — and stay clearly distinguishable from each other.
+const SERIES_COLOR = {
+  Directions:   CHANNEL_HEX.maps,          // #A855F7 — channel identity, primary
+  Searches:     'rgba(255,255,255,0.75)',
+  Explorations: 'rgba(255,255,255,0.45)',
+  Other:        'rgba(255,255,255,0.22)',
+} as const;
+const SERIES_WIDTH: Record<MapsSeries, number> = {
+  Directions:   2.5,
+  Searches:     1.5,
+  Explorations: 1.5,
+  Other:        1.25,
+};
+
+type MapsSeries = 'Directions' | 'Searches' | 'Explorations' | 'Other';
 
 interface MapsData {
   hourlyActivity: Array<{ hour: string; activities: number }>;
@@ -12,46 +34,41 @@ interface MapsData {
   dailyActivity: Array<{ date: string; directions: number; searches: number; explorations: number; other: number }>;
 }
 
-// Helper to format activity type for display
 const formatActivityType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    'directions': 'Directions',
-    'search': 'Search',
-    'explore': 'Explore',
-    'place_view': 'Place View',
-    'app_usage': 'App Usage',
-    'view': 'View',
-    'review': 'Review',
-    'save': 'Save',
-    'other': 'Other',
+    directions: 'Directions',
+    search: 'Search',
+    explore: 'Explore',
+    place_view: 'Place View',
+    app_usage: 'App Usage',
+    view: 'View',
+    review: 'Review',
+    save: 'Save',
+    other: 'Other',
   };
   return typeMap[type] || type;
 };
 
-// Helper to get icon for activity type
-const getActivityIcon = (type: string): JSX.Element => {
+const getActivityIcon = (type: string) => {
   switch (type) {
     case 'directions':
-      // Arrow/Navigation icon
       return (
         <svg className="size-4 text-channel-violet" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M8 2L8 14M8 2L4 6M8 2L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 2L8 14M8 2L4 6M8 2L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
     case 'search':
-      // Magnifying glass icon
       return (
         <svg className="size-4 text-channel-violet" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-          <path d="M10 10L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="7" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M10 10L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       );
     case 'explore':
-      // Compass icon
       return (
         <svg className="size-4 text-channel-violet" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-          <path d="M8 3L10 8L8 13L6 8L8 3Z" fill="currentColor"/>
+          <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M8 3L10 8L8 13L6 8L8 3Z" fill="currentColor" />
         </svg>
       );
     case 'place_view':
@@ -59,24 +76,21 @@ const getActivityIcon = (type: string): JSX.Element => {
     case 'app_usage':
     case 'save':
     case 'review':
-      // Location pin icon
       return (
         <svg className="size-4 text-channel-violet" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M8 2C6.067 2 4.5 3.567 4.5 5.5C4.5 8.25 8 13 8 13C8 13 11.5 8.25 11.5 5.5C11.5 3.567 9.933 2 8 2ZM8 7C7.172 7 6.5 6.328 6.5 5.5C6.5 4.672 7.172 4 8 4C8.828 4 9.5 4.672 9.5 5.5C9.5 6.328 8.828 7 8 7Z" fill="currentColor"/>
+          <path d="M8 2C6.067 2 4.5 3.567 4.5 5.5C4.5 8.25 8 13 8 13C8 13 11.5 8.25 11.5 5.5C11.5 3.567 9.933 2 8 2ZM8 7C7.172 7 6.5 6.328 6.5 5.5C6.5 4.672 7.172 4 8 4C8.828 4 9.5 4.672 9.5 5.5C9.5 6.328 8.828 7 8 7Z" fill="currentColor" />
         </svg>
       );
     default:
-      // Target/circle icon for other types
       return (
         <svg className="size-4 text-channel-violet" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-          <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+          <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <circle cx="8" cy="8" r="1.5" fill="currentColor" />
         </svg>
       );
   }
 };
 
-// Helper to format time ago
 const formatTimeAgo = (timeString: string): string => {
   const date = new Date(timeString);
   const now = new Date();
@@ -84,7 +98,6 @@ const formatTimeAgo = (timeString: string): string => {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
-
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
@@ -94,164 +107,128 @@ const formatTimeAgo = (timeString: string): string => {
 };
 
 export function MapsCharts({ data }: { data: MapsData }) {
-  const [visibleSeries, setVisibleSeries] = useState({
-    Directions: true,
-    Searches: true,
+  const [visibleSeries, setVisibleSeries] = useState<Record<MapsSeries, boolean>>({
+    Directions:   true,
+    Searches:     true,
     Explorations: true,
-    Other: true,
+    Other:        false,
   });
 
-  const toggleSeries = (series: keyof typeof visibleSeries) => {
-    setVisibleSeries(prev => ({ ...prev, [series]: !prev[series] }));
-  };
+  const toggleSeries = (s: MapsSeries) => setVisibleSeries(p => ({ ...p, [s]: !p[s] }));
 
-  // Transform data for chart
   const chartData = data.dailyActivity.map((d) => ({
     date: formatChartDate(d.date),
-    Directions: Number(d.directions) || 0,
-    Searches: Number(d.searches) || 0,
+    Directions:   Number(d.directions)   || 0,
+    Searches:     Number(d.searches)     || 0,
     Explorations: Number(d.explorations) || 0,
-    Other: Number(d.other) || 0,
+    Other:        Number(d.other)        || 0,
   }));
 
-  const series = [
-    { name: 'Directions', color: '#10b981' },
-    { name: 'Searches', color: '#3b82f6' },
-    { name: 'Explorations', color: '#f59e0b' },
-    { name: 'Other', color: '#8b5cf6' },
-  ] as const;
+  // Activity-type distribution — totals across the 30-day window. Channels
+  // the same color scheme as the daily-activity series so legend pairs read.
+  const totals = data.dailyActivity.reduce(
+    (acc, d) => ({
+      Directions:   acc.Directions   + (Number(d.directions)   || 0),
+      Searches:     acc.Searches     + (Number(d.searches)     || 0),
+      Explorations: acc.Explorations + (Number(d.explorations) || 0),
+      Other:        acc.Other        + (Number(d.other)        || 0),
+    }),
+    { Directions: 0, Searches: 0, Explorations: 0, Other: 0 },
+  );
+  const distributionData = [
+    { name: 'Directions',   value: totals.Directions   },
+    { name: 'Searches',     value: totals.Searches     },
+    { name: 'Explorations', value: totals.Explorations },
+    { name: 'Other',        value: totals.Other        },
+  ].filter((d) => d.value > 0);
 
-  // Calculate totals
-  const totalDirections = data.dailyActivity.reduce((a, b) => a + Number(b.directions), 0);
-  const totalSearches = data.dailyActivity.reduce((a, b) => a + Number(b.searches), 0);
-  const totalExplorations = data.dailyActivity.reduce((a, b) => a + Number(b.explorations), 0);
-  const totalOther = data.dailyActivity.reduce((a, b) => a + Number(b.other), 0);
-  const totalActivities = totalDirections + totalSearches + totalExplorations + totalOther;
-  const avgPerDay = data.dailyActivity.length > 0 ? Math.round(totalActivities / data.dailyActivity.length) : 0;
-
-  const mostActive = [
-    { name: 'Directions', total: totalDirections, color: '#10b981' },
-    { name: 'Searches', total: totalSearches, color: '#3b82f6' },
-    { name: 'Explorations', total: totalExplorations, color: '#f59e0b' },
-    { name: 'Other', total: totalOther, color: '#8b5cf6' },
-  ].sort((a, b) => b.total - a.total)[0];
+  const series: Array<{ name: MapsSeries; color: string }> = [
+    { name: 'Directions',   color: SERIES_COLOR.Directions   },
+    { name: 'Searches',     color: SERIES_COLOR.Searches     },
+    { name: 'Explorations', color: SERIES_COLOR.Explorations },
+    { name: 'Other',        color: SERIES_COLOR.Other        },
+  ];
 
   return (
     <>
-      {/* First: Daily Activity Breakdown - Full Width */}
       <section className="mb-12">
-        <Surface className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Daily Activity Breakdown (Last 30 Days)</h2>
+        <Surface>
+          <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">
+            Daily activity · last 30 days
+          </h2>
 
-          {/* Stats and KPIs */}
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex gap-8">
-              <div>
-                <p className="text-xs text-signal-white/50 mb-1">Total Activities</p>
-                <p className="text-2xl font-bold text-signal-white">{totalActivities.toLocaleString()}</p>
-                <p className="text-xs text-signal-white/40">last 30 days</p>
-              </div>
-              <div>
-                <p className="text-xs text-signal-white/50 mb-1">Daily Average</p>
-                <p className="text-2xl font-bold text-signal-white">{avgPerDay.toLocaleString()}</p>
-                <p className="text-xs text-signal-white/40">per day</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-signal-white/50 mb-1">Most Common</p>
-              <p className="text-xl font-bold" style={{ color: mostActive.color }}>{mostActive.name}</p>
-              <p className="text-xs text-signal-white/40">{mostActive.total.toLocaleString()} activities</p>
-            </div>
+          <div className="mb-4 flex flex-wrap gap-3">
+            {series.map((s) => {
+              const on = visibleSeries[s.name];
+              return (
+                <button
+                  key={s.name}
+                  onClick={() => toggleSeries(s.name)}
+                  aria-pressed={on}
+                  className={cn(
+                    'flex items-center gap-2 rounded-sm px-2 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-channel-violet',
+                    on ? 'text-signal-white/90' : 'text-signal-white/30',
+                  )}
+                >
+                  <span
+                    className="block size-2 rounded-sm"
+                    style={{ backgroundColor: on ? s.color : 'rgba(255,255,255,0.15)' }}
+                    aria-hidden="true"
+                  />
+                  {s.name}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Legend */}
-          <div className="flex flex-wrap gap-4 mb-4">
-            {series.map((s) => (
-              <button
-                key={s.name}
-                onClick={() => toggleSeries(s.name)}
-                className="flex items-center gap-2 transition-opacity"
-                style={{ opacity: visibleSeries[s.name] ? 1 : 0.4 }}
-              >
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: s.color }}
-                />
-                <span className="text-sm text-signal-white/80">{s.name}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Chart */}
           <ResponsiveContainer width="100%" height={TIME_SERIES_CHART_HEIGHT}>
             <LineChart data={chartData}>
               <CartesianGrid {...CHART_STYLES.cartesianGrid} />
               <XAxis
                 dataKey="date"
-                {...CHART_STYLES.timeSeriesXAxis}
+                stroke="rgba(255,255,255,0.25)"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 10, fontFamily: '"IBM Plex Mono", ui-monospace, monospace' }}
               />
               <YAxis
-                stroke="#fff"
-                tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
-                tickLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
-                label={{ value: 'Activities', angle: -90, position: 'insideLeft', fill: 'rgba(255, 255, 255, 0.7)' }}
+                stroke="rgba(255,255,255,0.25)"
+                tickLine={false}
+                axisLine={false}
+                width={32}
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: '"IBM Plex Mono", ui-monospace, monospace' }}
               />
               <Tooltip
-                contentStyle={CHART_STYLES.tooltip.contentStyle} itemStyle={CHART_STYLES.tooltip.itemStyle} labelStyle={CHART_STYLES.tooltip.labelStyle}
+                contentStyle={CHART_STYLES.tooltip.contentStyle}
+                itemStyle={CHART_STYLES.tooltip.itemStyle}
+                labelStyle={CHART_STYLES.tooltip.labelStyle}
                 cursor={CHART_STYLES.tooltip.cursor}
               />
-              {visibleSeries.Directions && (
-                <Line
-                  type="monotone"
-                  dataKey="Directions"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={{ fill: '#10b981', r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              )}
-              {visibleSeries.Searches && (
-                <Line
-                  type="monotone"
-                  dataKey="Searches"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={{ fill: '#3b82f6', r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              )}
-              {visibleSeries.Explorations && (
-                <Line
-                  type="monotone"
-                  dataKey="Explorations"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={{ fill: '#f59e0b', r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              )}
-              {visibleSeries.Other && (
-                <Line
-                  type="monotone"
-                  dataKey="Other"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  dot={{ fill: '#8b5cf6', r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
+              {series.map((s) =>
+                visibleSeries[s.name] ? (
+                  <Line
+                    key={s.name}
+                    type="monotone"
+                    dataKey={s.name}
+                    stroke={s.color}
+                    strokeWidth={SERIES_WIDTH[s.name]}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                ) : null,
               )}
             </LineChart>
           </ResponsiveContainer>
         </Surface>
       </section>
 
-      {/* Second: Top Destinations and Hourly Activity */}
+      {/* 2. Top list + Distribution — side-by-side, equal height */}
       <section className="mb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Destinations */}
-          <Surface>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Surface className="flex h-full flex-col">
             <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-              Top Destinations
+              Top destinations
             </h2>
             <TopList
               channel="maps"
@@ -265,45 +242,47 @@ export function MapsCharts({ data }: { data: MapsData }) {
             />
           </Surface>
 
-          {/* Activity by Hour */}
-          <Surface>
+          <Surface className="flex h-full flex-col">
             <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-              Activity by Hour
+              Activity-type distribution
             </h2>
-            <ChannelHistogram
-              channel="maps"
-              bins={data.hourlyActivity.map((h) => ({ label: h.hour, value: h.activities }))}
-              unitLabel="Activities"
-              height={260}
-            />
+            <ChannelPie channel="maps" data={distributionData} topN={4} />
           </Surface>
         </div>
       </section>
 
-      {/* Third: Last Activity - Full Width */}
+      {/* 3. Activity by hour — full width */}
       <section className="mb-12">
-        <Surface className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Last Activity</h2>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-channel-violet/50 scrollbar-track-transparent">
+        <Surface>
+          <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
+            Activity by hour
+          </h2>
+          <ChannelHistogram
+            channel="maps"
+            bins={data.hourlyActivity.map((h) => ({ label: h.hour, value: h.activities }))}
+            unitLabel="Activities"
+            height={220}
+          />
+        </Surface>
+      </section>
+
+      {/* 5. Recent events */}
+      <section className="mb-12">
+        <Surface>
+          <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
+            Last activity
+          </h2>
+          <div className="-mx-6 -mb-6 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-channel-violet/50 scrollbar-track-transparent">
             {data.lastActivities.map((activity, index) => (
-              <div
+              <EventRow
                 key={index}
-                className="flex items-center justify-between p-3 border-b border-signal-white/5 last:border-b-0 hover:bg-signal-white/[0.03] transition-colors duration-150 ease-snap"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-channel-violet/20 flex items-center justify-center flex-shrink-0">
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm truncate">{activity.location}</div>
-                    <div className="text-xs text-signal-white/60">{formatActivityType(activity.type)}</div>
-                  </div>
-                </div>
-                <div className="text-right ml-4">
-                  <div className="text-sm font-semibold text-channel-violet">{formatTimeAgo(activity.time)}</div>
-                  <div className="text-xs text-signal-white/60">{activity.timeOfDay}</div>
-                </div>
-              </div>
+                channel="maps"
+                primary={activity.location}
+                secondary={formatActivityType(activity.type)}
+                rightTop={formatTimeAgo(activity.time)}
+                rightBottom={activity.timeOfDay}
+                leftIcon={getActivityIcon(activity.type)}
+              />
             ))}
           </div>
         </Surface>

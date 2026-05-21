@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-05-21T19:18:48.994Z",
+  "windowMinutes": 60,
+  "events": [
+    {
+      "time": "2026-05-21T19:18:18.994Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-21T19:17:13.994Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Modular synth basics"
+    },
+    {
+      "time": "2026-05-21T19:14:48.994Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-21T19:12:28.994Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Team standup · 30 min"
+    },
+    {
+      "time": "2026-05-21T19:09:48.994Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-21T19:06:48.994Z",
+      "channel": "maps",
+      "label": "Directions",
+      "value": "Zürich HB → home"
+    },
+    {
+      "time": "2026-05-21T19:02:28.994Z",
+      "channel": "youtube",
+      "label": "Searched",
+      "value": "how to lay down vinyl"
+    },
+    {
+      "time": "2026-05-21T18:58:08.994Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-21T18:53:58.994Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Lunch (sandwich)"
+    },
+    {
+      "time": "2026-05-21T18:48:18.994Z",
+      "channel": "spotify",
+      "label": "Playlist queued",
+      "value": "Deep focus · 47 tracks"
+    },
+    {
+      "time": "2026-05-21T18:43:48.994Z",
+      "channel": "maps",
+      "label": "Place visit",
+      "value": "Café Schober"
+    },
+    {
+      "time": "2026-05-21T18:33:48.994Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Why your dbt jobs are slow"
+    },
+    {
+      "time": "2026-05-21T18:23:48.994Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "Random Access Memories"
+    }
+  ]
+}

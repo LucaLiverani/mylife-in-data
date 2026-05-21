@@ -15,12 +15,20 @@ interface ChannelHistogramProps {
   bins: HistogramBin[];
   /** Tooltip value formatter. Default 'count'. */
   kind?: KpiKind;
-  /** Pixel height of the chart. Default 260. */
-  height?: number;
+  /**
+   * Pixel height of the chart, OR `'fill'` to expand to the parent's height
+   * (use this when the chart sits inside a flex-column Surface that should
+   * stretch to match a sibling card).
+   *
+   * Defaults to `'fill'` so equal-height grids "just work."
+   */
+  height?: number | 'fill';
   /** Tooltip name for the value (e.g., "Events", "Activities"). */
   unitLabel?: string;
   /** Highlight a single bin (e.g. busiest weekday) with a brighter fill. */
   highlightLabel?: string;
+  /** Minimum height in px when `height='fill'`. Default 220. */
+  minHeight?: number;
 }
 
 /**
@@ -38,17 +46,31 @@ export function ChannelHistogram({
   channel,
   bins,
   kind = 'count',
-  height = 260,
+  height = 'fill',
   unitLabel,
   highlightLabel,
+  minHeight = 220,
 }: ChannelHistogramProps) {
   const hex = CHANNEL_HEX[channel];
   const dimmedHex = `${hex}66`; // ~40% opacity when a highlight is set
 
+  // Tighten the per-category gap when there are few bars so the chart fills
+  // its container (7-bar weekday histograms otherwise look stranded inside a
+  // wide Surface). For 24-hour histograms we keep more breathing room.
+  const gap = bins.length <= 12 ? '12%' : '18%';
+  // Cap bar width so very-wide containers don't produce comically thick bars,
+  // but lift the cap well above the previous 32px so weekday charts read full-width.
+  const cap = bins.length <= 12 ? 72 : 36;
+
+  // When fill, use flex:1 so we expand inside a flex-column Surface.
+  const wrapStyle = height === 'fill'
+    ? { flex: '1 1 auto', minHeight, width: '100%' }
+    : { height, width: '100%' };
+
   return (
-    <div style={{ height }}>
+    <div style={wrapStyle}>
       <ResponsiveContainer>
-        <BarChart data={bins} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} barCategoryGap="20%">
+        <BarChart data={bins} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} barCategoryGap={gap}>
           <CartesianGrid {...CHART_STYLES.cartesianGrid} vertical={false} />
           <XAxis
             dataKey="label"
@@ -81,7 +103,7 @@ export function ChannelHistogram({
             cursor={{ fill: 'rgba(255,255,255,0.04)' }}
             formatter={(value: number) => [formatKpi(value, kind), unitLabel ?? 'Value']}
           />
-          <Bar dataKey="value" radius={0} maxBarSize={32}>
+          <Bar dataKey="value" radius={0} maxBarSize={cap}>
             {bins.map((bin) => (
               <Cell
                 key={bin.label}

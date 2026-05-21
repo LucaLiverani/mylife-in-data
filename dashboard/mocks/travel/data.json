@@ -15,7 +15,11 @@
     "searchPct": 31,
     "explorePct": 18,
     "firstActivity": "2026-02-21",
-    "lastActivity": "2026-05-21"
+    "lastActivity": "2026-05-21",
+    "kilometersTraveled": 4870,
+    "daysAwayFromHome": 27,
+    "newPlacesThisYear": 19,
+    "longestTripDays": 11
   },
   "locations": [
     {
@@ -1292,5 +1296,42 @@
         "other": 1
       }
     ]
-  }
+  },
+  "trips": [
+    {
+      "start": "2026-04-21",
+      "end": "2026-05-02",
+      "destination": "Tokyo",
+      "days": 11,
+      "km": 9460
+    },
+    {
+      "start": "2026-03-14",
+      "end": "2026-03-17",
+      "destination": "Berlin",
+      "days": 3,
+      "km": 1080
+    },
+    {
+      "start": "2026-02-28",
+      "end": "2026-03-02",
+      "destination": "Milan",
+      "days": 2,
+      "km": 460
+    },
+    {
+      "start": "2026-02-08",
+      "end": "2026-02-15",
+      "destination": "Lisbon",
+      "days": 7,
+      "km": 2730
+    },
+    {
+      "start": "2026-01-19",
+      "end": "2026-01-23",
+      "destination": "London",
+      "days": 4,
+      "km": 1620
+    }
+  ]
 }

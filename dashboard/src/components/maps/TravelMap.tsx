@@ -25,6 +25,7 @@ export function TravelMap({ locations }: TravelMapProps) {
       try {
         // Dynamically import Leaflet only on client side
         const L = (await import('leaflet')).default;
+        // @ts-expect-error — CSS side-effect import; Vite handles, tsc cannot resolve.
         await import('leaflet/dist/leaflet.css');
 
         if (!isMounted || !mapRef.current || mapInstanceRef.current) return;
@@ -49,19 +50,11 @@ export function TravelMap({ locations }: TravelMapProps) {
           noWrap: true,
         }).addTo(map);
 
-        // Custom marker icon
+        // Custom marker: flat at rest; glow lives in the hover handler below.
+        // (DESIGN.md §4 Flat-Rest Rule — shadow is a response, not decoration.)
         const customIcon = L.divIcon({
-          className: 'custom-marker',
-          html: `
-            <div style="
-              width: 12px;
-              height: 12px;
-              background: ${CHANNEL_HEX.maps};
-              border: 2px solid #fff;
-              border-radius: 50%;
-              box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
-            "></div>
-          `,
+          className: 'travel-marker',
+          html: `<div class="travel-marker-dot"></div>`,
           iconSize: [12, 12],
           iconAnchor: [6, 6],
         });
@@ -72,10 +65,9 @@ export function TravelMap({ locations }: TravelMapProps) {
           const marker = L.marker([location.lat, location.lng], { icon: customIcon })
             .addTo(map)
             .bindPopup(`
-              <div style="color: #1A1A1A; font-weight: 500;">
-                ${location.name}
-                <br/>
-                <span style="font-size: 0.75rem; color: #666;">${location.duration}</span>
+              <div class="travel-popup">
+                <div class="travel-popup-name">${location.name}</div>
+                <div class="travel-popup-meta">${location.duration}</div>
               </div>
             `);
           markers.push(marker);
@@ -125,21 +117,49 @@ export function TravelMap({ locations }: TravelMapProps) {
   }, [locations]);
 
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden border border-signal-white/10 relative">
+    <div className="relative h-full w-full overflow-hidden rounded-md border border-signal-white/10">
       <style>{`
         .leaflet-container {
-          background: linear-gradient(to bottom right, #1A1A1A, #2D2D2D) !important;
+          background: linear-gradient(to bottom right, var(--rack-black, #1A1A1A), var(--rack-charcoal, #2D2D2D)) !important;
         }
-        .leaflet-tile-pane {
-          opacity: 0.8;
+        .leaflet-tile-pane { opacity: 0.8; }
+
+        /* Marker — flat at rest, glow on hover (Flat-Rest Rule) */
+        .travel-marker-dot {
+          width: 12px;
+          height: 12px;
+          background: ${CHANNEL_HEX.maps};
+          border: 2px solid rgba(255,255,255,0.92);
+          border-radius: 50%;
+          transition: box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .travel-marker:hover .travel-marker-dot,
+        .travel-marker:focus-visible .travel-marker-dot {
+          box-shadow: 0 0 12px ${CHANNEL_HEX.maps}cc;
+        }
+
+        /* Popup — Rack Black surface, mono meta */
+        .leaflet-popup-content-wrapper {
+          background: #1A1A1A;
+          color: #FFFFFF;
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+        }
+        .leaflet-popup-tip { background: #1A1A1A; border: 1px solid rgba(255,255,255,0.1); }
+        .travel-popup-name { font-weight: 500; }
+        .travel-popup-meta {
+          margin-top: 4px;
+          font-family: "IBM Plex Mono", ui-monospace, monospace;
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.6);
         }
       `}</style>
       {isLoading && (
-        <div className="absolute inset-0 bg-rack-black/80 flex items-center justify-center z-10">
-          <p className="text-signal-white/50">Loading map...</p>
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-rack-black/80">
+          <p className="font-mono text-sm uppercase tracking-wider text-signal-white/60">Plotting the route…</p>
         </div>
       )}
-      <div ref={mapRef} className="w-full h-full" />
+      <div ref={mapRef} className="h-full w-full" />
     </div>
   );
 }

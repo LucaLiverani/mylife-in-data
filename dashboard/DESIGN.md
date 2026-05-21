@@ -171,7 +171,17 @@ The console body and signal layer.
 
 **Flat-by-default with state-driven lift.** Surfaces sit on the rack body without shadow, separated only by a hairline border (Signal White / 10%) or a tonal step. Elevation appears as a *response*: on hover, on focus, on the active live-now state. Never as decoration.
 
-The legacy glassmorphism (`bg-white/5 backdrop-blur-sm border-white/10` everywhere) is the system's prior aesthetic and is being phased out. The frontmatter and Components below describe the destination, not the current code.
+The legacy glassmorphism (`bg-white/5 backdrop-blur-sm border-white/10`) has been fully phased out of the current code (`/impeccable` detector run on 2026-05-21: 0 findings). The remaining Wrapped-flavored *gradient* moments are intentional, declared, and contained — see "Gradients in Wrapped moments" below.
+
+### Gradients in Wrapped moments (explicit exception)
+
+Channel colors are **LEDs by default**: solid, identity-carrying, never gradient. But three contained surfaces are permitted a vertical channel-color gradient as their Wrapped-flavored signature treatment:
+
+- **Live Track card** (Spotify, when playing): `from-channel-green/30 to-channel-green/5` top-to-bottom. The "soloed channel" gets a drenched panel.
+- **Source-page hero word** (the `<Spotify|YouTube|Maps|Calendar> Analytics` H1): the channel-coloured word stays solid; the surrounding container is allowed a single soft gradient from the channel color at low opacity, never both.
+- **Year-in-review surfaces** (`/year`, when built): a single hero panel may carry a full channel-color gradient.
+
+Outside these declared moments, channel colors are flat solids. The default is still LED.
 
 ### Shadow Vocabulary
 
@@ -210,7 +220,15 @@ The fader-strip variant for per-source pages.
 
 ### Cards / Containers
 
-There are no decorative cards. Containers exist only when grouping is semantically real (a chart and its legend, a list and its header). When they exist:
+There are no decorative cards. Containers exist only when grouping is semantically real. The `Surface` component is the canonical implementation; reach for it when:
+
+- A chart or list belongs *with* a heading and a legend (chart + tooltip = one container).
+- A KPI block belongs *with* its sparkline and its trend annotation.
+- A section is one logical surface, not a row of three siblings sitting on the page.
+
+Do not wrap every section in a `Surface`. If the only thing inside is a mono-uppercase heading and a chart that already extends to the page edges, the heading alone is enough — let it sit on the body.
+
+When containers exist:
 
 - **Corner Style:** rounded-md (8px).
 - **Background:** Rack Black, no glass blur.
@@ -218,6 +236,7 @@ There are no decorative cards. Containers exist only when grouping is semantical
 - **Internal padding:** 24px.
 - **Shadow Strategy:** none at rest. See Elevation.
 - **No nested containers.** A card inside a card is forbidden.
+- **Row containers (`-mx-6 -mb-6`) for list-rows that should bleed to the surface edge** — `EventRow` and the calendar Coming-up list use this pattern.
 
 ### Buttons
 
@@ -253,11 +272,30 @@ A list item, not a card.
 
 ### Navigation
 
-Not yet implemented. Direction:
+Implemented in `components/Nav.tsx`.
 
-- **Style:** persistent top bar with channel buttons (Spotify / YouTube / Maps / Calendar) as ghost buttons in mono, plus a logo/wordmark on the left.
-- **Active state:** the active source's channel color in the underline or focus ring; never as a full background fill.
-- **Mobile:** collapses to a slide-over with the four channels stacked vertically.
+- **Style:** sticky top bar (`h-14`, hairline border bottom). Wordmark left (4-cell channel-color glyph + "My Life in Data" in mono uppercase). Channel chips center: Spotify / YouTube / Maps / Calendar, each as a ghost-style chip with a small channel-color LED. Utility links right: Now / System.
+- **Active state:** the active source's chip shows a 2px channel-color underline along the bottom of the chip. Utility links use signal-white underline on focus; no background fill ever.
+- **Mobile:** collapses behind a hamburger toggle to a slide-over from below the bar; channels stacked vertically, with the utility links separated by a hairline divider.
+
+### Charts & primitives
+
+The dashboard ships its own minimal chart primitives so cross-page consistency is enforced at the component level, not at the call-site:
+
+- **`Sparkline`** — pure SVG mini line chart, no Recharts, two modes (fixed-width and responsive). Channel-colored area fill at 15% + 1.5px line. Aria-decorative by default.
+- **`TopList`** — leaderboard with rank · primary · secondary · inline sparkline · value. Sparkline column pinned to widest secondary label across rows so alignment holds.
+- **`ChannelPie`** — donut with channel-internal tonal ramp (`CHANNEL_RAMP[channel]`), grouped legend with percentages.
+- **`ChannelHistogram`** — square-bar histogram with channel-color fill, mono tick labels, optional highlight bar. Used for hour-of-day and weekday breakdowns.
+- **`CalendarHeatmap`** — GitHub-style 7 rows × N weeks. Channel-color tonal ramp by intensity. Used by the Calendar page (activity over months); will be reused by Spotify and YouTube for listening/watching heatmaps.
+- **`WeekGrid`** — 24h × 7d intensity grid. Channel-color alpha by intensity. Used by the Calendar page for "where the week goes."
+- **`DataGenerationChart`** — cross-channel 90-day line chart (Home only). Toggleable series in mono-uppercase chips.
+
+### Multi-series series colors
+
+Sub-series within a chart on a *single channel's page* must stay inside the channel ramp:
+`SERIES_COLOR[seriesName] = CHANNEL_RAMP[channel][tonalIndex]`.
+
+Never use Tailwind defaults (`#3b82f6`, `#10b981`, `#f59e0b`, `#8b5cf6`) for sub-series — they violate the Channel-Lane Rule.
 
 ## 6. Do's and Don'ts
 
@@ -268,8 +306,8 @@ Not yet implemented. Direction:
 - **Do** keep surfaces flat at rest. Lift, glow, and ring belong to *response*, not decoration.
 - **Do** earn Wrapped-flavored loud moments by surrounding them with restraint. A drenched hero buys its volume by being followed by surgical KPI rows.
 - **Do** put personality in copy first: headlines, empty states, error messages, the no-track caption on the Live Track card. The chart stays calm.
-- **Do** install a real type pairing in Tailwind config: **IBM Plex Sans + IBM Plex Mono** (or **Inter Tight + JetBrains Mono**) before treating typography as solved. The current system-stack fallback is a placeholder.
-- **Do** respect `prefers-reduced-motion`. Disable Typewriter, ParticleBackground, and entrance Framer Motion when set.
+- **Do** install a real type pairing in Tailwind config: **IBM Plex Sans + IBM Plex Mono** is wired up; before treating typography as solved, ship the actual webfont (Tailwind currently falls back to the system stack).
+- **Do** respect `prefers-reduced-motion`. The `usePrefersReducedMotion` hook + global CSS rule disable entrance animations when set — extend the same hook to any new Framer Motion entrances.
 - **Do** maintain 4.5:1 contrast on body text and 3:1 on labels — even inside Wrapped-flavored drenched moments.
 
 ### Don't:
@@ -282,4 +320,7 @@ Not yet implemented. Direction:
 - **Don't** apply `background-clip: text` gradient text anywhere. Single solid colors for type, always.
 - **Don't** let Wrapped energy spill into format. No story-mode-per-viewport, no full-bleed single-stat screens, no 100%-saturation flooding the whole canvas. The 70% intensity cap is real.
 - **Don't** style trend indicators with the channel color. Trends use Trace Up / Trace Down. The channel color is identity, not direction.
-- **Don't** hard-code source hex values in components (`#1DB954`, `#FF0000` repeated dozens of times across `Home.tsx`, `Spotify.tsx`, charts). Reference them through the `colors.channel-*` tokens.
+- **Don't** hard-code source hex values in components. Reference them through the `colors.channel-*` Tailwind tokens or via `CHANNEL_HEX`/`CHANNEL_RAMP` from `src/lib/channels.ts`.
+- **Don't** use Tailwind-default hex (`#3b82f6`, `#10b981`, `#f59e0b`, `#8b5cf6`) for sub-series colors on a channel's page. Use that channel's `CHANNEL_RAMP` instead — sub-series stay inside the lane.
+- **Don't** spinner-circle loaders. Use the mono-uppercase loading line (e.g. `Loading the console…`) or a skeleton.
+- **Don't** put a `text-2xl font-bold` H2 next to a mono-uppercase H2 on the same page. Pick one per page; the mono-uppercase label is the system default.
