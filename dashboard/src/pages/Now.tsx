@@ -1,55 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { FadeIn } from '@/components/animations/FadeIn';
-import { nowAPI } from '@/lib/api';
-import { CHANNEL_CLASS, type Channel } from '@/lib/channels';
+import { CHANNEL_CLASS } from '@/lib/channels';
+import { useLiveTimeline, type TimelineEvent } from '@/lib/useLiveTimeline';
 import { cn } from '@/lib/utils';
-
-interface TimelineEvent {
-  time: string;          // ISO
-  channel: Channel;
-  label: string;         // e.g. "Track started"
-  value: string;         // e.g. "Strobe — Deadmau5"
-  href?: string;
-}
-
-interface NowTimeline {
-  generatedAt: string;
-  windowMinutes: number;
-  events: TimelineEvent[];
-}
 
 const REFRESH_MS = 15_000;
 
 export default function NowPage() {
-  const [data, setData] = useState<NowTimeline | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [tick, setTick] = useState(0);
+  const { data, events, lastSync, loading, tick } = useLiveTimeline(REFRESH_MS);
+  void tick;
 
-  useEffect(() => {
-    let active = true;
-    const fetch = async () => {
-      try {
-        const result = (await nowAPI.getTimeline()) as NowTimeline;
-        if (!active) return;
-        setData(result);
-        setLastSync(new Date());
-      } catch {
-        if (active) setLastSync(new Date());
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    fetch();
-    const id = window.setInterval(fetch, REFRESH_MS);
-    return () => { active = false; window.clearInterval(id); };
-  }, []);
-
-  // 1Hz tick so the "Last sync Xs ago" indicator counts smoothly
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+  // Group events by local-day so a 7-day list stays readable.
+  const grouped = useMemo(() => groupByDay(events), [events]);
 
   if (loading) {
     return (
@@ -59,65 +21,75 @@ export default function NowPage() {
     );
   }
 
-  const eventsByMostRecent = (data?.events ?? []).slice().sort((a, b) =>
-    new Date(b.time).getTime() - new Date(a.time).getTime(),
-  );
-  const youngest = eventsByMostRecent[0];
-  const oldestSinceMs = youngest ? Date.now() - new Date(youngest.time).getTime() : null;
+  const windowMins = data?.windowMinutes ?? 60;
+  const windowLabel = formatWindow(windowMins);
   const lastSyncAgo = lastSync ? Math.floor((Date.now() - lastSync.getTime()) / 1000) : null;
-  void tick; // re-render trigger only
+  const fresh = lastSyncAgo !== null && lastSyncAgo < REFRESH_MS / 1000 + 2;
 
   return (
     <main className="min-h-screen text-signal-white">
       <div className="mx-auto max-w-3xl px-6 py-12">
         <FadeIn>
-          <div className="mb-10">
+          <div className="mb-8">
             <p className="mb-2 font-mono text-xs uppercase tracking-wider text-signal-white/60">Live console</p>
             <h1 className="text-5xl font-bold leading-[1.0] tracking-tight lg:text-6xl">Now</h1>
             <p className="mt-3 max-w-xl text-sm italic text-signal-white/60">
-              Everything that happened in the last {data?.windowMinutes ?? 60} minutes, across every channel.
+              Everything that's reached the warehouse in the last {windowLabel}, across every channel.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-widest text-signal-white/40">
               <span className="flex items-center gap-2">
                 <span
-                  className={cn(
-                    'block size-1.5 rounded-sm',
-                    lastSyncAgo !== null && lastSyncAgo < REFRESH_MS / 1000 + 2
-                      ? 'bg-trace-up animate-pulse'
-                      : 'bg-signal-white/30',
-                  )}
+                  className={cn('block size-1.5 rounded-sm', fresh ? 'bg-trace-up animate-pulse' : 'bg-signal-white/30')}
                   aria-hidden="true"
                 />
                 Last sync {lastSyncAgo === null ? '—' : `${lastSyncAgo}s`} ago · refresh every {REFRESH_MS / 1000}s
               </span>
-              {youngest && oldestSinceMs !== null && (
-                <span>Latest signal: {formatRelative(oldestSinceMs)} ago</span>
-              )}
+              <span>{events.length} signals · {grouped.length} day{grouped.length === 1 ? '' : 's'}</span>
             </div>
           </div>
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          {eventsByMostRecent.length === 0 ? (
+          {events.length === 0 ? (
             <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-8 text-center">
               <p className="font-mono text-sm uppercase tracking-wider text-signal-white/60">The console is silent.</p>
-              <p className="mt-2 text-xs italic text-signal-white/40">No signal in the last {data?.windowMinutes ?? 60} minutes.</p>
+              <p className="mt-2 text-xs italic text-signal-white/40">No signal in the last {windowLabel}.</p>
             </div>
           ) : (
-            <ol className="relative">
-              {/* vertical hairline */}
-              <span
-                aria-hidden="true"
-                className="absolute left-[7px] top-2 bottom-2 w-px bg-signal-white/10"
-              />
-              {eventsByMostRecent.map((e, i) => (
-                <TimelineRow key={`${e.time}-${i}`} event={e} />
+            <div className="space-y-8">
+              {grouped.map((day) => (
+                <DayGroup key={day.key} day={day} />
               ))}
-            </ol>
+            </div>
           )}
         </FadeIn>
       </div>
     </main>
+  );
+}
+
+interface DayBucket {
+  key: string;       // YYYY-MM-DD
+  label: string;     // "Today" / "Yesterday" / "Wed, Mar 5"
+  events: TimelineEvent[];
+}
+
+function DayGroup({ day }: { day: DayBucket }) {
+  return (
+    <section aria-label={day.label}>
+      <header className="mb-3 flex items-baseline justify-between">
+        <h2 className="font-mono text-xs uppercase tracking-widest text-signal-white/60">{day.label}</h2>
+        <span className="font-mono text-[10px] uppercase tracking-widest tabular-nums text-signal-white/40">
+          {day.events.length} signal{day.events.length === 1 ? '' : 's'}
+        </span>
+      </header>
+      <ol className="relative">
+        <span aria-hidden="true" className="absolute left-[7px] top-2 bottom-2 w-px bg-signal-white/10" />
+        {day.events.map((e, i) => (
+          <TimelineRow key={`${e.time}-${i}`} event={e} />
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -126,7 +98,7 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
   const channelText = CHANNEL_CLASS.text[event.channel];
   const localTime = new Date(event.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   return (
-    <li className="relative flex items-start gap-4 py-3">
+    <li className="relative flex items-start gap-4 py-2.5">
       <span className={cn('relative z-10 mt-1.5 block size-3.5 shrink-0 rounded-sm border-2 border-rack-black', dotClass)} aria-hidden="true" />
       <time
         dateTime={event.time}
@@ -145,11 +117,42 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
   );
 }
 
-function formatRelative(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  return `${h}h`;
+function formatWindow(minutes: number): string {
+  if (minutes < 60) return `${minutes} minutes`;
+  if (minutes < 24 * 60) {
+    const h = Math.round(minutes / 60);
+    return `${h} hour${h === 1 ? '' : 's'}`;
+  }
+  const d = Math.round(minutes / (24 * 60));
+  return `${d} day${d === 1 ? '' : 's'}`;
+}
+
+function groupByDay(events: TimelineEvent[]): DayBucket[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const buckets = new Map<string, DayBucket>();
+  for (const e of events) {
+    const d = new Date(e.time);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      const eventDay = new Date(d);
+      eventDay.setHours(0, 0, 0, 0);
+      const label =
+        eventDay.getTime() === today.getTime()     ? 'Today' :
+        eventDay.getTime() === yesterday.getTime() ? 'Yesterday' :
+        eventDay.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      bucket = { key, label, events: [] };
+      buckets.set(key, bucket);
+    }
+    bucket.events.push(e);
+  }
+
+  // Sort buckets by date desc (Today first), preserving event order within each
+  return Array.from(buckets.values()).sort(
+    (a, b) => new Date(b.events[0].time).getTime() - new Date(a.events[0].time).getTime(),
+  );
 }

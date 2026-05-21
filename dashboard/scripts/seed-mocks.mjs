@@ -568,32 +568,130 @@ write('system/health.json', {
 });
 
 // ---------- /api/now/timeline ----------
+// 7-day cross-channel feed. Spotify is the real-time channel (dense, ~200
+// events). YouTube and Maps are batch ingests (24-48h cadence) so they're
+// sparse. Calendar is daily-batched but denser during working hours.
 {
-  const TIMELINE_SEED = [
-    { dt:   30, channel: 'spotify',  label: 'Now playing',     value: 'Strobe — Deadmau5' },
-    { dt:   95, channel: 'youtube',  label: 'Watched',         value: 'Modular synth basics' },
-    { dt:  240, channel: 'spotify',  label: 'Track ended',     value: 'Tempo Tantrum — RJD2' },
-    { dt:  380, channel: 'calendar', label: 'Meeting started', value: 'Team standup · 30 min' },
-    { dt:  540, channel: 'spotify',  label: 'Liked',           value: 'I Want You — Mitski' },
-    { dt:  720, channel: 'maps',     label: 'Directions',      value: 'Zürich HB → home' },
-    { dt:  980, channel: 'youtube',  label: 'Searched',        value: 'how to lay down vinyl' },
-    { dt: 1240, channel: 'spotify',  label: 'Skipped',         value: 'Generic Lofi Beat 247' },
-    { dt: 1490, channel: 'calendar', label: 'Event ended',     value: 'Lunch (sandwich)' },
-    { dt: 1830, channel: 'spotify',  label: 'Playlist queued', value: 'Deep focus · 47 tracks' },
-    { dt: 2100, channel: 'maps',     label: 'Place visit',     value: 'Café Schober' },
-    { dt: 2700, channel: 'youtube',  label: 'Watched',         value: 'Why your dbt jobs are slow' },
-    { dt: 3300, channel: 'spotify',  label: 'Album opened',    value: 'Random Access Memories' },
-  ];
   const nowMs = TODAY.getTime();
+  const HOUR_MS = 3600_000;
+  const DAY_MS = 24 * HOUR_MS;
+  const timelineEvents = [];
+  const choice = (arr) => arr[Math.floor(rand() * arr.length)];
+
+  // ---- Spotify: ~200 events across 7d, waking-hours weighted ----
+  const SPOTIFY_TRACKS = [
+    ['Track started','Strobe — Deadmau5'],['Track ended','Tempo Tantrum — RJD2'],
+    ['Now playing','I Want You — Mitski'],['Track ended','Random Access Memories — Daft Punk'],
+    ['Liked','Untrue — Burial'],['Skipped','Generic Lofi Beat 247'],
+    ['Track started','Wide Open — The Chemical Brothers'],['Track ended','Teardrop — Massive Attack'],
+    ['Now playing','Midnight City — M83'],['Album opened','In Rainbows — Radiohead'],
+    ['Track started','Pyramid Song — Radiohead'],['Track ended','Nightcall — Kavinsky'],
+    ['Playlist queued','Deep focus · 47 tracks'],['Track started','Outro — M83'],
+    ['Skipped','Bored ambient #3'],['Track started','Genesis — Justice'],
+    ['Track ended','D.A.N.C.E. — Justice'],['Liked','Lazerhawk — Visitors'],
+    ['Track started','Cosmic Latte — Lone'],['Track ended','Avril 14th — Aphex Twin'],
+    ['Liked','Selva — Floating Points'],['Track ended','Last Resort — Trentemøller'],
+    ['Now playing','Innerbloom — RÜFÜS DU SOL'],['Track started','Roygbiv — Boards of Canada'],
+  ];
+  for (let i = 0; i < 200; i++) {
+    const daysAgo = rand() * 7;
+    const ts = new Date(nowMs - daysAgo * DAY_MS);
+    const h = ts.getHours();
+    if (h >= 2 && h <= 5 && rand() > 0.08) { i--; continue; }
+    const [label, value] = choice(SPOTIFY_TRACKS);
+    timelineEvents.push({ time: ts.toISOString(), channel: 'spotify', label, value });
+  }
+
+  // ---- YouTube: ~22 events across 7d, batch-clustered (daily cadence) ----
+  const YT_TITLES = [
+    'Modular synth basics in 12 minutes','Why your dbt jobs are slow',
+    'How to lay down vinyl flooring (search)','Inside the Polestar 4 — review',
+    'React 19 the things they didn’t tell you','Linux on a Framework 13 — one year later',
+    'Postgres bloat reindex concurrently (search)','How TypeScript has too many ways to type a thing',
+    'How to design a producer console UI','Best espresso machines (search)',
+    'Synthwave essentials — 70 min mix','Berghain documentary — first 15 minutes',
+    'What is webgpu actually for (search)','How dbt does incremental models',
+    'Building a CLI in Go — full tutorial','Why I switched from Vue to Solid',
+    'Cloudflare Pages vs Workers — comparison','Postgres vs ClickHouse for analytics',
+    'Tailwind v4 — what changed','The truth about HTMX',
+    'Watch this before refactoring','Modular synth bassline tutorial',
+  ];
+  let ytIdx = 0;
+  for (let d = 0; d < 7 && ytIdx < YT_TITLES.length; d++) {
+    const batchSize = 2 + Math.floor(rand() * 3);
+    for (let k = 0; k < batchSize && ytIdx < YT_TITLES.length; k++) {
+      const eventDayAgo = d + 0.05 + rand() * 0.9;
+      const ts = new Date(nowMs - eventDayAgo * DAY_MS);
+      const title = YT_TITLES[ytIdx++];
+      const isSearch = title.includes('(search)');
+      timelineEvents.push({
+        time: ts.toISOString(),
+        channel: 'youtube',
+        label: isSearch ? 'Searched' : 'Watched',
+        value: title.replace(' (search)', ''),
+      });
+    }
+  }
+
+  // ---- Maps: ~12 events across 7d, batch-clustered (~48h cadence) ----
+  const MAPS_EVENTS = [
+    ['Directions','Zürich HB → home'],['Place visit','Café Schober'],
+    ['Directions','home → Zürich HB'],['Search','sika headquarters baar'],
+    ['Place visit','Coop Pronto'],['Directions','Bern → Zürich'],
+    ['Search','dim sum near me'],['Place visit','Kaufleuten'],
+    ['Directions','airport → home'],['Search','best burger zurich'],
+    ['Place visit','Café Henrici'],['Directions','home → office'],
+  ];
+  let mapsIdx = 0;
+  for (let b = 0; b < 4 && mapsIdx < MAPS_EVENTS.length; b++) {
+    const batchSize = 2 + Math.floor(rand() * 2);
+    for (let k = 0; k < batchSize && mapsIdx < MAPS_EVENTS.length; k++) {
+      const eventDayAgo = (b * 2) + rand() * 2;
+      const ts = new Date(nowMs - eventDayAgo * DAY_MS);
+      const [label, value] = MAPS_EVENTS[mapsIdx++];
+      timelineEvents.push({ time: ts.toISOString(), channel: 'maps', label, value });
+    }
+  }
+
+  // ---- Calendar: ~25 events across 7d, working-hours weighted ----
+  const CAL_EVENTS = [
+    ['Meeting started','Team standup · 30 min'],['Event ended','Lunch (sandwich)'],
+    ['Meeting started','1:1 with manager · 30 min'],['Event ended','Design review · 60 min'],
+    ['Meeting started','Sprint planning · 90 min'],['Event ended','Coffee with Ana'],
+    ['Meeting started','Architecture sync · 45 min'],['Event ended','Pair on auth refactor'],
+    ['Event ended','Yoga · 60 min'],['Meeting started','Customer demo · 30 min'],
+    ['Event ended','Retrospective · 60 min'],['Meeting started','Hiring loop · 45 min'],
+    ['Event ended','Doctor appointment'],['Meeting started','Reading time · 30 min'],
+    ['Event ended','Family dinner'],['Meeting started','Deep work block · 90 min'],
+    ['Event ended','Run with Marco'],['Meeting started','Roadmap review · 60 min'],
+    ['Event ended','Concert · 3h'],['Meeting started','Sales sync · 30 min'],
+  ];
+  let calIdx = 0;
+  for (let d = 0; d < 7 && calIdx < CAL_EVENTS.length; d++) {
+    const dayDate = new Date(nowMs - d * DAY_MS);
+    const dow = dayDate.getDay();
+    const dayCount = dow === 0 || dow === 6 ? 1 + Math.floor(rand() * 2) : 4 + Math.floor(rand() * 2);
+    for (let k = 0; k < dayCount && calIdx < CAL_EVENTS.length; k++) {
+      const hour = 9 + Math.floor(rand() * 10);
+      const ts = new Date(nowMs - d * DAY_MS);
+      ts.setHours(hour, Math.floor(rand() * 60), 0, 0);
+      const [label, value] = CAL_EVENTS[calIdx++];
+      timelineEvents.push({ time: ts.toISOString(), channel: 'calendar', label, value });
+    }
+  }
+
+  timelineEvents.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
   write('now/timeline.json', {
     generatedAt: TODAY.toISOString(),
-    windowMinutes: 60,
-    events: TIMELINE_SEED.map((e) => ({
-      time: new Date(nowMs - e.dt * 1000).toISOString(),
-      channel: e.channel,
-      label: e.label,
-      value: e.value,
-    })),
+    windowMinutes: 10080, // 7d
+    ingestionCadence: {
+      spotify:  'real-time stream',
+      youtube:  'daily batch (~24h)',
+      maps:     'batch (~48h)',
+      calendar: 'daily batch (~24h)',
+    },
+    events: timelineEvents,
   });
 }
 

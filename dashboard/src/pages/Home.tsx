@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import { ChannelStrip, type ChannelStatus } from '@/components/ChannelStrip';
+import { LiveConsole } from '@/components/LiveConsole';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { DataGenerationChart } from '@/components/charts/DataGenerationChart';
 import { overviewAPI, travelAPI, calendarAPI, homeAPI } from '@/lib/api';
@@ -298,36 +297,12 @@ export default function Home() {
           </section>
         )}
 
-        {/* /now CTA — replaces the old three-panel Recent Signal section */}
-        <section aria-labelledby="now-cta">
+        {/* Live console — the last cross-channel events, embedded so Home reads
+            as a real-time surface, not just a summary. Click-through to /now.
+            Sized to match (and slightly exceed) the signal-over-time chart above. */}
+        <section aria-labelledby="live-console">
           <FadeIn delay={0.18}>
-            <Link
-              to="/now"
-              className="group block rounded-md border border-signal-white/10 bg-rack-black/60 p-6 transition-shadow duration-200 ease-snap hover:shadow-lift hover:border-signal-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white"
-            >
-              <div className="flex items-start justify-between gap-6">
-                <div>
-                  <h2 id="now-cta" className="mb-2 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-                    Last 60 minutes
-                  </h2>
-                  <p className="text-2xl font-bold text-signal-white">
-                    Watch the console live →
-                  </p>
-                  <p className="mt-2 max-w-xl text-sm italic text-signal-white/60">
-                    Every signal across every channel, in the order it happened.
-                  </p>
-                </div>
-                <div className="hidden items-center gap-3 sm:flex">
-                  <span className="grid grid-cols-2 gap-1" aria-hidden="true">
-                    <span className="block size-2 rounded-sm bg-channel-green animate-pulse" />
-                    <span className="block size-2 rounded-sm bg-channel-red" />
-                    <span className="block size-2 rounded-sm bg-channel-violet" />
-                    <span className="block size-2 rounded-sm bg-channel-blue" />
-                  </span>
-                  <ArrowRight className="size-5 text-signal-white/60 transition-transform group-hover:translate-x-1 group-hover:text-signal-white" aria-hidden="true" />
-                </div>
-              </div>
-            </Link>
+            <LiveConsole limit={12} />
           </FadeIn>
         </section>
       </div>
