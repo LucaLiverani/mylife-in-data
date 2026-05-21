@@ -62,22 +62,22 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
         {/* Left side: Main stats */}
         <div className="flex gap-8">
           <div>
-            <p className="text-xs text-white/50 mb-1">This Month</p>
-            <p className="text-2xl font-bold text-white">{parseInt(totalEvents).toLocaleString()}</p>
-            <p className="text-xs text-white/40">events</p>
+            <p className="text-xs text-signal-white/50 mb-1">This Month</p>
+            <p className="text-2xl font-bold text-signal-white">{parseInt(totalEvents).toLocaleString()}</p>
+            <p className="text-xs text-signal-white/40">events</p>
           </div>
           <div>
-            <p className="text-xs text-white/50 mb-1">Daily Average</p>
-            <p className="text-2xl font-bold text-white">{parseInt(avgPerDay).toLocaleString()}</p>
-            <p className="text-xs text-white/40">events/day</p>
+            <p className="text-xs text-signal-white/50 mb-1">Daily Average</p>
+            <p className="text-2xl font-bold text-signal-white">{parseInt(avgPerDay).toLocaleString()}</p>
+            <p className="text-xs text-signal-white/40">events/day</p>
           </div>
         </div>
 
         {/* Right side: Most Active KPI */}
         <div className="text-right">
-          <p className="text-xs text-white/50 mb-1">Most Active</p>
+          <p className="text-xs text-signal-white/50 mb-1">Most Active</p>
           <p className="text-xl font-bold" style={{ color: mostActive.color }}>{mostActive.name}</p>
-          <p className="text-xs text-white/40">{mostActive.total.toLocaleString()} events</p>
+          <p className="text-xs text-signal-white/40">{mostActive.total.toLocaleString()} events</p>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: s.color }}
             />
-            <span className="text-sm text-white/80">{s.name}</span>
+            <span className="text-sm text-signal-white/80">{s.name}</span>
           </button>
         ))}
       </div>
@@ -115,7 +115,7 @@ export function DataGenerationChart({ data, totalEvents, avgPerDay }: DataGenera
               label={{ value: 'Events', angle: -90, position: 'insideLeft', fill: 'rgba(255, 255, 255, 0.7)' }}
             />
             <Tooltip
-              contentStyle={CHART_STYLES.tooltip.contentStyle}
+              contentStyle={CHART_STYLES.tooltip.contentStyle} itemStyle={CHART_STYLES.tooltip.itemStyle} labelStyle={CHART_STYLES.tooltip.labelStyle}
               cursor={CHART_STYLES.tooltip.cursor}
             />
             {visibleSeries.Spotify && (

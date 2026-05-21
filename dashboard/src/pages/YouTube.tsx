@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { FadeIn } from '@/components/animations/FadeIn';
-import { ParticleBackground } from '@/components/animations/ParticleBackground';
 import { KPIMetric } from '@/components/KPIMetric';
 import { YouTubeCharts } from '@/components/charts/YouTubeCharts';
 import { youtubeAPI } from '@/lib/api';
@@ -25,14 +24,14 @@ interface DailyWatchTimeBreakdown {
 
 interface YouTubeFullData {
   kpis: {
-    videosWatched: string;
-    totalSearches: string;
-    totalAdsWatched: string;
-    adsPercentage: string;
-    totalWatchTime: string;
-    totalChannels: string;
+    videosWatched: number | string;
+    totalSearches: number | string;
+    totalAdsWatched: number | string;
+    adsPercentage: number | string;
+    totalWatchTime: number | string;
+    totalChannels: number | string;
     avgWatchTimePerDay: number;
-    enrichmentPercentage: string;
+    enrichmentPercentage: number | string;
     firstActivityDate: string;
     lastActivityDate: string;
   };
@@ -83,12 +82,11 @@ export default function YouTubePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white">
-        <ParticleBackground />
+      <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-[#FF0000] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-xl text-white/60">Loading YouTube data...</p>
+            <div className="w-16 h-16 border-4 border-channel-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-xl text-signal-white/60">Loading YouTube data...</p>
           </div>
         </div>
       </div>
@@ -97,12 +95,11 @@ export default function YouTubePage() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white">
-        <ParticleBackground />
+      <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-xl text-red-400">{error || 'No data available'}</p>
-            <Link to="/" className="mt-4 inline-block text-[#FF0000] hover:underline">
+            <Link to="/" className="mt-4 inline-block text-channel-red hover:underline">
               Return to Home
             </Link>
           </div>
@@ -112,21 +109,20 @@ export default function YouTubePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white">
-      <ParticleBackground />
+    <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
         {/* Header */}
         <FadeIn>
-          <Link to="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-signal-white/60 hover:text-signal-white transition-colors mb-8">
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Link>
           <div className="mb-12">
             <h1 className="text-5xl lg:text-7xl font-bold mb-4">
-              <span className="text-[#FF0000]">YouTube</span> Analytics
+              <span className="text-channel-red">YouTube</span> Analytics
             </h1>
-            <p className="text-xl text-white/60 italic">
+            <p className="text-xl text-signal-white/60 italic">
               Where productivity goes to die, one autoplay at a time.
             </p>
           </div>
@@ -135,38 +131,12 @@ export default function YouTubePage() {
         {/* KPI Section */}
         <section className="mb-12">
           <FadeIn delay={0.1}>
-            <h2 className="text-2xl font-bold mb-4">Overview</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-              <KPIMetric
-                label="Watch Time"
-                value={data.kpis.totalWatchTime}
-                color="#FF0000"
-              />
-              <KPIMetric
-                label="Total Channels"
-                value={data.kpis.totalChannels}
-                color="#FF0000"
-              />
-              <KPIMetric
-                label="Videos Watched"
-                value={data.kpis.videosWatched}
-                color="#FF0000"
-              />
-              <KPIMetric
-                label="Searches"
-                value={data.kpis.totalSearches}
-                color="#3b82f6"
-              />
-              <KPIMetric
-                label="Ads Watched"
-                value={data.kpis.totalAdsWatched}
-                color="#f59e0b"
-              />
-              <KPIMetric
-                label="Ads %"
-                value={`${data.kpis.adsPercentage}%`}
-                color="#f59e0b"
-              />
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Overview</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <KPIMetric label="Hours"    value={data.kpis.totalWatchTime} kind="hours"   channel="youtube" />
+              <KPIMetric label="Channels" value={data.kpis.totalChannels}  kind="count"   channel="youtube" />
+              <KPIMetric label="Videos"   value={data.kpis.videosWatched}  kind="count"   channel="youtube" />
+              <KPIMetric label="Ads"      value={data.kpis.adsPercentage}  kind="percent" channel="youtube" />
             </div>
           </FadeIn>
         </section>

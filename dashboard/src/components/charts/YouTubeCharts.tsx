@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Surface } from '@/components/Surface';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CHART_COLORS, CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatChartDate } from './chartConfig';
+import { ChannelPie } from './ChannelPie';
+import { TopList } from './TopList';
+import { ChannelHistogram } from './ChannelHistogram';
 
 interface DailyWatchTimeBreakdown {
   date: string;
@@ -28,6 +31,7 @@ interface YouTubeData {
     watchTimeHours: number;
     category: string;
     uniqueVideos: number;
+    trend?: number[];
   }>;
   categoryBreakdown: Array<{
     name: string;
@@ -100,27 +104,27 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
     <>
       {/* First: Daily Watch Time Breakdown - Full Width */}
       <section className="mb-12">
-        <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
+        <Surface className="p-6">
           <h2 className="text-2xl font-bold mb-6">Daily Watch Time (Last 30 Days)</h2>
 
           {/* Stats and KPIs */}
           <div className="flex justify-between items-start mb-6">
             <div className="flex gap-8">
               <div>
-                <p className="text-xs text-white/50 mb-1">Total Watch Time</p>
-                <p className="text-2xl font-bold text-white">{totalHours.toFixed(1)}h</p>
-                <p className="text-xs text-white/40">last 30 days</p>
+                <p className="text-xs text-signal-white/50 mb-1">Total Watch Time</p>
+                <p className="text-2xl font-bold text-signal-white">{totalHours.toFixed(1)}h</p>
+                <p className="text-xs text-signal-white/40">last 30 days</p>
               </div>
               <div>
-                <p className="text-xs text-white/50 mb-1">Daily Average</p>
-                <p className="text-2xl font-bold text-white">{avgHoursPerDay}h</p>
-                <p className="text-xs text-white/40">per day</p>
+                <p className="text-xs text-signal-white/50 mb-1">Daily Average</p>
+                <p className="text-2xl font-bold text-signal-white">{avgHoursPerDay}h</p>
+                <p className="text-xs text-signal-white/40">per day</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-white/50 mb-1">Most Time On</p>
+              <p className="text-xs text-signal-white/50 mb-1">Most Time On</p>
               <p className="text-xl font-bold" style={{ color: mostActive.color }}>{mostActive.name}</p>
-              <p className="text-xs text-white/40">{mostActive.total.toFixed(1)}h total</p>
+              <p className="text-xs text-signal-white/40">{mostActive.total.toFixed(1)}h total</p>
             </div>
           </div>
 
@@ -137,7 +141,7 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: s.color }}
                 />
-                <span className="text-sm text-white/80">{s.name}</span>
+                <span className="text-sm text-signal-white/80">{s.name}</span>
               </button>
             ))}
           </div>
@@ -157,7 +161,7 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
                 label={{ value: 'Hours', angle: -90, position: 'insideLeft', fill: 'rgba(255, 255, 255, 0.7)' }}
               />
               <Tooltip
-                contentStyle={CHART_STYLES.tooltip.contentStyle}
+                contentStyle={CHART_STYLES.tooltip.contentStyle} itemStyle={CHART_STYLES.tooltip.itemStyle} labelStyle={CHART_STYLES.tooltip.labelStyle}
                 cursor={CHART_STYLES.tooltip.cursor}
               />
               {visibleSeries.Watched && (
@@ -212,147 +216,91 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
               )}
             </LineChart>
           </ResponsiveContainer>
-        </Card>
+        </Surface>
       </section>
 
       {/* Second: Top Channels and Category Breakdown */}
       <section className="mb-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Channels */}
-          <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Top Channels</h2>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={data.topChannels.slice(0, 10)} layout="vertical">
-                <CartesianGrid {...CHART_STYLES.cartesianGrid} />
-                <XAxis
-                  type="number"
-                  stroke="#fff"
-                  label={{ value: 'Hours', position: 'insideBottom', offset: -5, fill: 'rgba(255, 255, 255, 0.7)' }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="channelTitle"
-                  stroke="#fff"
-                  width={120}
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip
-                  contentStyle={CHART_STYLES.tooltip.contentStyle}
-                  formatter={(value: number, name: string, props: any) => [
-                    `${value.toFixed(1)}h (${props.payload.watchCount} videos)`,
-                    'Watch Time'
-                  ]}
-                />
-                <Bar
-                  dataKey="watchTimeHours"
-                  fill={CHART_COLORS.youtube}
-                  radius={[0, 4, 4, 0]}
-                  label={{
-                    position: 'right',
-                    fill: '#fff',
-                    fontSize: 12,
-                    formatter: (value: number) => `${value.toFixed(1)}h`
-                  }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+          <Surface>
+            <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
+              Top Channels
+            </h2>
+            <TopList
+              channel="youtube"
+              kind="hours"
+              items={data.topChannels.map((c) => ({
+                primary: c.channelTitle,
+                secondary: c.category || `${c.watchCount} videos`,
+                value: c.watchTimeHours,
+                trend: c.trend,
+              }))}
+            />
+          </Surface>
 
           {/* Category Breakdown */}
-          <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Category Distribution</h2>
-            <ResponsiveContainer width="100%" height={350}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry: unknown) => {
-                    const data = entry as { name: string; value: number; percent?: number };
-                    return `${data.name} ${data.percent ? (data.percent * 100).toFixed(0) : 0}%`;
-                  }}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index: number) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS.youtubeShades[index % 5]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={CHART_STYLES.tooltip.contentStyle}
-                  itemStyle={{ color: '#fff' }}
-                  labelStyle={{ color: '#fff' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
+          <Surface>
+            <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
+              Category Distribution
+            </h2>
+            <ChannelPie channel="youtube" data={pieData} height={280} topN={5} />
+          </Surface>
         </div>
       </section>
 
       {/* Third: Hourly Activity - Full Width */}
       <section className="mb-12">
-        <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
-          <h2 className="text-2xl font-bold mb-6">Activity by Hour</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.hourlyActivity}>
-              <CartesianGrid {...CHART_STYLES.cartesianGrid} />
-              <XAxis
-                dataKey="hour"
-                stroke="#fff"
-                tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
-                tickLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
-              />
-              <YAxis
-                stroke="#fff"
-                tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
-                tickLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
-              />
-              <Tooltip contentStyle={CHART_STYLES.tooltip.contentStyle} />
-              <Bar dataKey="activities" fill={CHART_COLORS.youtube} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
+        <Surface>
+          <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
+            Activity by Hour
+          </h2>
+          <ChannelHistogram
+            channel="youtube"
+            bins={data.hourlyActivity.map((h) => ({ label: h.hour, value: h.activities }))}
+            unitLabel="Activities"
+            height={260}
+          />
+        </Surface>
       </section>
 
       {/* Fourth: Recent Videos - Full Width */}
       <section className="mb-12">
-        <Card className="p-8 bg-white/5 backdrop-blur-sm border-white/10">
+        <Surface className="p-6">
           <h2 className="text-2xl font-bold mb-6">Recent Videos</h2>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FF0000]/50 scrollbar-track-transparent">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-channel-red/50 scrollbar-track-transparent">
             {data.recentVideos.map((video, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
+                className="flex items-center justify-between p-3 border-b border-signal-white/5 last:border-b-0 hover:bg-signal-white/[0.03] transition-colors duration-150 ease-snap"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#FF0000]/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-channel-red/20 flex items-center justify-center flex-shrink-0">
                     {video.isFromAds ? (
-                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-                        <rect x="2" y="5" width="12" height="6" rx="1" fill="#FF0000"/>
+                      <svg className="size-4 text-channel-red" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="5" width="12" height="6" rx="1" fill="currentColor"/>
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-                        <path d="M5 3L13 8L5 13V3Z" fill="#FF0000"/>
+                      <svg className="size-4 text-channel-red" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M5 3L13 8L5 13V3Z" fill="currentColor"/>
                       </svg>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm truncate">{video.title}</div>
-                    <div className="text-xs text-white/60">
+                    <div className="text-xs text-signal-white/60">
                       {video.isFromAds ? 'From Ads' : 'Watched'}
                     </div>
                   </div>
                 </div>
                 <div className="text-right ml-4">
-                  <div className="text-sm font-semibold text-[#FF0000]">{video.relativeTime}</div>
-                  <div className="text-xs text-white/60">{video.timeOfDay}</div>
+                  <div className="text-sm font-semibold text-channel-red">{video.relativeTime}</div>
+                  <div className="text-xs text-signal-white/60">{video.timeOfDay}</div>
                 </div>
               </div>
             ))}
           </div>
-        </Card>
+        </Surface>
       </section>
     </>
   );

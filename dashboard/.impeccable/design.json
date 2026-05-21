@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-21T12:00:00Z",
+  "title": "Design System: My Life in Data",
+  "extensions": {
+    "colorMeta": {
+      "channel-green": {
+        "role": "primary",
+        "displayName": "Channel Green",
+        "canonical": "#1DB954",
+        "tonalRamp": ["#0A4F23", "#0F6E32", "#138C40", "#16A04A", "#1DB954", "#3FC972", "#73D998", "#A8E8BF"]
+      },
+      "channel-red": {
+        "role": "primary",
+        "displayName": "Channel Red",
+        "canonical": "#FF0000",
+        "tonalRamp": ["#660000", "#8B0000", "#B00000", "#D80000", "#FF0000", "#FF3333", "#FF6666", "#FFB3B3"]
+      },
+      "channel-violet": {
+        "role": "primary",
+        "displayName": "Channel Violet",
+        "canonical": "#A855F7",
+        "tonalRamp": ["#4A1D7A", "#5E2B9C", "#7339BD", "#8C42D8", "#A855F7", "#BC7DFA", "#D2A6FC", "#E7CFFE"]
+      },
+      "channel-blue": {
+        "role": "primary",
+        "displayName": "Channel Blue",
+        "canonical": "#4285F4",
+        "tonalRamp": ["#0F3F8C", "#1551AC", "#2167CF", "#3276E8", "#4285F4", "#6FA3F7", "#9DC2F9", "#CCE0FC"]
+      },
+      "rack-black": {
+        "role": "neutral",
+        "displayName": "Rack Black",
+        "canonical": "#1A1A1A",
+        "tonalRamp": ["#0A0A0A", "#121212", "#1A1A1A", "#222222", "#2D2D2D", "#3A3A3A", "#4A4A4A", "#5C5C5C"]
+      },
+      "rack-charcoal": {
+        "role": "neutral",
+        "displayName": "Rack Charcoal",
+        "canonical": "#2D2D2D",
+        "tonalRamp": ["#1A1A1A", "#222222", "#2D2D2D", "#3A3A3A", "#4A4A4A", "#5C5C5C", "#707070", "#858585"]
+      },
+      "signal-white": {
+        "role": "neutral",
+        "displayName": "Signal White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#1A1A1A", "#404040", "#666666", "#999999", "#CCCCCC", "#E5E5E5", "#F2F2F2", "#FFFFFF"]
+      },
+      "trace-up": {
+        "role": "tertiary",
+        "displayName": "Trace Up",
+        "canonical": "#34D399",
+        "tonalRamp": ["#0F4F38", "#16704F", "#1E9168", "#27B080", "#34D399", "#5FDEAE", "#8AE8C3", "#B5F1D7"]
+      },
+      "trace-down": {
+        "role": "tertiary",
+        "displayName": "Trace Down",
+        "canonical": "#F87171",
+        "tonalRamp": ["#5A1F1F", "#7A2929", "#9B3434", "#C84A4A", "#F87171", "#FA9494", "#FBB6B6", "#FDD9D9"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero on Home, source-page title (Spotify / YouTube / Maps / Calendar)." },
+      "headline": { "displayName": "Headline", "purpose": "Top-of-section H2s within a page." },
+      "title": { "displayName": "Title", "purpose": "Card titles, sub-section headers." },
+      "body": { "displayName": "Body", "purpose": "Prose, KPI explainer markdown, tooltips. Cap at 65–75ch." },
+      "label": { "displayName": "Label", "purpose": "Mono KPI captions, axis labels, channel identifiers. Slight letter-spacing." },
+      "numeric": { "displayName": "Numeric", "purpose": "Every KPI value and figure rendered from data. Tabular figures." }
+    },
+    "shadows": [
+      { "name": "lift", "value": "0 8px 24px rgba(0, 0, 0, 0.4)", "purpose": "Hover state on interactive surfaces (channel tiles, list rows). Subtle, downward, charcoal-tinted." },
+      { "name": "channel-glow-green", "value": "0 0 32px rgba(29, 185, 84, 0.3)", "purpose": "Hover or active state on the Spotify channel tile only." },
+      { "name": "channel-glow-red", "value": "0 0 32px rgba(255, 0, 0, 0.3)", "purpose": "Hover or active state on the YouTube channel tile only." },
+      { "name": "channel-glow-violet", "value": "0 0 32px rgba(168, 85, 247, 0.3)", "purpose": "Hover or active state on the Maps channel tile only." },
+      { "name": "channel-glow-blue", "value": "0 0 32px rgba(66, 133, 244, 0.3)", "purpose": "Hover or active state on the Calendar channel tile only." }
+    ],
+    "motion": [
+      { "name": "ease-out-snap", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default easing for state transitions (hover, focus). Sharp, no bounce." },
+      { "name": "duration-fast", "value": "120ms", "purpose": "Micro-interactions: hover-in, focus-on, value flicker." },
+      { "name": "duration-state", "value": "200ms", "purpose": "State changes: tile lift, ring appearance, channel solo." },
+      { "name": "duration-page", "value": "400ms", "purpose": "Page-level entrances (FadeIn). Respect prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Channel Tile",
+      "kind": "card",
+      "refersTo": "channel-tile",
+      "description": "Home page source card. A mixing-desk channel strip with LED indicator and fader.",
+      "html": "<a href=\"#\" class=\"ds-channel-tile\" data-channel=\"green\"><span class=\"ds-channel-led\"></span><span class=\"ds-channel-label\">SPOTIFY</span><span class=\"ds-channel-value\">847</span><span class=\"ds-channel-meta\">ARTISTS</span><span class=\"ds-channel-fader\"><span class=\"ds-channel-fader-fill\"></span></span></a>",
+      "css": ".ds-channel-tile { display: grid; grid-template-rows: auto auto auto auto; gap: 8px; padding: 20px; background: #1A1A1A; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; text-decoration: none; color: #FFFFFF; font-family: ui-sans-serif, system-ui, sans-serif; transition: box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms cubic-bezier(0.22, 1, 0.36, 1); cursor: pointer; } .ds-channel-tile[data-channel=\"green\"] .ds-channel-led { background: #1DB954; } .ds-channel-tile[data-channel=\"green\"]:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 32px rgba(29,185,84,0.3); border-color: rgba(29,185,84,0.4); } .ds-channel-tile[data-channel=\"green\"] .ds-channel-fader-fill { background: #1DB954; } .ds-channel-led { width: 8px; height: 8px; border-radius: 1px; } .ds-channel-label { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em; color: rgba(255,255,255,0.6); text-transform: uppercase; } .ds-channel-value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 2.25rem; font-weight: 700; line-height: 1; font-feature-settings: 'tnum'; color: #FFFFFF; } .ds-channel-meta { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.625rem; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); text-transform: uppercase; } .ds-channel-fader { height: 3px; background: rgba(255,255,255,0.1); border-radius: 1px; overflow: hidden; margin-top: 4px; } .ds-channel-fader-fill { display: block; height: 100%; width: 68%; }"
+    },
+    {
+      "name": "KPI Meter",
+      "kind": "card",
+      "refersTo": "kpi-meter",
+      "description": "Per-source-page KPI tile with mono numeric and an optional fader bar.",
+      "html": "<div class=\"ds-kpi-meter\"><span class=\"ds-kpi-label\">TOTAL TIME</span><span class=\"ds-kpi-value\">253h</span><span class=\"ds-kpi-fader\"><span class=\"ds-kpi-fader-fill\"></span></span></div>",
+      "css": ".ds-kpi-meter { display: grid; gap: 6px; padding: 16px 20px; background: #1A1A1A; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; } .ds-kpi-label { font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.6); text-transform: uppercase; } .ds-kpi-value { font-size: 1.875rem; font-weight: 700; line-height: 1; font-feature-settings: 'tnum'; color: #1DB954; } .ds-kpi-fader { height: 2px; background: rgba(255,255,255,0.1); margin-top: 4px; overflow: hidden; } .ds-kpi-fader-fill { display: block; height: 100%; width: 72%; background: #1DB954; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Confirmation actions only.",
+      "html": "<button class=\"ds-btn-primary\">CONFIRM</button>",
+      "css": ".ds-btn-primary { background: #FFFFFF; color: #1A1A1A; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; transition: box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 120ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-primary:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.4); } .ds-btn-primary:focus-visible { outline: 2px solid #4285F4; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Default for navigation and secondary actions.",
+      "html": "<button class=\"ds-btn-ghost\">VIEW DETAILS</button>",
+      "css": ".ds-btn-ghost { background: #1A1A1A; color: rgba(255,255,255,0.6); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; cursor: pointer; transition: border-color 200ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-ghost:hover { border-color: rgba(255,255,255,0.4); color: #FFFFFF; } .ds-btn-ghost:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Single-line text input. Mono input text.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"track name\" aria-label=\"Search tracks\" />",
+      "css": ".ds-input { background: #1A1A1A; color: #FFFFFF; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.875rem; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; width: 100%; transition: border-color 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-input::placeholder { color: rgba(255,255,255,0.4); } .ds-input:focus { border-color: #FFFFFF; outline: 2px solid #1DB954; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Producer's Console",
+    "overview": "The dashboard is a control room for one person's digital life. Four channels — Spotify, YouTube, Maps, Calendar — feed signal into one master view. The aesthetic borrows from studio gear and modular synths: matte rack surfaces, mono-forward labels, LED-tinted accents, fader-strip layouts where each channel has its lane and its signature color.\n\nTwo reference frequencies share the band: Raycast sets the baseline tempo (dense, restrained, confident), and Spotify Wrapped at ~70% intensity owns the expressive moments. They alternate — never both at full volume at once.",
+    "keyCharacteristics": [
+      "Producer-console aesthetic: rack surfaces, fader strips, LED-tinted channel colors, mono numerics",
+      "Calm bones (Raycast), expressive moments (Wrapped at 70%) — never both loud at once",
+      "Flat-by-default surfaces; lift only in response to state (hover, focus)",
+      "Voice in copy, not in chrome",
+      "Channel-color discipline: each source owns one accent, used as signal not decoration"
+    ],
+    "rules": [
+      { "name": "The Channel-Lane Rule", "body": "A channel color owns its source page and only its source page. Channel Green never appears on the YouTube page; Channel Red never appears in a Spotify chart. Cross-source aggregate pages (Home, AI chat) may show all four together — that is the only context where they share a screen.", "section": "colors" },
+      { "name": "The 10% Rule, Reframed", "body": "Outside Wrapped-flavored moments, the channel color occupies ≤10% of any given screen. Inside a Wrapped moment — a hero, a live-now card, a soloed channel — it may occupy 30–60% of a contained area, never the whole viewport.", "section": "colors" },
+      { "name": "The Trace-Not-Identity Rule", "body": "Trends (up/down) use Trace Up / Trace Down, not the channel color. The channel color is the source's identity; the trace is the data's direction.", "section": "colors" },
+      { "name": "The Mono-for-Data Rule", "body": "Anything that is a number rendered from data — KPI values, timestamps, percentages, durations, axis ticks — is set in mono with tabular figures. Prose is sans.", "section": "typography" },
+      { "name": "The 65ch Rule", "body": "Body prose (the explainer pages especially) caps line length at 65–75ch.", "section": "typography" },
+      { "name": "The Flat-Rest Rule", "body": "Every surface is flat at rest. No drop shadows, no glass blur, no gradient borders. If the surface looks elevated when nothing is happening, it is over-designed.", "section": "elevation" },
+      { "name": "The Single-Lift Rule", "body": "Only one element on a screen lifts at a time. Hover state is exclusive — when one tile lifts, the rest stay flat.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do treat every source as a channel: one color, one lane, one signature LED. Cross-channel mixing happens only on aggregate views (Home, the planned AI chat).",
+      "Do set all numerics in mono with tabular figures. Every KPI, every timestamp, every axis tick.",
+      "Do keep surfaces flat at rest. Lift, glow, and ring belong to response, not decoration.",
+      "Do earn Wrapped-flavored loud moments by surrounding them with restraint.",
+      "Do put personality in copy first: headlines, empty states, error messages, the no-track caption on the Live Track card.",
+      "Do install a real type pairing in Tailwind config: IBM Plex Sans + IBM Plex Mono (or Inter Tight + JetBrains Mono).",
+      "Do respect prefers-reduced-motion. Disable Typewriter, ParticleBackground, and entrance Framer Motion when set.",
+      "Do maintain 4.5:1 contrast on body text and 3:1 on labels — even inside Wrapped-flavored drenched moments."
+    ],
+    "donts": [
+      "Don't use glassmorphism (backdrop-blur, bg-white/5 frosted panels) as a default surface.",
+      "Don't ship side-stripe borders (border-left: 3px solid {color}) as a row affordance.",
+      "Don't nest containers. A card inside a card is forbidden.",
+      "Don't repeat the hero-metric template across the top of every page.",
+      "Don't use purple-to-blue or any other AI-tool gradient.",
+      "Don't apply background-clip: text gradient text anywhere.",
+      "Don't let Wrapped energy spill into format. No story-mode-per-viewport, no full-bleed single-stat screens.",
+      "Don't style trend indicators with the channel color. Trends use Trace Up / Trace Down.",
+      "Don't hard-code source hex values in components. Reference them through the colors.channel-* tokens."
+    ]
+  }
+}

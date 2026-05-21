@@ -1,0 +1,108 @@
+{
+  "spotify": [
+    {
+      "track": "Pacific Blue",
+      "artist": "Yussef Dayes",
+      "time": "2026-05-21T12:00:00.000Z",
+      "relativeTime": "4 min ago",
+      "albumArt": "https://picsum.photos/seed/Yussef%20Dayes/100"
+    },
+    {
+      "track": "Slow River",
+      "artist": "L'IMPÉRATRICE",
+      "time": "2026-05-21T11:56:00.000Z",
+      "relativeTime": "8 min ago",
+      "albumArt": "https://picsum.photos/seed/L'IMP%C3%89RATRICE/100"
+    },
+    {
+      "track": "Velvet Sky",
+      "artist": "kokoro",
+      "time": "2026-05-21T11:52:00.000Z",
+      "relativeTime": "12 min ago",
+      "albumArt": "https://picsum.photos/seed/kokoro/100"
+    },
+    {
+      "track": "Smooth Sailing",
+      "artist": "Burial",
+      "time": "2026-05-21T11:48:00.000Z",
+      "relativeTime": "16 min ago",
+      "albumArt": "https://picsum.photos/seed/Burial/100"
+    },
+    {
+      "track": "Tangerine",
+      "artist": "Jamie xx",
+      "time": "2026-05-21T11:44:00.000Z",
+      "relativeTime": "20 min ago",
+      "albumArt": "https://picsum.photos/seed/Jamie%20xx/100"
+    }
+  ],
+  "youtube": [
+    {
+      "title": "Inside Linux in 100 seconds",
+      "activityType": "watched",
+      "time": "2026-05-21T12:00:00.000Z",
+      "isFromAds": false,
+      "relativeTime": "18 min ago"
+    },
+    {
+      "title": "Why Rust in 100 seconds",
+      "activityType": "watched",
+      "time": "2026-05-21T11:42:00.000Z",
+      "isFromAds": false,
+      "relativeTime": "36 min ago"
+    },
+    {
+      "title": "How WebGPU explained",
+      "activityType": "watched",
+      "time": "2026-05-21T11:24:00.000Z",
+      "isFromAds": true,
+      "relativeTime": "54 min ago"
+    },
+    {
+      "title": "How Rust explained",
+      "activityType": "watched",
+      "time": "2026-05-21T11:06:00.000Z",
+      "isFromAds": false,
+      "relativeTime": "72 min ago"
+    },
+    {
+      "title": "Why WebGPU changes everything",
+      "activityType": "watched",
+      "time": "2026-05-21T10:48:00.000Z",
+      "isFromAds": false,
+      "relativeTime": "90 min ago"
+    }
+  ],
+  "maps": [
+    {
+      "location": "Amsterdam, Netherlands",
+      "type": "place_visit",
+      "time": "2026-05-21T12:00:00.000Z",
+      "timeOfDay": "Afternoon"
+    },
+    {
+      "location": "Copenhagen, Denmark",
+      "type": "search",
+      "time": "2026-05-21T11:15:00.000Z",
+      "timeOfDay": "Morning"
+    },
+    {
+      "location": "Edinburgh, UK",
+      "type": "place_view",
+      "time": "2026-05-21T10:30:00.000Z",
+      "timeOfDay": "Morning"
+    },
+    {
+      "location": "Zurich, Switzerland",
+      "type": "place_visit",
+      "time": "2026-05-21T09:45:00.000Z",
+      "timeOfDay": "Morning"
+    },
+    {
+      "location": "Edinburgh, UK",
+      "type": "place_view",
+      "time": "2026-05-21T09:00:00.000Z",
+      "timeOfDay": "Morning"
+    }
+  ]
+}

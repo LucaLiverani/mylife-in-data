@@ -28,48 +28,42 @@ A real-time personal analytics dashboard built with React and deployed on Cloudf
 ## Project Structure
 
 ```
-dashboard-cloudflare/
+dashboard/
+├── mocks/                  # Dev-mode sample data, served by Vite at /api/*
+│   ├── overview/stats.json
+│   ├── home/recent-events.json
+│   ├── spotify/{data,recent,summary,current}.json
+│   ├── youtube/data.json
+│   └── travel/data.json
 ├── public/
-│   └── fallback-data/      # Static fallback data
-│       ├── overview-stats.json
-│       ├── spotify-current.json
-│       └── ...
-├── src/
-│   ├── components/
-│   │   ├── animations/     # FadeIn, ParticleBackground, Typewriter
-│   │   ├── charts/         # Reusable chart components
-│   │   │   ├── chartConfig.ts
-│   │   │   ├── SpotifyCharts.tsx
-│   │   │   ├── YouTubeCharts.tsx
-│   │   │   ├── GoogleCharts.tsx
-│   │   │   └── MapsCharts.tsx
-│   │   ├── maps/           # TravelMap (Leaflet integration)
-│   │   ├── spotify/        # SpotifyLiveStream
-│   │   └── ui/             # Button, Card, etc.
-│   ├── lib/                # API client and utilities
+│   └── fallback-data/      # PROD fallback (raw ClickHouse rows, used by Workers)
+├── src/                    # React app (unchanged layout)
+│   ├── components/         # animations/, charts/, maps/, spotify/, ui/
+│   ├── lib/                # api.ts, utils.ts
 │   ├── pages/              # Home, Spotify, YouTube, Google, Maps
 │   ├── App.tsx
 │   └── main.tsx
-├── functions/
-│   ├── _shared/
-│   │   ├── clickhouse.ts   # ClickHouse HTTP client
-│   │   ├── fallback.ts     # Fallback data loader
-│   │   └── types.ts
-│   └── api/
-│       ├── overview/stats.ts
-│       ├── spotify/
-│       │   ├── current.ts  # Polling endpoint (with fallback)
-│       │   ├── data.ts
-│       │   ├── recent.ts
-│       │   └── summary.ts
-│       └── travel/data.ts
+├── functions/              # Cloudflare Workers Functions (prod /api/* handlers)
+│   ├── _shared/            # clickhouse.ts, fallback.ts, types.ts
+│   └── api/                # overview/, spotify/, youtube/, travel/, home/
+├── vite-plugins/
+│   └── mock-api.ts         # Dev-only Vite middleware: /api/* → mocks/*.json
 ├── scripts/
-│   ├── deploy-to-pages.sh  # Deploy to Cloudflare Pages
+│   ├── seed-mocks.mjs      # Regenerate mocks/ with `npm run seed`
+│   ├── deploy-to-pages.sh
 │   └── export-fallback-data.sh
 ├── wrangler.toml
 ├── vite.config.ts
 └── package.json
 ```
+
+### Two data systems, on purpose
+
+- **`mocks/`** — shaped JSON matching the frontend's expected response. Used
+  only by `npm run dev` (Vite middleware). Easiest path to iterate on UI.
+- **`public/fallback-data/`** — raw ClickHouse rows in JSONEachRow format.
+  Used by the Cloudflare Workers Functions at runtime when ClickHouse is
+  unreachable. Ship-time fallback, not dev-time.
 
 ## Getting Started
 
@@ -82,51 +76,48 @@ dashboard-cloudflare/
 
 ### Local Development
 
-1. **Clone and install dependencies**
-
 ```bash
-cd dashboard-cloudflare
+cd dashboard
 npm install
+npm run dev          # http://localhost:3000 — Vite + mock /api/* from mocks/
 ```
 
-2. **Configure environment variables**
+That's it. No ClickHouse, no wrangler, no env vars. The Vite dev plugin in
+`vite-plugins/mock-api.ts` serves any `/api/<path>` request from
+`mocks/<path>.json` and returns 404 with a helpful message for paths that
+don't have a mock yet.
 
-Create a `.dev.vars` file (git-ignored):
+#### Adding a new page or endpoint
+
+1. Add `mocks/<area>/<name>.json` with the shape you want the frontend to consume.
+2. Add the matching client call in `src/lib/api.ts`.
+3. Add the page in `src/pages/` and route in `src/App.tsx`.
+4. Reload the browser — no server restart needed.
+
+#### Regenerating richer sample data
 
 ```bash
-CLICKHOUSE_HOST=http://your-clickhouse-host:8123
-CLICKHOUSE_USER=admin
-CLICKHOUSE_PASSWORD=your_password
-CLICKHOUSE_DATABASE=analytics
+npm run seed         # regenerates everything under mocks/ via scripts/seed-mocks.mjs
 ```
 
-If you don't have ClickHouse running, the app will use fallback data automatically.
+Edit `scripts/seed-mocks.mjs` to change row counts, date ranges, or shapes.
+The generator uses a seeded PRNG so output is stable across runs.
 
-3. **Start development server**
+#### Full-stack smoke test (Cloudflare Workers Functions)
 
-Run the Vite dev server:
+Run this only before deploying — for day-to-day UI work the mock API is
+enough.
 
 ```bash
-npm run dev
-```
+# Optional: create .dev.vars (git-ignored) with ClickHouse credentials
+# CLICKHOUSE_HOST=http://your-clickhouse-host:8123
+# CLICKHOUSE_USER=admin
+# CLICKHOUSE_PASSWORD=your_password
+# CLICKHOUSE_DATABASE=analytics
 
-Visit http://localhost:3000
-
-4. **Test with Workers Functions (optional)**
-
-To test the full stack including API functions:
-
-**Terminal 1** - Build frontend:
-```bash
 npm run build
+npm run pages:dev    # http://localhost:8788 — real Workers Functions + ClickHouse fallback
 ```
-
-**Terminal 2** - Run Pages dev server:
-```bash
-npm run pages:dev
-```
-
-Visit http://localhost:8788
 
 ## Deployment to Cloudflare
 

@@ -35,3 +35,7 @@ export const travelAPI = {
 export const youtubeAPI = {
   getData: () => fetchAPI('/api/youtube/data'),
 };
+
+export const calendarAPI = {
+  getData: () => fetchAPI('/api/google/calendar'),
+};

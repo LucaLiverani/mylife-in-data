@@ -1,0 +1,585 @@
+{
+  "kpis": {
+    "plansCount": 614,
+    "freeDays": 12,
+    "totalEvents": 614,
+    "meetingHours": 142,
+    "avgDaily": 6.8,
+    "busiestDay": "Tue"
+  },
+  "busyHours": [
+    {
+      "hour": "00:00",
+      "events": 0
+    },
+    {
+      "hour": "01:00",
+      "events": 0
+    },
+    {
+      "hour": "02:00",
+      "events": 0
+    },
+    {
+      "hour": "03:00",
+      "events": 0
+    },
+    {
+      "hour": "04:00",
+      "events": 0
+    },
+    {
+      "hour": "05:00",
+      "events": 0
+    },
+    {
+      "hour": "06:00",
+      "events": 0
+    },
+    {
+      "hour": "07:00",
+      "events": 4
+    },
+    {
+      "hour": "08:00",
+      "events": 3
+    },
+    {
+      "hour": "09:00",
+      "events": 17
+    },
+    {
+      "hour": "10:00",
+      "events": 14
+    },
+    {
+      "hour": "11:00",
+      "events": 15
+    },
+    {
+      "hour": "12:00",
+      "events": 2
+    },
+    {
+      "hour": "13:00",
+      "events": 4
+    },
+    {
+      "hour": "14:00",
+      "events": 10
+    },
+    {
+      "hour": "15:00",
+      "events": 11
+    },
+    {
+      "hour": "16:00",
+      "events": 18
+    },
+    {
+      "hour": "17:00",
+      "events": 20
+    },
+    {
+      "hour": "18:00",
+      "events": 8
+    },
+    {
+      "hour": "19:00",
+      "events": 7
+    },
+    {
+      "hour": "20:00",
+      "events": 2
+    },
+    {
+      "hour": "21:00",
+      "events": 0
+    },
+    {
+      "hour": "22:00",
+      "events": 0
+    },
+    {
+      "hour": "23:00",
+      "events": 0
+    }
+  ],
+  "categories": [
+    {
+      "name": "Work",
+      "value": 344,
+      "percentage": 56
+    },
+    {
+      "name": "Health",
+      "value": 74,
+      "percentage": 12
+    },
+    {
+      "name": "Social",
+      "value": 86,
+      "percentage": 14
+    },
+    {
+      "name": "Personal",
+      "value": 68,
+      "percentage": 11
+    },
+    {
+      "name": "Travel",
+      "value": 43,
+      "percentage": 7
+    }
+  ],
+  "weekdayBreakdown": [
+    {
+      "day": "Mon",
+      "events": 19
+    },
+    {
+      "day": "Tue",
+      "events": 28
+    },
+    {
+      "day": "Wed",
+      "events": 18
+    },
+    {
+      "day": "Thu",
+      "events": 22
+    },
+    {
+      "day": "Fri",
+      "events": 21
+    },
+    {
+      "day": "Sat",
+      "events": 7
+    },
+    {
+      "day": "Sun",
+      "events": 5
+    }
+  ],
+  "upcomingEvents": [
+    {
+      "title": "Deep work",
+      "category": "Social",
+      "time": "2026-05-21T12:45:00.000Z",
+      "relativeTime": "in 45 min",
+      "durationMinutes": 48
+    },
+    {
+      "title": "Deep work",
+      "category": "Personal",
+      "time": "2026-05-21T13:30:00.000Z",
+      "relativeTime": "in 2h",
+      "durationMinutes": 38
+    },
+    {
+      "title": "Concert",
+      "category": "Travel",
+      "time": "2026-05-21T14:15:00.000Z",
+      "relativeTime": "in 2h",
+      "durationMinutes": 69
+    },
+    {
+      "title": "Reading time",
+      "category": "Personal",
+      "time": "2026-05-21T15:00:00.000Z",
+      "relativeTime": "in 3h",
+      "durationMinutes": 73
+    },
+    {
+      "title": "Design review",
+      "category": "Health",
+      "time": "2026-05-21T15:45:00.000Z",
+      "relativeTime": "in 4h",
+      "durationMinutes": 70
+    },
+    {
+      "title": "Reading time",
+      "category": "Social",
+      "time": "2026-05-21T16:30:00.000Z",
+      "relativeTime": "in 5h",
+      "durationMinutes": 83
+    },
+    {
+      "title": "Run with Marco",
+      "category": "Social",
+      "time": "2026-05-21T17:15:00.000Z",
+      "relativeTime": "in 5h",
+      "durationMinutes": 37
+    },
+    {
+      "title": "Standup",
+      "category": "Travel",
+      "time": "2026-05-21T18:00:00.000Z",
+      "relativeTime": "in 6h",
+      "durationMinutes": 26
+    }
+  ],
+  "dailyEvents": [
+    {
+      "date": "2026-02-21",
+      "events": 2
+    },
+    {
+      "date": "2026-02-22",
+      "events": 0
+    },
+    {
+      "date": "2026-02-23",
+      "events": 6
+    },
+    {
+      "date": "2026-02-24",
+      "events": 12
+    },
+    {
+      "date": "2026-02-25",
+      "events": 10
+    },
+    {
+      "date": "2026-02-26",
+      "events": 12
+    },
+    {
+      "date": "2026-02-27",
+      "events": 5
+    },
+    {
+      "date": "2026-02-28",
+      "events": 3
+    },
+    {
+      "date": "2026-03-01",
+      "events": 1
+    },
+    {
+      "date": "2026-03-02",
+      "events": 8
+    },
+    {
+      "date": "2026-03-03",
+      "events": 4
+    },
+    {
+      "date": "2026-03-04",
+      "events": 11
+    },
+    {
+      "date": "2026-03-05",
+      "events": 7
+    },
+    {
+      "date": "2026-03-06",
+      "events": 4
+    },
+    {
+      "date": "2026-03-07",
+      "events": 1
+    },
+    {
+      "date": "2026-03-08",
+      "events": 3
+    },
+    {
+      "date": "2026-03-09",
+      "events": 8
+    },
+    {
+      "date": "2026-03-10",
+      "events": 5
+    },
+    {
+      "date": "2026-03-11",
+      "events": 9
+    },
+    {
+      "date": "2026-03-12",
+      "events": 12
+    },
+    {
+      "date": "2026-03-13",
+      "events": 6
+    },
+    {
+      "date": "2026-03-14",
+      "events": 3
+    },
+    {
+      "date": "2026-03-15",
+      "events": 0
+    },
+    {
+      "date": "2026-03-16",
+      "events": 5
+    },
+    {
+      "date": "2026-03-17",
+      "events": 9
+    },
+    {
+      "date": "2026-03-18",
+      "events": 4
+    },
+    {
+      "date": "2026-03-19",
+      "events": 12
+    },
+    {
+      "date": "2026-03-20",
+      "events": 10
+    },
+    {
+      "date": "2026-03-21",
+      "events": 0
+    },
+    {
+      "date": "2026-03-22",
+      "events": 1
+    },
+    {
+      "date": "2026-03-23",
+      "events": 10
+    },
+    {
+      "date": "2026-03-24",
+      "events": 9
+    },
+    {
+      "date": "2026-03-25",
+      "events": 10
+    },
+    {
+      "date": "2026-03-26",
+      "events": 4
+    },
+    {
+      "date": "2026-03-27",
+      "events": 5
+    },
+    {
+      "date": "2026-03-28",
+      "events": 5
+    },
+    {
+      "date": "2026-03-29",
+      "events": 2
+    },
+    {
+      "date": "2026-03-30",
+      "events": 12
+    },
+    {
+      "date": "2026-03-31",
+      "events": 10
+    },
+    {
+      "date": "2026-04-01",
+      "events": 10
+    },
+    {
+      "date": "2026-04-02",
+      "events": 6
+    },
+    {
+      "date": "2026-04-03",
+      "events": 7
+    },
+    {
+      "date": "2026-04-04",
+      "events": 2
+    },
+    {
+      "date": "2026-04-05",
+      "events": 4
+    },
+    {
+      "date": "2026-04-06",
+      "events": 7
+    },
+    {
+      "date": "2026-04-07",
+      "events": 7
+    },
+    {
+      "date": "2026-04-08",
+      "events": 12
+    },
+    {
+      "date": "2026-04-09",
+      "events": 11
+    },
+    {
+      "date": "2026-04-10",
+      "events": 11
+    },
+    {
+      "date": "2026-04-11",
+      "events": 1
+    },
+    {
+      "date": "2026-04-12",
+      "events": 5
+    },
+    {
+      "date": "2026-04-13",
+      "events": 5
+    },
+    {
+      "date": "2026-04-14",
+      "events": 4
+    },
+    {
+      "date": "2026-04-15",
+      "events": 5
+    },
+    {
+      "date": "2026-04-16",
+      "events": 5
+    },
+    {
+      "date": "2026-04-17",
+      "events": 11
+    },
+    {
+      "date": "2026-04-18",
+      "events": 2
+    },
+    {
+      "date": "2026-04-19",
+      "events": 2
+    },
+    {
+      "date": "2026-04-20",
+      "events": 9
+    },
+    {
+      "date": "2026-04-21",
+      "events": 5
+    },
+    {
+      "date": "2026-04-22",
+      "events": 9
+    },
+    {
+      "date": "2026-04-23",
+      "events": 8
+    },
+    {
+      "date": "2026-04-24",
+      "events": 5
+    },
+    {
+      "date": "2026-04-25",
+      "events": 4
+    },
+    {
+      "date": "2026-04-26",
+      "events": 3
+    },
+    {
+      "date": "2026-04-27",
+      "events": 10
+    },
+    {
+      "date": "2026-04-28",
+      "events": 12
+    },
+    {
+      "date": "2026-04-29",
+      "events": 11
+    },
+    {
+      "date": "2026-04-30",
+      "events": 10
+    },
+    {
+      "date": "2026-05-01",
+      "events": 8
+    },
+    {
+      "date": "2026-05-02",
+      "events": 4
+    },
+    {
+      "date": "2026-05-03",
+      "events": 5
+    },
+    {
+      "date": "2026-05-04",
+      "events": 8
+    },
+    {
+      "date": "2026-05-05",
+      "events": 9
+    },
+    {
+      "date": "2026-05-06",
+      "events": 12
+    },
+    {
+      "date": "2026-05-07",
+      "events": 9
+    },
+    {
+      "date": "2026-05-08",
+      "events": 5
+    },
+    {
+      "date": "2026-05-09",
+      "events": 4
+    },
+    {
+      "date": "2026-05-10",
+      "events": 4
+    },
+    {
+      "date": "2026-05-11",
+      "events": 5
+    },
+    {
+      "date": "2026-05-12",
+      "events": 10
+    },
+    {
+      "date": "2026-05-13",
+      "events": 11
+    },
+    {
+      "date": "2026-05-14",
+      "events": 9
+    },
+    {
+      "date": "2026-05-15",
+      "events": 7
+    },
+    {
+      "date": "2026-05-16",
+      "events": 1
+    },
+    {
+      "date": "2026-05-17",
+      "events": 0
+    },
+    {
+      "date": "2026-05-18",
+      "events": 7
+    },
+    {
+      "date": "2026-05-19",
+      "events": 11
+    },
+    {
+      "date": "2026-05-20",
+      "events": 9
+    },
+    {
+      "date": "2026-05-21",
+      "events": 4
+    }
+  ]
+}

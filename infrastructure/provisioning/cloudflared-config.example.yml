@@ -1,0 +1,51 @@
+# Cloudflare Tunnel ingress config — TEMPLATE
+#
+# Copy to /home/admin/.cloudflared/config.yml on the VM and fill in:
+#   - <TUNNEL_ID>             your tunnel UUID (from `cloudflared tunnel list`)
+#   - <YOUR_DOMAIN>            your apex domain on Cloudflare
+#   - the credentials-file path (created by `cloudflared tunnel create`)
+#
+# After editing:
+#   for h in ch dagster airflow grafana; do
+#     cloudflared tunnel route dns <TUNNEL_ID> $h.<YOUR_DOMAIN>
+#   done
+#   sudo cloudflared service install
+#   sudo systemctl enable --now cloudflared
+#
+# Result: the VM has zero inbound ports open (other than 22). All UIs reach
+# you via Cloudflare's edge.
+
+tunnel: <TUNNEL_ID>
+credentials-file: /home/admin/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  # ── Warehouse: ClickHouse HTTP API (read by Cloudflare Workers Functions) ──
+  - hostname: ch.<YOUR_DOMAIN>
+    service: http://localhost:8123
+    originRequest:
+      noTLSVerify: true
+      # Recommend putting Cloudflare Access in front of this hostname so only
+      # your dashboard workers can hit it. Configure in Zero Trust → Access.
+
+  # ── Orchestration: Dagster UI (after the Airflow → Dagster cutover) ──
+  - hostname: dagster.<YOUR_DOMAIN>
+    service: http://localhost:3000
+
+  # ── Orchestration: Airflow UI (remove once Dagster fully replaces it) ──
+  - hostname: airflow.<YOUR_DOMAIN>
+    service: http://localhost:8080
+
+  # ── Observability: Grafana ──
+  - hostname: grafana.<YOUR_DOMAIN>
+    service: http://localhost:3001
+
+  # ── Storage console: MinIO (drop once R2 migration is done) ──
+  - hostname: minio.<YOUR_DOMAIN>
+    service: http://localhost:9001
+
+  # ── Broker console: Redpanda Console (after Kafka → Redpanda cutover) ──
+  - hostname: redpanda.<YOUR_DOMAIN>
+    service: http://localhost:8090
+
+  # Default catch-all — REQUIRED. Anything else returns 404 at the edge.
+  - service: http_status:404

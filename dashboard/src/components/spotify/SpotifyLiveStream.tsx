@@ -1,160 +1,44 @@
-import { useEffect, useState } from 'react';
-import { Music, Pause, Play } from 'lucide-react';
-
-interface SpotifyPlaybackData {
-  timestamp: string;
-  track_id: string | null;
-  track_name?: string;
-  track_uri?: string;
-  artists?: Array<{ id: string; name: string; uri: string }>;
-  album?: {
-    id: string;
-    name: string;
-    uri: string;
-    images: Array<{ url: string; height: number; width: number }>;
-  };
-
-  is_playing: boolean;
-  device?: {
-    id: string;
-    name: string;
-    type: string;
-    volume_percent: number;
-  };
-  context?: {
-    type: string;
-    uri: string;
-  } | null;
-}
-
-const LAST_TRACK_KEY = 'spotify_last_track';
-const POLL_INTERVAL = 1000; // Poll every 1 second
+import { Music } from 'lucide-react';
+import { useLiveSpotify } from '@/lib/useLiveSpotify';
 
 export function SpotifyLiveStream() {
-  const [currentTrack, setCurrentTrack] = useState<SpotifyPlaybackData | null>(null);
-  const [lastValidTrack, setLastValidTrack] = useState<SpotifyPlaybackData | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(LAST_TRACK_KEY);
-        return saved ? JSON.parse(saved) : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-
-  // Polling effect
-  useEffect(() => {
-    let isActive = true;
-    let timeoutId: number;
-
-    const poll = async () => {
-      if (!isActive) return;
-
-      try {
-        const response = await fetch('/api/spotify/current');
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch current track');
-        }
-
-        const data = await response.json();
-
-        if (!isActive) return;
-
-        // Handle the response
-        if (data.type === 'current_track') {
-          const trackData = data.data as SpotifyPlaybackData;
-          setCurrentTrack(trackData);
-          setIsConnected(true);
-          setError(null);
-
-          // Save as last valid track if it has track info
-          if (trackData.track_id) {
-            setLastValidTrack(trackData);
-            try {
-              localStorage.setItem(LAST_TRACK_KEY, JSON.stringify(trackData));
-            } catch (error) {
-              console.error('Failed to save track to localStorage:', error);
-            }
-          }
-
-          // Update playing state
-          setIsPlaying(trackData.is_playing);
-
-
-        } else if (data.type === 'no_track') {
-          setIsConnected(true);
-          setCurrentTrack({ ...data.data, track_id: null });
-          setIsPlaying(false);
-        }
-      } catch (err) {
-        if (!isActive) return;
-        console.error('Polling error:', err);
-        setError('Failed to fetch current track');
-        setIsConnected(false);
-      }
-
-      // Schedule next poll
-      if (isActive) {
-        timeoutId = window.setTimeout(poll, POLL_INTERVAL);
-      }
-    };
-
-    // Initial poll
-    poll();
-
-    return () => {
-      isActive = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, []);
+  const { data: currentTrack, lastValidTrack, isConnected, error } = useLiveSpotify();
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
-        <p className="text-red-400">{error}</p>
-        <p className="text-red-400/60 text-sm mt-2">
-          Make sure the API is accessible.
-        </p>
+      <div role="alert" className="rounded-md border border-trace-down/30 bg-trace-down/10 p-5">
+        <p className="font-mono text-sm text-trace-down">{error}</p>
+        <p className="mt-1 font-mono text-xs text-trace-down/70">API unreachable.</p>
       </div>
     );
   }
 
   if (!isConnected) {
     return (
-      <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+      <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-5">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
-          <p className="text-white/60">Loading current track...</p>
+          <span className="size-2 animate-pulse rounded-sm bg-signal-white/40" aria-hidden="true" />
+          <p className="font-mono text-xs uppercase tracking-wider text-signal-white/60">Connecting…</p>
         </div>
       </div>
     );
   }
 
-  // Determine which track to display
-  const displayTrack = (!currentTrack?.track_id && lastValidTrack)
-    ? { ...lastValidTrack, is_playing: false }
-    : currentTrack;
+  const displayTrack =
+    (!currentTrack?.track_id && lastValidTrack)
+      ? { ...lastValidTrack, is_playing: false }
+      : currentTrack;
 
   if (!displayTrack || !displayTrack.track_id) {
     return (
-      <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+      <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-5">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-white/10 rounded-lg flex items-center justify-center">
-            <Music className="w-8 h-8 text-white/40" />
+          <div className="flex size-16 items-center justify-center rounded-sm bg-rack-charcoal">
+            <Music className="size-7 text-signal-white/30" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-white/60">No track currently playing</p>
-            <p className="text-sm text-white/40 mt-1">
-              Start playing something on Spotify!
-            </p>
+            <p className="font-mono text-xs uppercase tracking-wider text-signal-white/60">The studio is quiet.</p>
+            <p className="mt-1 text-sm text-signal-white/40">No signal on the listening channel right now.</p>
           </div>
         </div>
       </div>
@@ -163,85 +47,80 @@ export function SpotifyLiveStream() {
 
   const albumImage = displayTrack.album?.images?.[0]?.url;
   const artistNames = displayTrack.artists?.map((a) => a.name).join(', ') || 'Unknown Artist';
+  const playing = displayTrack.is_playing;
 
   return (
-    <div className={`bg-gradient-to-br rounded-lg p-6 backdrop-blur-sm transition-all duration-700 ${
-      displayTrack.is_playing
-        ? 'from-[#1DB954]/20 to-[#1DB954]/5 border border-[#1DB954]/30 opacity-100'
-        : 'from-white/10 to-white/5 border border-white/20 opacity-85'
-    }`}>
-      <div className="flex items-center gap-2 mb-4">
-        {displayTrack.is_playing ? (
+    <article
+      role="status"
+      aria-live="polite"
+      aria-label={`Now ${playing ? 'playing' : 'paused'}: ${displayTrack.track_name} by ${artistNames}`}
+      className={
+        'overflow-hidden rounded-md border transition-colors duration-300 ease-snap ' +
+        (playing
+          ? 'border-channel-green/40 bg-gradient-to-br from-channel-green/30 to-channel-green/5'
+          : 'border-signal-white/10 bg-rack-black/60')
+      }
+    >
+      <header className="flex items-center gap-2 border-b border-signal-white/5 px-5 py-3">
+        {playing ? (
           <>
-            <div className="w-2 h-2 bg-[#1DB954] rounded-full animate-pulse" />
-            <p className="text-sm text-[#1DB954] font-medium">LIVE NOW</p>
+            <span className="size-2 animate-pulse rounded-sm bg-channel-green" aria-hidden="true" />
+            <p className="font-mono text-xs font-medium uppercase tracking-widest text-channel-green">
+              Live now
+            </p>
           </>
         ) : (
           <>
-            <div className="w-2 h-2 bg-white/40 rounded-full" />
-            <p className="text-sm text-white/60 font-medium">PAUSED</p>
+            <span className="size-2 rounded-sm bg-signal-white/40" aria-hidden="true" />
+            <p className="font-mono text-xs font-medium uppercase tracking-widest text-signal-white/60">
+              Paused
+            </p>
           </>
         )}
-      </div>
+      </header>
 
-      <div className="flex items-start gap-6">
-        {/* Album Art */}
-        <div className="flex-shrink-0">
+      <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:gap-6">
+        <div className="flex-shrink-0 self-center sm:self-start">
           {albumImage ? (
             <img
               src={albumImage}
-              alt={displayTrack.album?.name || 'Album art'}
-              className={`w-32 h-32 rounded-lg shadow-2xl transition-all duration-700 ${
-                displayTrack.is_playing ? 'grayscale-0' : 'grayscale-[30%]'
-              }`}
+              alt={displayTrack.album?.name ? `Album art for ${displayTrack.album.name}` : 'Album art'}
+              loading="lazy"
+              decoding="async"
+              className={
+                'size-24 rounded-sm transition-all duration-300 ease-snap sm:size-32 ' +
+                (playing ? 'grayscale-0' : 'grayscale-[30%]')
+              }
             />
           ) : (
-            <div className="w-32 h-32 bg-white/10 rounded-lg flex items-center justify-center">
-              <Music className="w-12 h-12 text-white/40" />
+            <div className="flex size-24 items-center justify-center rounded-sm bg-rack-charcoal sm:size-32">
+              <Music className="size-10 text-signal-white/30" aria-hidden="true" />
             </div>
           )}
         </div>
 
-        {/* Track Info */}
-        <div className="flex-grow min-w-0">
-          <h3 className="text-2xl font-bold text-white mb-2 truncate">
-            {displayTrack.track_name}
-          </h3>
-          <p className="text-lg text-white/70 mb-4 truncate">{artistNames}</p>
+        <div className="min-w-0 flex-grow">
+          <h3 className="mb-1 truncate text-xl font-bold sm:text-2xl">{displayTrack.track_name}</h3>
+          <p className="mb-4 truncate text-base text-signal-white/70">{artistNames}</p>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 text-sm text-white/60">
-              {displayTrack.is_playing ? (
-                <>
-                  <Play className="w-4 h-4 text-[#1DB954]" />
-                  <span>Playing</span>
-                </>
-              ) : (
-                <>
-                  <Pause className="w-4 h-4 text-white/40" />
-                  <span>Paused</span>
-                </>
-              )}
-            </div>
-
+          <dl className="space-y-1 font-mono text-xs text-signal-white/60">
             {displayTrack.album?.name && (
-              <p className="text-sm text-white/50">
-                <span className="text-white/70">Album:</span> {displayTrack.album.name}
-              </p>
+              <div className="flex gap-2">
+                <dt className="uppercase tracking-wider text-signal-white/40">Album</dt>
+                <dd className="truncate text-signal-white/80">{displayTrack.album.name}</dd>
+              </div>
             )}
-
             {displayTrack.device?.name && (
-              <p className="text-sm text-white/50">
-                <span className="text-white/70">Device:</span> {displayTrack.device.name} (
-                {displayTrack.device.type})
-              </p>
+              <div className="flex gap-2">
+                <dt className="uppercase tracking-wider text-signal-white/40">Device</dt>
+                <dd className="truncate text-signal-white/80">
+                  {displayTrack.device.name} <span className="text-signal-white/50">({displayTrack.device.type})</span>
+                </dd>
+              </div>
             )}
-          </div>
+          </dl>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
-
-
-

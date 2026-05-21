@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type L from 'leaflet';
+import { CHANNEL_HEX } from '@/lib/channels';
 
 interface TravelMapProps {
   locations: Array<{
@@ -55,7 +56,7 @@ export function TravelMap({ locations }: TravelMapProps) {
             <div style="
               width: 12px;
               height: 12px;
-              background: #A855F7;
+              background: ${CHANNEL_HEX.maps};
               border: 2px solid #fff;
               border-radius: 50%;
               box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
@@ -71,7 +72,7 @@ export function TravelMap({ locations }: TravelMapProps) {
           const marker = L.marker([location.lat, location.lng], { icon: customIcon })
             .addTo(map)
             .bindPopup(`
-              <div style="color: #1a1a1a; font-weight: 500;">
+              <div style="color: #1A1A1A; font-weight: 500;">
                 ${location.name}
                 <br/>
                 <span style="font-size: 0.75rem; color: #666;">${location.duration}</span>
@@ -89,7 +90,7 @@ export function TravelMap({ locations }: TravelMapProps) {
             L.polyline(
               [[from.lat, from.lng], [to.lat, to.lng]],
               {
-                color: '#A855F7',
+                color: CHANNEL_HEX.maps,
                 weight: 2,
                 opacity: 0.6,
                 dashArray: '5, 10',
@@ -124,18 +125,18 @@ export function TravelMap({ locations }: TravelMapProps) {
   }, [locations]);
 
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden border border-white/10 relative">
+    <div className="w-full h-full rounded-xl overflow-hidden border border-signal-white/10 relative">
       <style>{`
         .leaflet-container {
-          background: linear-gradient(to bottom right, #1a1a1a, #2d2d2d) !important;
+          background: linear-gradient(to bottom right, #1A1A1A, #2D2D2D) !important;
         }
         .leaflet-tile-pane {
           opacity: 0.8;
         }
       `}</style>
       {isLoading && (
-        <div className="absolute inset-0 bg-white/5 flex items-center justify-center z-10">
-          <p className="text-white/50">Loading map...</p>
+        <div className="absolute inset-0 bg-rack-black/80 flex items-center justify-center z-10">
+          <p className="text-signal-white/50">Loading map...</p>
         </div>
       )}
       <div ref={mapRef} className="w-full h-full" />
