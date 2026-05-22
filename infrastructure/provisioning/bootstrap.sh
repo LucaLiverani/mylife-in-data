@@ -31,8 +31,8 @@ set -euo pipefail
 # ─────────────────────────────────────────────────────────────────────────────
 USERNAME="${USERNAME:-admin}"
 TIMEZONE="${TIMEZONE:-Europe/Zurich}"
-HOSTNAME_NEW="${HOSTNAME_NEW:-mylife-data}"
-GH_DEPLOY_KEY_NAME="github_mylife"
+HOSTNAME_NEW="${HOSTNAME_NEW:-perry}"
+GH_DEPLOY_KEY_NAME="github_perry_deploy_key"  # filename (without .pub) for the GitHub deploy key, stored in the new user's ~/.ssh/
 GH_REPO_HOST="github.com"
 
 # ─────────────────────────────────────────────────────────────────────────────
