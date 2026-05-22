@@ -176,8 +176,14 @@ source infrastructure/provisioning/.env
 
 ### 2.3 Clone the repo + set up `.env`
 
-- [ ] `ssh $VM_USER@$VM_IP "git clone $GH_REPO && cd mylife-in-data"`.
-- [ ] For each `.env` file created in Phase 0.1, `scp` it from your laptop to the matching path on the VM. **Do not commit them.** Set permissions: `ssh $VM_USER@$VM_IP "find mylife-in-data/infrastructure -name '.env' -exec chmod 600 {} +"`.
+- [ ] `ssh $VM_USER@$VM_IP "git clone $GH_REPO mylife-in-data"`.
+- [ ] Copy the consolidated `infrastructure/.env` from your laptop to the VM:
+  ```bash
+  scp infrastructure/.env $VM_USER@$VM_IP:mylife-in-data/infrastructure/.env
+  ssh $VM_USER@$VM_IP "chmod 600 ~/mylife-in-data/infrastructure/.env && sed -i '/^DAGSTER_PORT=/d' ~/mylife-in-data/infrastructure/.env"
+  ```
+  The `sed` strips the `DAGSTER_PORT=3030` laptop-only override so Dagster binds the canonical 3000 on the VM (which is what the cloudflared tunnel expects).
+- [ ] No need to scp per-service `.env` files — `start-all.sh` recreates the symlinks under each `compose/*/` automatically.
 
 ### 2.4 Provision R2 object storage
 
