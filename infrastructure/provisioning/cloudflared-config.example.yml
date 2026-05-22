@@ -27,23 +27,16 @@ ingress:
       # Recommend putting Cloudflare Access in front of this hostname so only
       # your dashboard workers can hit it. Configure in Zero Trust → Access.
 
-  # ── Orchestration: Dagster UI (after the Airflow → Dagster cutover) ──
+  # ── Orchestration: Dagster UI ──
+  # 3030 matches DAGSTER_PORT in infrastructure/.env.
   - hostname: dagster.<YOUR_DOMAIN>
-    service: http://localhost:3000
-
-  # ── Orchestration: Airflow UI (remove once Dagster fully replaces it) ──
-  - hostname: airflow.<YOUR_DOMAIN>
-    service: http://localhost:8080
+    service: http://localhost:3030
 
   # ── Observability: Grafana ──
   - hostname: grafana.<YOUR_DOMAIN>
     service: http://localhost:3001
 
-  # ── Storage console: MinIO (drop once R2 migration is done) ──
-  - hostname: minio.<YOUR_DOMAIN>
-    service: http://localhost:9001
-
-  # ── Broker console: Redpanda Console (after Kafka → Redpanda cutover) ──
+  # ── Broker console: Redpanda Console ──
   - hostname: redpanda.<YOUR_DOMAIN>
     service: http://localhost:8090
 

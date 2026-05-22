@@ -8,7 +8,7 @@ Docker Compose stack for the data platform.
 |---|---|---|
 | `redpanda/` | Kafka-compatible broker + Console | 9093 (Kafka), 8090 (Console) |
 | `clickhouse/` | OLAP warehouse + Keeper | 8123 (HTTP), 9200 (native), 9181 (Keeper) |
-| `dagster/` | Webserver + daemon + Postgres metadata DB | 3000 (default; 3030 if `DAGSTER_PORT=3030` in `.env`) |
+| `dagster/` | Webserver + daemon + Postgres metadata DB | 3030 (override with `DAGSTER_PORT` in `.env`) |
 | `monitoring/` | Prometheus + Grafana | 9090 (Prom), 3001 (Grafana) |
 
 All containers share the external network `data-platform-network`. Object storage uses Cloudflare R2 (configured via `.env`, not in compose).

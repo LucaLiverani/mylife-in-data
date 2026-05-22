@@ -21,7 +21,7 @@ DEPLOYMENT_PLAN.md      Step-by-step plan: local → VM → tunnel → dashboard
 |---|---|---|
 | Redpanda | Kafka-compatible event streaming | 9093 (host) / 9092 (network) |
 | ClickHouse | Columnar OLAP warehouse | 8123 (HTTP) / 9200 (native) |
-| Dagster | Asset-based orchestration | 3000 (3030 on this laptop) |
+| Dagster | Asset-based orchestration | 3030 |
 | Prometheus + Grafana | Monitoring | 9090 / 3001 |
 
 Object storage: Cloudflare R2 (provisioned outside the compose stack). Every credential — ClickHouse, Grafana, Dagster Postgres — flows from `infrastructure/.env` (gitignored), referenced via `${VAR}` in compose YAML. Nothing personal is hardcoded in any committed file.
