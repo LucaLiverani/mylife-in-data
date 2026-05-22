@@ -28,9 +28,8 @@ ingress:
       # your dashboard workers can hit it. Configure in Zero Trust → Access.
 
   # ── Orchestration: Dagster UI ──
-  # 3030 matches DAGSTER_PORT in infrastructure/.env.
   - hostname: dagster.<YOUR_DOMAIN>
-    service: http://localhost:3030
+    service: http://localhost:3000
 
   # ── Observability: Grafana ──
   - hostname: grafana.<YOUR_DOMAIN>
