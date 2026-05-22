@@ -43,9 +43,14 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-if [[ ! -f /root/.ssh/authorized_keys ]] || [[ ! -s /root/.ssh/authorized_keys ]]; then
-  echo "ERROR: /root/.ssh/authorized_keys is empty or missing." >&2
-  echo "       Run 'ssh-copy-id root@<VM_IP>' from your laptop first." >&2
+# Need at least one path of key-based access. After SSH hardening per
+# infrastructure/server/README.md root usually has no authorized_keys; in that
+# case the target user must already exist with their own key installed.
+USER_HOME_PRECHECK="/home/${USERNAME:-admin}"
+if [[ ! -s /root/.ssh/authorized_keys ]] && [[ ! -s "$USER_HOME_PRECHECK/.ssh/authorized_keys" ]]; then
+  echo "ERROR: no SSH key found in /root/.ssh/authorized_keys or $USER_HOME_PRECHECK/.ssh/authorized_keys." >&2
+  echo "       Either ssh-copy-id root first, or follow infrastructure/server/README.md to" >&2
+  echo "       create the target user with key access before running this script." >&2
   exit 1
 fi
 
@@ -95,14 +100,20 @@ else
   chmod 0440 /etc/sudoers.d/90-"$USERNAME"
 fi
 
-# Copy root's authorized_keys to admin (idempotent)
+# If the target user has no key yet, seed it from root's authorized_keys.
+# Idempotent: if the user already has their own keys (SSH-hardened workflow),
+# leave them alone.
 USER_HOME="/home/$USERNAME"
 mkdir -p "$USER_HOME/.ssh"
-cp /root/.ssh/authorized_keys "$USER_HOME/.ssh/authorized_keys"
+if [[ ! -s "$USER_HOME/.ssh/authorized_keys" ]] && [[ -s /root/.ssh/authorized_keys ]]; then
+  cp /root/.ssh/authorized_keys "$USER_HOME/.ssh/authorized_keys"
+  echo "  ✓ SSH keys seeded from root → $USER_HOME/.ssh/authorized_keys"
+else
+  echo "  ✓ $USERNAME already has SSH keys — leaving as-is"
+fi
 chown -R "$USERNAME:$USERNAME" "$USER_HOME/.ssh"
 chmod 700 "$USER_HOME/.ssh"
 chmod 600 "$USER_HOME/.ssh/authorized_keys"
-echo "  ✓ SSH keys copied to $USER_HOME/.ssh/authorized_keys"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. Docker + Compose plugin
