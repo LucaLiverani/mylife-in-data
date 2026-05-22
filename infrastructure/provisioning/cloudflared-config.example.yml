@@ -6,7 +6,7 @@
 #   - the credentials-file path (created by `cloudflared tunnel create`)
 #
 # After editing:
-#   for h in ch dagster airflow grafana; do
+#   for h in clickhouse dagster grafana redpanda; do
 #     cloudflared tunnel route dns <TUNNEL_ID> $h.<YOUR_DOMAIN>
 #   done
 #   sudo cloudflared service install
@@ -20,7 +20,7 @@ credentials-file: /home/admin/.cloudflared/<TUNNEL_ID>.json
 
 ingress:
   # ── Warehouse: ClickHouse HTTP API (read by Cloudflare Workers Functions) ──
-  - hostname: ch.<YOUR_DOMAIN>
+  - hostname: clickhouse.<YOUR_DOMAIN>
     service: http://localhost:8123
     originRequest:
       noTLSVerify: true

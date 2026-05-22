@@ -8,10 +8,13 @@ __pycache__/
 **/venv/
 **/.venv/
 
-# Secrets / env
+# Secrets / env — all .env* files are gitignored except *.env.example.
 **.env
 **.env.local
+**.env.development
+**.env.production
 .env
+!**.env.example
 client_secrets.json
 airflow_variables.json
 .spotipy_token_cache

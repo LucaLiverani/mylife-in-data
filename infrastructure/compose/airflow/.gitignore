@@ -1,7 +1,0 @@
-# Airflow runtime
-logs/
-*.db
-*.pid
-unittests.cfg
-webserver_config.py
-dags/__pycache__

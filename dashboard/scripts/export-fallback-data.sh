@@ -1,9 +1,11 @@
 #!/bin/bash
 
 # Export current data as static JSON for fallback
+# Required env: CLICKHOUSE_USER, CLICKHOUSE_PASSWORD.
+# Usage: source dashboard/.env.development && ./scripts/export-fallback-data.sh
 CLICKHOUSE_HOST=${CLICKHOUSE_HOST:-"http://localhost:8123"}
-CLICKHOUSE_USER=${CLICKHOUSE_USER:-"admin"}
-CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-"clickhouse08062013"}
+CLICKHOUSE_USER="${CLICKHOUSE_USER:?set CLICKHOUSE_USER (source dashboard/.env.development first)}"
+CLICKHOUSE_PASSWORD="${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD}"
 CLICKHOUSE_DB=${CLICKHOUSE_DATABASE:-"gold"}
 OUTPUT_DIR="./public/fallback-data"
 

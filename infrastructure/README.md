@@ -1,56 +1,52 @@
-# Data Platform Infrastructure
+# Infrastructure
 
-This directory contains the infrastructure setup for the data platform, using Docker Compose to orchestrate the following services:
+Docker Compose stack for the data platform.
 
-- **Airflow**: For workflow orchestration and scheduling.
-- **Kafka**: For real-time data streaming.
-- **Storage (MinIO)**: For S3-compatible object storage.
+## Services
 
-## Getting Started
+| Compose dir | Purpose | Host port(s) |
+|---|---|---|
+| `redpanda/` | Kafka-compatible broker + Console | 9093 (Kafka), 8090 (Console) |
+| `clickhouse/` | OLAP warehouse + Keeper | 8123 (HTTP), 9200 (native), 9181 (Keeper) |
+| `dagster/` | Webserver + daemon + Postgres metadata DB | 3000 (default; 3030 if `DAGSTER_PORT=3030` in `.env`) |
+| `monitoring/` | Prometheus + Grafana | 9090 (Prom), 3001 (Grafana) |
 
-### Prerequisites
+All containers share the external network `data-platform-network`. Object storage uses Cloudflare R2 (configured via `.env`, not in compose).
 
-- Docker
-- Docker Compose
+## Configuration
 
-### Setup
+Every service reads from a single `.env` file at `infrastructure/.env`. Each `compose/*/` directory has a `.env` symlink pointing at it, so:
 
-1.  **Create Environment Files**:
-    Each service requires a `.env` file for configuration. You can create them from the provided examples:
+- `cd infrastructure && ./start-all.sh` just works
+- `cd compose/clickhouse && docker compose up -d` also works (the symlink resolves)
 
-    ```bash
-    cp storage/.env.example storage/.env
-    cp kafka/.env.example kafka/.env
-    cp airflow/.env.example airflow/.env
-    ```
+```bash
+cp .env.example .env
+chmod 600 .env
+# edit .env — set CLICKHOUSE_PASSWORD, GRAFANA_ADMIN_PASSWORD, DAGSTER_POSTGRES_PASSWORD, R2 creds
+```
 
-2.  **Configure Environment Variables**:
-    Update the `.env` files with your desired credentials and settings. For Airflow, you'll need to generate a Fernet key:
+No credentials are committed. Everything personal — including the username — flows through env vars.
 
-    ```bash
-    python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-    ```
-    Copy the output to the `AIRFLOW__CORE__FERNET_KEY` variable in `airflow/.env`.
+## Bring up / down
 
-3.  **Make Scripts Executable**:
-    ```bash
-    chmod +x *.sh
-    ```
+```bash
+./start-all.sh   # boots Redpanda → ClickHouse → Dagster → monitoring (idempotent)
+./stop-all.sh    # stops everything
+```
 
-### Usage
+## R2 (object storage)
 
-- **Start all services**:
-  ```bash
-  ./start-all.sh
-  ```
+Cloudflare R2 is the object-storage layer, sitting outside the compose stack. Run once per environment to provision the bucket + write credentials into `.env`:
 
-- **Stop all services**:
-  ```bash
-  ./stop-all.sh
-  ```
+```bash
+./provisioning/setup-r2.sh           # default bucket name: mylife-data-lake
+# or
+./provisioning/setup-r2.sh my-bucket
+```
 
-- **Cleanup**:
-  To stop all services and remove all data, run:
-  ```bash
-  ./cleanup.sh
-  ```
+The script uses wrangler to create the bucket, prints the dashboard URL to mint a bucket-scoped API token, then writes `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` into `infrastructure/.env`.
+
+## Provisioning a new VM
+
+See `provisioning/README.md` for the bootstrap workflow (Docker install, GitHub deploy key, Cloudflare Tunnel install).

@@ -1,67 +1,45 @@
 # My Life in Data
 
-Personal data platform: collect data from Spotify, YouTube, and Google Takeout; warehouse it in ClickHouse; transform it with dbt; visualize on a Cloudflare-hosted dashboard.
+Personal data platform: collect signals from streaming services (Spotify, YouTube, Google Maps), warehouse them in ClickHouse, and visualize on a Cloudflare-hosted dashboard.
+
+The pipelines are being rewritten from scratch on this stack. The legacy Airflow + Kafka + MinIO incarnation has been removed; ingestion code currently exists only for the OAuth handshake (`ingestion/spotify/authenticate_local.py`).
 
 ## Layout
 
 ```
-ingestion/            Source-specific code (one folder per data source)
-  spotify/            Spotify API client, OAuth, real-time Kafka producer
-  youtube/            YouTube Data API enrichment of watch history
-  google_takeout/     Google Data Portability API export client
-
-orchestration/        Airflow — DAGs, requirements, plugins
-  dags/               One file per DAG
-
-warehouse/            ClickHouse — DDL, Kafka tables, S3Queue setup, materialized views
-  ddl/                SQL files (run with clickhouse-client)
-
-transformations/      dbt project (bronze/silver/gold by domain)
-  models/{bronze,silver,gold}/{spotify,youtube,maps,home}/
-
-dashboard/            React + Vite + Cloudflare Workers Functions (Pages-deployed)
-
-infrastructure/       Deployment — Docker Compose, start/stop scripts
-  compose/{airflow,kafka,clickhouse,storage,monitoring}/
-  start-all.sh        Bring everything up
-  stop-all.sh         Tear everything down
-
-exploration/          Jupyter notebooks + DuckDB sandbox (not part of the prod path)
-
-docs/                 Architecture diagrams, deployment guide, decision records
+ingestion/spotify/      OAuth flow (the only piece kept from the legacy code)
+orchestration/dagster/  Dagster code location (placeholder — pipelines TBD)
+infrastructure/         Docker Compose stack + provisioning scripts
+dashboard/              React + Vite + Cloudflare Pages Functions
+exploration/            Jupyter sandbox (not part of the prod path)
+DEPLOYMENT_PLAN.md      Step-by-step plan: local → VM → tunnel → dashboard rewire
 ```
 
-## Data flow
+## Stack
 
-```
-Spotify API ──┬─ producer ────────► Kafka ──► ClickHouse (Kafka engine + MVs) ──┐
-              └─ Airflow DAG (batch) ─► MinIO/R2 ──► ClickHouse (S3Queue) ──────┤
-                                                                                ├──► dbt (bronze→silver→gold) ──► Cloudflare dashboard
-YouTube API ─── Airflow DAG (daily) ─► MinIO/R2 ──► ClickHouse (S3Queue) ──────┤
-                                                                                │
-Google Takeout ─ Airflow DAG (daily) ─► MinIO/R2 ──► ClickHouse (S3Queue) ─────┘
-```
+| Service | Purpose | Port |
+|---|---|---|
+| Redpanda | Kafka-compatible event streaming | 9093 (host) / 9092 (network) |
+| ClickHouse | Columnar OLAP warehouse | 8123 (HTTP) / 9200 (native) |
+| Dagster | Asset-based orchestration | 3000 (3030 on this laptop) |
+| Prometheus + Grafana | Monitoring | 9090 / 3001 |
+
+Object storage: Cloudflare R2 (provisioned outside the compose stack). Every credential — ClickHouse, Grafana, Dagster Postgres — flows from `infrastructure/.env` (gitignored), referenced via `${VAR}` in compose YAML. Nothing personal is hardcoded in any committed file.
 
 ## Quick start (local)
 
 ```bash
-cp .env.example .env  # fill in credentials
-cd infrastructure && ./start-all.sh
+cd infrastructure
+cp .env.example .env       # then chmod 600 .env and fill in real values
+./start-all.sh
 ```
 
-Then visit:
-- Airflow UI: http://localhost:8080
-- MinIO Console: http://localhost:9001
-- Kafka UI: http://localhost:8090
-- ClickHouse HTTP: http://localhost:8123
-- Grafana: http://localhost:3001
+URLs printed at the end. The stack uses one identity across every service — username + password come from `infrastructure/.env`.
 
-Per-component READMEs:
-- `ingestion/spotify/README.md` — Spotify OAuth setup and DAG description
-- `ingestion/google_takeout/README.md` — Google Data Portability OAuth
-- `warehouse/ddl/README.md` — ClickHouse table/MV setup
-- `transformations/README.md` — dbt model layout
-- `dashboard/README.md` — Cloudflare Pages deployment
-- `infrastructure/compose/airflow/README.md` — Airflow operational notes
-- `docs/architecture.md` — overall architecture diagram
-- `docs/deployment.md` — end-to-end deployment walkthrough
+```bash
+./stop-all.sh
+```
+
+## Production deploy
+
+See `DEPLOYMENT_PLAN.md` — five phases ending with the Cloudflare Pages dashboard reading live ClickHouse via a Cloudflare Tunnel.

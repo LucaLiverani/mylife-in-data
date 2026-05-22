@@ -1,56 +1,64 @@
 #!/bin/bash
-# start-all.sh - Start entire data platform
+# start-all.sh — Boot the data platform.
+#
+# Stack (4 services): Redpanda (streaming) → ClickHouse (warehouse)
+#                     → Dagster (orchestration) → monitoring (Prometheus + Grafana).
+# Object storage uses Cloudflare R2 (out of compose). MinIO was dropped May 2026.
 
 set -e
 
-echo "Starting Data Platform..."
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_DIR="$SCRIPT_DIR/compose"
+
+echo "Starting Data Platform..."
 
 if ! docker network inspect data-platform-network >/dev/null 2>&1; then
     echo "Creating shared network..."
     docker network create data-platform-network
 fi
 
-echo "Starting storage layer..."
-(cd "$COMPOSE_DIR/storage" && docker compose up -d)
+# Ensure each service's .env is a symlink to the consolidated infrastructure/.env.
+# Idempotent: ln -sf overwrites any existing link/file at the destination.
+for svc in clickhouse dagster monitoring redpanda; do
+    ln -sf ../../.env "$COMPOSE_DIR/$svc/.env"
+done
 
-echo "Waiting for MinIO to be ready..."
-sleep 10
-
-echo "Starting Kafka ecosystem..."
-(cd "$COMPOSE_DIR/kafka" && docker compose up -d)
-
-echo "Waiting for Kafka to be ready..."
+echo
+echo "[1/4] Streaming (Redpanda)..."
+(cd "$COMPOSE_DIR/redpanda" && docker compose up -d)
 sleep 15
+echo "      Ensuring topics exist..."
+docker exec redpanda rpk topic create \
+    spotify.tracks.raw spotify.player.current spotify.artist_ids spotify.artists.raw \
+    google.youtube.raw google.maps.raw \
+    -p 3 -r 1 -c retention.ms=604800000 2>/dev/null || true
 
-echo "Starting Airflow..."
-(cd "$COMPOSE_DIR/airflow" && docker compose up -d)
-sleep 15
-
-echo "Starting ClickHouse..."
+echo
+echo "[2/4] Warehouse (ClickHouse)..."
 (cd "$COMPOSE_DIR/clickhouse" && docker compose up -d)
 sleep 10
 
-echo "Starting Monitoring stack..."
-(cd "$COMPOSE_DIR/monitoring" && docker compose up -d)
+echo
+echo "[3/4] Orchestration (Dagster)..."
+(cd "$COMPOSE_DIR/dagster" && docker compose up -d)
 sleep 10
 
-echo ""
-echo "Data Platform Started Successfully!"
-echo ""
-echo "Access URLs:"
-echo "   Airflow UI:        http://localhost:8080"
-echo "   MinIO Console:     http://localhost:9001"
-echo "   Kafka UI:          http://localhost:8090"
-echo "   Schema Registry:   http://localhost:8081"
+echo
+echo "[4/4] Monitoring (Prometheus + Grafana)..."
+(cd "$COMPOSE_DIR/monitoring" && docker compose up -d)
+sleep 5
+
+DAGSTER_PORT="${DAGSTER_PORT:-$(grep -E '^DAGSTER_PORT=' "$COMPOSE_DIR/dagster/.env" 2>/dev/null | cut -d= -f2)}"
+DAGSTER_PORT="${DAGSTER_PORT:-3000}"
+
+echo
+echo "Data Platform Started."
+echo
+echo "Access URLs (login: see compose/*/.env where applicable):"
+echo "   Dagster UI:        http://localhost:${DAGSTER_PORT}"
+echo "   Redpanda Console:  http://localhost:8090"
 echo "   ClickHouse HTTP:   http://localhost:8123"
 echo "   ClickHouse Native: http://localhost:9200"
-echo ""
-echo "Monitoring URLs:"
-echo "   Prometheus:        http://localhost:9090"
 echo "   Grafana:           http://localhost:3001"
-echo "   cAdvisor:          http://localhost:8082"
-echo "   Node Exporter:     http://localhost:9100"
-echo ""
+echo "   Prometheus:        http://localhost:9090"
+echo

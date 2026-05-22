@@ -1,3 +1,6 @@
+# Prometheus + Grafana only.
+# Grafana creds come from .env (gitignored). No plaintext in this file.
+
 services:
   prometheus:
     image: prom/prometheus:latest
@@ -12,70 +15,19 @@ services:
       - '--storage.tsdb.path=/prometheus'
     networks:
       - data-platform-network
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3001:3000"  # Changed from 3000 to 3001
+      - "3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    networks:
-      - data-platform-network
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
-    command:
-      - '--store_container_labels=true'
-      - '--docker=unix:///var/run/docker.sock'
-    ports:
-      - "8082:8080"  # Changed from 8081 to 8082 (8081 is schema-registry)
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Explicit Docker socket access
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-    devices:
-      - /dev/kmsg:/dev/kmsg
-    networks:
-      - data-platform-network
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    ports:
-      - "9100:9100"
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    networks:
-      - data-platform-network
-
-  container-name-exporter:
-    image: python:3.11-slim
-    container_name: container-name-exporter
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        pip install --quiet docker &&
-        python3 /app/container-name-exporter.py
-    ports:
-      - "9104:9104"
-    volumes:
-      - ./container-name-exporter.py:/app/container-name-exporter.py:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
     networks:
       - data-platform-network
     restart: unless-stopped

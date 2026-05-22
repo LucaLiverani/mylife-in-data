@@ -1,10 +1,9 @@
-# ClickHouse Analytics Database
-# High-performance columnar OLAP database with MinIO S3 integration
-# Enables fast analytics queries on data stored in MinIO
+# ClickHouse — columnar OLAP warehouse + Keeper (ZK replacement).
+# User, password, and broker hostnames all come from env vars in
+# infrastructure/.env (gitignored). No identity or credentials are committed.
 
 services:
 
-  # ClickHouse Server
   clickhouse:
     image: clickhouse/clickhouse-server:24.8-alpine
     container_name: clickhouse
@@ -13,27 +12,27 @@ services:
       clickhouse-keeper:
         condition: service_healthy
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      # The image entrypoint reads these and generates users.d/default-user.xml
+      # with the matching user definition + access_management.
       CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: ${CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT:-1}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     ports:
-      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"     # HTTP API
-      - "${CLICKHOUSE_NATIVE_PORT:-9200}:9000"   # Native protocol (external 9200 -> internal 9000)
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9200}:9000"
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - clickhouse-logs:/var/log/clickhouse-server
       - ./config/config.xml:/etc/clickhouse-server/config.d/config.xml:ro
-      - ./config/s3_storage.xml:/etc/clickhouse-server/config.d/s3_storage.xml:ro
-      - ./config/s3_credentials.xml:/etc/clickhouse-server/config.d/s3_credentials.xml:ro
       - ./config/kafka.xml:/etc/clickhouse-server/config.d/kafka.xml:ro
       - ./config/zookeeper.xml:/etc/clickhouse-server/config.d/zookeeper.xml:ro
     networks:
       - data-platform-network
-      - default
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "clickhouse-client", "--user", "admin", "--password", "clickhouse08062013", "--query", "SELECT 1"]
+      # $$ defers var expansion to the container shell — no secrets in this file.
+      test: ["CMD-SHELL", "clickhouse-client --user \"$$CLICKHOUSE_USER\" --password \"$$CLICKHOUSE_PASSWORD\" --query 'SELECT 1'"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -48,13 +47,12 @@ services:
         soft: 262144
         hard: 262144
 
-  # ClickHouse Keeper - ZooKeeper replacement for coordination
   clickhouse-keeper:
     image: clickhouse/clickhouse-keeper:24.8-alpine
     container_name: clickhouse-keeper
     hostname: clickhouse-keeper
     ports:
-      - "9181:9181"  # Client port
+      - "9181:9181"
     volumes:
       - clickhouse-keeper-data:/var/lib/clickhouse/coordination
       - clickhouse-keeper-logs:/var/log/clickhouse-keeper
@@ -73,44 +71,6 @@ services:
         limits:
           cpus: '1'
           memory: 1G
-
-  # ClickHouse initialization - Create S3 buckets if needed
-  clickhouse-init:
-    image: minio/mc:latest
-    container_name: clickhouse-init
-    depends_on:
-      clickhouse:
-        condition: service_healthy
-    entrypoint: /bin/sh
-    command: >
-      -c "
-      echo 'Initializing ClickHouse S3 buckets...';
-      sleep 3;
-      echo 'Setting up MinIO alias...';
-      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-
-      echo 'Creating ClickHouse data bucket...';
-      /usr/bin/mc mb myminio/${CLICKHOUSE_S3_BUCKET} --ignore-existing;
-
-      echo 'Creating ClickHouse subdirectories...';
-      /usr/bin/mc mb myminio/${CLICKHOUSE_S3_BUCKET}/data --ignore-existing;
-      /usr/bin/mc mb myminio/${CLICKHOUSE_S3_BUCKET}/backups --ignore-existing;
-      /usr/bin/mc mb myminio/${CLICKHOUSE_S3_BUCKET}/temp --ignore-existing;
-
-      echo 'Setting temp folder auto-cleanup (7 days)...';
-      /usr/bin/mc ilm add --expiry-days 7 myminio/${CLICKHOUSE_S3_BUCKET}/temp || true;
-
-      echo 'ClickHouse S3 initialization complete!';
-      echo '';
-      echo 'ClickHouse S3 Bucket:';
-      /usr/bin/mc ls myminio/${CLICKHOUSE_S3_BUCKET};
-      "
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      CLICKHOUSE_S3_BUCKET: ${CLICKHOUSE_S3_BUCKET}
-    networks:
-      - data-platform-network
 
 volumes:
   clickhouse-data:

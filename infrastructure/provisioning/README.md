@@ -5,20 +5,20 @@ First-time setup + tunnel config for the Netcup VM.
 ## Files
 
 - **`bootstrap.sh`** — Idempotent root-run script for a fresh box: creates `admin` user, installs Docker, configures UFW + fail2ban + unattended-upgrades, sets hostname + timezone, generates a GitHub deploy key. Does **not** touch `sshd_config` (you harden manually after verifying key login).
+- **`setup-r2.sh`** — Provisions a Cloudflare R2 bucket and writes the four `R2_*` credentials into `infrastructure/.env`.
 - **`cloudflared-config.example.yml`** — Template for `~/.cloudflared/config.yml` on the VM. Maps subdomains → local service ports.
+- **`.env.example`** — Deploy-time variables (VM IP, domain, tunnel UUID). Copy to `.env`, fill in, then `source .env` in any session where you run the commands below.
 
-## Variables — set once per session
-
-Open a terminal and export these. Every command below uses them.
+## Variables — set once, persist across sessions
 
 ```bash
-export VM_IP=
-export VM_USER=
-export LOCAL_KEY=
-export GH_REPO=
-export TUNNEL_ID=
-export DOMAIN=
+cp infrastructure/provisioning/.env.example infrastructure/provisioning/.env
+# edit infrastructure/provisioning/.env with your values
+chmod 600 infrastructure/provisioning/.env
+source infrastructure/provisioning/.env
 ```
+
+Every command in this README uses those exports (`$VM_IP`, `$VM_USER`, `$LOCAL_KEY`, `$GH_REPO`, `$DOMAIN`, `$TUNNEL_ID`). Re-source the file in each new terminal.
 
 ## 1. Bootstrap the VM (run once)
 
@@ -66,12 +66,15 @@ ssh $VM_USER@$VM_IP 'cat ~/.ssh/github_mylife.pub'
 ```bash
 ssh $VM_USER@$VM_IP "
   git clone $GH_REPO &&
-  cd mylife-in-data &&
-  cp .env.example .env
+  cd mylife-in-data/infrastructure &&
+  cp .env.example .env &&
+  chmod 600 .env
 "
 
-# Edit .env (interactive)
-ssh -t $VM_USER@$VM_IP 'cd mylife-in-data && nano .env'
+# Edit .env (interactive) — set CLICKHOUSE_PASSWORD, GRAFANA_ADMIN_PASSWORD,
+# DAGSTER_POSTGRES_PASSWORD, R2 credentials. Remove the DAGSTER_PORT=3030
+# override (only needed on dev machines where port 3000 is taken).
+ssh -t $VM_USER@$VM_IP 'cd mylife-in-data/infrastructure && nano .env'
 
 # Bring everything up
 ssh $VM_USER@$VM_IP 'cd mylife-in-data/infrastructure && ./start-all.sh'
@@ -115,7 +118,7 @@ Route DNS for each hostname you exposed, then install as a service:
 
 ```bash
 ssh $VM_USER@$VM_IP "
-  for h in ch dagster airflow grafana; do
+  for h in clickhouse dagster grafana redpanda; do
     cloudflared tunnel route dns $TUNNEL_ID \$h.$DOMAIN
   done &&
   sudo cloudflared service install &&
@@ -125,6 +128,6 @@ ssh $VM_USER@$VM_IP "
 
 ## What's still manual
 
-- Adding the Spotify token cache to Airflow Variables (the auth script prints what to paste; see `ingestion/spotify/README.md`).
-- Putting Cloudflare Access in front of admin UIs (`airflow`, `dagster`, `grafana`) so only you can hit them.
+- Running `python ingestion/spotify/authenticate_local.py` once on your laptop to mint a Spotify OAuth token cache, then `scp`-ing the resulting file into the volume mount on the VM where the (future) producer will read it.
+- Putting Cloudflare Access in front of admin UIs (`dagster`, `grafana`, `redpanda`) with an email policy; `clickhouse.<DOMAIN>` gets a Service Token policy so the dashboard Pages Functions can authenticate.
 - Setting up `clickhouse-backup` → R2 (separate follow-up).

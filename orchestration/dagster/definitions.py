@@ -1,19 +1,21 @@
-"""
-Dagster entrypoint — placeholder definitions.
+"""Dagster code location — clean starting point.
 
-This is a scaffold so the Dagster container has something to load. The actual
-asset/job port from the Airflow DAGs (in `../dags/`) is the next step of the
-refactor. Each Airflow DAG below maps to a Dagster job/schedule:
+The previous Airflow DAGs in `../dags/` (now `_legacy/`) are kept as reference
+only. Pipelines are being rewritten from scratch here.
 
-    spotify_ingestion_dag.py      → Dagster job: spotify_recently_played
-    spotify_artist_ingestion_dag  → Dagster job: spotify_artist_enrichment
-    youtube_enrichment_dag        → Dagster job: youtube_enrichment
-    google_export_initiator_dag   → Dagster job: google_takeout_initiate
-    google_export_monitor_dag     → Dagster job: google_takeout_collect
-    {spotify,youtube,maps,home}_dbt_dag → @dbt_assets via dagster-dbt
+What to keep from the legacy code:
+    - `ingestion/spotify/authenticate_local.py` and the OAuth flow it sets up.
+      The CacheFileHandler pattern from `ingestion/spotify/spotify_api.py`
+      (`get_spotify_producer_client`) translates cleanly to a Dagster
+      ConfigurableResource pointing at a file in DAGSTER_HOME.
 
-The dbt project lives at /opt/dagster/repo/transformations and integrates via
-dagster-dbt's DbtCliResource.
+What gets replaced:
+    - All Airflow Variable usage (Fernet-encrypted, key now lost).
+    - All Airflow-specific operators / connections.
+    - The dbt-via-BashOperator pattern → `@dbt_assets` from `dagster-dbt`.
+
+Until real assets land, this file just exposes a sanity-check asset so the
+webserver has something to load.
 """
 
 from dagster import Definitions, AssetExecutionContext, asset
@@ -21,7 +23,7 @@ from dagster import Definitions, AssetExecutionContext, asset
 
 @asset(group_name="meta")
 def placeholder_health_check(context: AssetExecutionContext) -> str:
-    """Sanity check asset — confirms the Dagster code location loaded successfully."""
+    """Confirms the Dagster code location loaded successfully."""
     context.log.info("Dagster code location loaded.")
     return "ok"
 

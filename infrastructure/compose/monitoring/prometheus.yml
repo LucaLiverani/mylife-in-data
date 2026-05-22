@@ -6,56 +6,10 @@ global:
     environment: 'local'
 
 scrape_configs:
-  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  # Container name mappings
-  - job_name: 'container-names'
-    static_configs:
-      - targets: ['container-name-exporter:9104']
-    metric_relabel_configs:
-      # Copy systemd_id to id so we can join with cAdvisor metrics
-      - source_labels: [systemd_id]
-        target_label: id
-        action: replace
-
-  # Container metrics (all containers)
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080']
-
-  # Host metrics
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # Airflow metrics via StatsD exporter
-  - job_name: 'airflow'
-    static_configs:
-      - targets: ['statsd-exporter:9102']
-
-  # Kafka JMX metrics via JMX exporter
-  - job_name: 'kafka'
-    static_configs:
-      - targets: ['jmx-exporter:5556']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'kafka-cluster'
-
-  # Note: Zookeeper and Kafka Connect are monitored via cAdvisor
-  # For detailed JMX metrics, you would need to add separate JMX exporters
-
-  # MinIO metrics
-  - job_name: 'minio'
-    metrics_path: /minio/v2/metrics/cluster
-    scheme: http
-    static_configs:
-      - targets: ['minio:9000']
-
-  # ClickHouse metrics
   - job_name: 'clickhouse'
     metrics_path: /metrics
     scheme: http
@@ -66,15 +20,14 @@ scrape_configs:
         target_label: instance
         replacement: 'clickhouse'
 
-  # ClickHouse system metrics (alternative endpoint)
-  - job_name: 'clickhouse-system'
-    metrics_path: /
-    params:
-      query: ['SELECT * FROM system.metrics FORMAT Prometheus']
+  # Redpanda exposes Prometheus metrics on its admin port.
+  - job_name: 'redpanda'
+    metrics_path: /public_metrics
     scheme: http
     static_configs:
-      - targets: ['clickhouse:8123']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'clickhouse-system'
+      - targets: ['redpanda:9644']
+
+  # Dagster metrics (when DAGSTER_PROMETHEUS_METRICS_ENABLED=true is set).
+  # - job_name: 'dagster'
+  #   static_configs:
+  #     - targets: ['dagster-webserver:3000']
