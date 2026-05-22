@@ -40,7 +40,9 @@ sleep 10
 
 echo
 echo "[3/4] Orchestration (Dagster)..."
-(cd "$COMPOSE_DIR/dagster" && docker compose up -d)
+# Dagster image is built from a local Dockerfile (not on Docker Hub).
+# --build is a no-op when the image is fresh, builds on first run / Dockerfile changes.
+(cd "$COMPOSE_DIR/dagster" && docker compose up -d --build)
 sleep 10
 
 echo
