@@ -152,70 +152,46 @@ The items below are the pipeline-rewrite work itself — out of scope for Phase 
 
 ---
 
-## Phase 2 — Deploy the stack to the VM
+## Phase 2 — Deploy the stack to the VM ✅
 
-Follow `infrastructure/provisioning/README.md` as the canonical sequence. Key adaptations below.
+**Done.** All 8 containers on the VM are healthy (Redpanda + Console, ClickHouse + Keeper, Dagster trio, Prometheus + Grafana). The VM reads its config from `infrastructure/.env` on disk (one file, symlinked under each compose service by `start-all.sh`).
 
-### 2.1 Set session variables
+Concrete patches that landed during this phase (worth knowing if you ever redo the deploy):
+- `e13708f` — `bootstrap.sh` no longer requires `/root/.ssh/authorized_keys` when the target user already has key access (SSH-hardened starting state)
+- `a8fe02b` — `start-all.sh` builds the Dagster image instead of trying to pull from Docker Hub
+- `1e9c9d7` — restored `+x` on shell scripts that lost it during the refactor
+- `fd13559` — `.env` copy step made explicit in Phase 2.3
+- `bb1107b` — Dagster port back to default 3000 (laptop stops zotify when running both)
 
-```bash
-cp infrastructure/provisioning/.env.example infrastructure/provisioning/.env
-chmod 600 infrastructure/provisioning/.env
-# edit infrastructure/provisioning/.env — fill VM_IP, VM_USER, LOCAL_KEY, GH_REPO, DOMAIN
-source infrastructure/provisioning/.env
-```
+If you ever redeploy to a clean VM, the steps are now:
+1. `cp infrastructure/provisioning/.env.example infrastructure/provisioning/.env`, fill in, `source` it.
+2. `scp infrastructure/provisioning/bootstrap.sh $VM_USER@$VM_IP:/tmp/ && ssh -t $VM_USER@$VM_IP "sudo USERNAME=$VM_USER HOSTNAME_NEW=perry TIMEZONE=Europe/Zurich bash /tmp/bootstrap.sh"`
+3. Add the printed deploy key to GitHub.
+4. `ssh $VM_USER@$VM_IP "git clone $GH_REPO mylife-in-data"`
+5. `scp infrastructure/.env $VM_USER@$VM_IP:mylife-in-data/infrastructure/.env && ssh $VM_USER@$VM_IP "chmod 600 ~/mylife-in-data/infrastructure/.env"`
+6. Optionally `./provisioning/setup-r2.sh` (only needed when rewritten pipelines start landing data)
+7. `ssh $VM_USER@$VM_IP 'cd mylife-in-data/infrastructure && ./start-all.sh'`
+8. Pick strong passwords by editing the VM's `.env` directly.
 
-`TUNNEL_ID` stays blank until Phase 3.1 creates the tunnel — re-source `.env` after you fill it in.
+---
 
-### 2.2 Bootstrap
+## ⏸ Resume here — current state
 
-- [ ] `scp infrastructure/provisioning/bootstrap.sh root@$VM_IP:/tmp/`
-- [ ] `ssh root@$VM_IP 'bash /tmp/bootstrap.sh'` — installs Docker, UFW, fail2ban, unattended-upgrades. Prints the GitHub deploy key.
-- [ ] Add the printed key to GitHub repo → Settings → Deploy keys (read-only).
-- [ ] Verify: `ssh $VM_USER@$VM_IP 'whoami && docker --version'`.
+**Where you are:** Phases 0, 1, 2 done. Stack is live on the VM at the IP in `infrastructure/provisioning/.env`, but the VM has no inbound ports open besides SSH (22) — everything else is firewalled. Dashboard on Cloudflare Pages still falls back to JSON; it doesn't know about the VM yet.
 
-### 2.3 Clone the repo + set up `.env`
+**What's next:** Phase 3 stitches the VM to the public internet via Cloudflare Tunnel + Access. Phase 4 rewires the dashboard to query the tunneled ClickHouse.
 
-- [ ] `ssh $VM_USER@$VM_IP "git clone $GH_REPO mylife-in-data"`.
-- [ ] Copy the consolidated `infrastructure/.env` from your laptop to the VM:
-  ```bash
-  scp infrastructure/.env $VM_USER@$VM_IP:mylife-in-data/infrastructure/.env
-  ssh $VM_USER@$VM_IP "chmod 600 ~/mylife-in-data/infrastructure/.env"
-  ```
-- [ ] No need to scp per-service `.env` files — `start-all.sh` recreates the symlinks under each `compose/*/` automatically.
+**Before starting Phase 3, gather:**
+- `cloudflared` installed on your laptop (`brew install cloudflared`, or pkg from <https://github.com/cloudflare/cloudflared/releases>)
+- Authenticated: `cloudflared tunnel login` (one-time browser flow)
+- Cloudflare Zero Trust enabled on your account (free tier — go to <https://one.dash.cloudflare.com/> once)
+- Your apex `$DOMAIN` already managed by Cloudflare DNS
 
-### 2.4 Provision R2 object storage
-
-R2 is a Cloudflare-managed service, not part of compose. Run once on the VM (or wherever you have wrangler authenticated):
-
-- [ ] `ssh $VM_USER@$VM_IP "cd mylife-in-data/infrastructure && ./provisioning/setup-r2.sh"`
-- The script creates the bucket via wrangler, prints the dashboard URL for token creation, then writes the four `R2_*` values into `infrastructure/.env` automatically.
-
-### 2.5 Push the Spotify OAuth token
-
-- [ ] `scp .spotipy_token_cache $VM_USER@$VM_IP:~/spotify-tokens/.spotify_cache`.
-- [ ] `ssh $VM_USER@$VM_IP "chmod 600 ~/spotify-tokens/.spotify_cache"`.
-
-### 2.6 Start the stack on the VM
-
-- [ ] `ssh $VM_USER@$VM_IP 'cd mylife-in-data/infrastructure && ./start-all.sh'` — first run pulls images (slow on first run).
-- [ ] `ssh $VM_USER@$VM_IP 'docker ps --format "table {{.Names}}\t{{.Status}}"'` — every container `(healthy)` or `Up`.
-
-### 2.7 First Dagster materialization on the VM
-
-- [ ] Reach Dagster directly on the VM via SSH tunnel for the initial run: `ssh -L 3000:localhost:3000 $VM_USER@$VM_IP`.
-- [ ] Open `http://localhost:3000` on your laptop → manually materialize each asset to seed bronze/silver/gold.
-- [ ] Re-run the row-count checks (Phase 0.5) against `curl -s -u admin:... 'http://localhost:8123/?query=...'` proxied through the SSH tunnel.
-
-### 2.8 Pick a strong password on the VM
-
-Local dev uses `<REDACTED>` as the placeholder password (set in your local `.env` files). On the VM:
-
-- [ ] In each `infrastructure/compose/*/.env` on the VM, set `CH_ADMIN_PASSWORD`, `CLICKHOUSE_PASSWORD`, `DAGSTER_POSTGRES_PASSWORD`, `GRAFANA_ADMIN_PASSWORD` to a strong random value (the public-repo-safe pattern means none of these touch git).
-- [ ] Same value for ClickHouse + dashboard (so `dashboard/.env.production` consumed by Pages Functions can reach ClickHouse). Different value is fine if you prefer — just align Dagster + dashboard with whatever ClickHouse expects.
-- [ ] `./stop-all.sh && ./start-all.sh` to pick up the new envs.
-
-**Phase 2 complete = the platform is producing data on the VM, reachable only via SSH.**
+**Reference files (committed) you'll be touching:**
+- `infrastructure/provisioning/cloudflared-config.example.yml` — template, copy + scp to VM
+- `infrastructure/provisioning/.env` — fill in `TUNNEL_ID` after Phase 3.1
+- `dashboard/functions/_shared/clickhouse.ts` + `types.ts` — Phase 4 code edit
+- `dashboard/.env.development.example` — for reference; Pages production env vars go in the Cloudflare dashboard
 
 ---
 
