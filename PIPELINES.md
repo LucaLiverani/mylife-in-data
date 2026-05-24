@@ -88,6 +88,97 @@ Suggested sequence:
 
 When live data flows, the dashboard's "ClickHouse offline" badge disappears and `_meta.cached` flips to `false`.
 
+## Local development → production deployment
+
+The platform layer is identical between laptop and VM (same compose stack, same ClickHouse schema, same Dagster code location). A pipeline that runs locally should run on the VM with minimal extra work. The interesting parts are credentials and source-data shipping.
+
+### What lives where
+
+| Layer | Tracked in git? | Where it lives | How it gets to the VM |
+|---|---|---|---|
+| **Pipeline code** (Python, SQL, dbt models) | yes (`dev` branch) | `ingestion/`, `orchestration/`, `transformations/` | `git push origin dev` → `ssh; git pull origin dev` |
+| **OAuth app credentials** (`SPOTIFY_CLIENT_ID`, `GOOGLE_CLIENT_ID`, etc.) | no | `infrastructure/.env` (gitignored) | Edit the VM's copy of `infrastructure/.env` once |
+| **OAuth user token cache** (`.spotify_cache`, `google_token.json` — the refresh_token cookie that proves consent) | no, never | Dagster home volume on each machine | Authenticate locally, scp the cache file to the VM, drop it into the Dagster home path |
+| **Source data files** (Google Takeout zips, .ics exports) | no | wherever the pipeline expects (e.g. `~/landing/` or R2) | scp / `aws s3 cp` once per backfill |
+| **PERSONAL.md** | no | repo root, gitignored | Stays on your laptop |
+
+### Auth flow — Spotify (template for any OAuth source)
+
+The Spotify producer needs (a) app credentials registered in the Spotify developer console and (b) a per-user refresh_token cached after a one-time browser handshake. Step-by-step:
+
+**One-time on the laptop:**
+```bash
+# 1. Register the app at https://developer.spotify.com/dashboard
+#    Add a redirect URI like http://localhost:8888/callback
+# 2. Drop the values into infrastructure/.env (gitignored):
+#    SPOTIFY_CLIENT_ID=...
+#    SPOTIFY_CLIENT_SECRET=...
+#    SPOTIFY_REDIRECT_URI=http://localhost:8888/callback
+# 3. Run the browser handshake:
+python ingestion/spotify/authenticate_local.py
+# This produces a cache file (legacy default: ~/.spotipy_token_cache, but
+# the rewritten code should point Spotipy's CacheFileHandler at
+# <DAGSTER_HOME>/.spotify_cache so the Dagster resource finds it).
+```
+
+**One-time on the VM:**
+```bash
+# 1. Add the same SPOTIFY_* values to the VM's infrastructure/.env
+ssh <VM_USER>@<VM_IP>
+$EDITOR ~/mylife-in-data/infrastructure/.env   # paste the SPOTIFY_* lines, save
+# (Restart the Dagster containers after editing .env so the new values load:
+#  cd ~/mylife-in-data/infrastructure && ./stop-all.sh && ./start-all.sh)
+
+# 2. Ship the user-token cache. Dagster runs in a container, so the cache
+#    file needs to land inside the dagster-home volume. Easiest path:
+#    a) scp the file to the VM host, then
+#    b) docker cp it into the dagster-webserver container at /opt/dagster/dagster_home/
+#    (Or, change infrastructure/compose/dagster/docker-compose.yml to bind-mount
+#    a host directory as DAGSTER_HOME so scp lands the file directly.)
+
+scp ~/path/to/.spotify_cache <VM_USER>@<VM_IP>:/tmp/.spotify_cache
+ssh <VM_USER>@<VM_IP> 'docker cp /tmp/.spotify_cache dagster-webserver:/opt/dagster/dagster_home/.spotify_cache'
+```
+
+After this, the Dagster `SpotifyResource` opens the cache file at startup, reads the refresh_token, and uses Spotipy's auto-refresh to keep `access_token` fresh on its own. **You only ever re-authenticate (and re-scp) if you revoke consent in Spotify's account dashboard or if Spotify expires the refresh_token (rare; multi-month TTL).**
+
+Same pattern for **Google Calendar** if you go the OAuth route — register the app in the Google Cloud Console, drop `GOOGLE_*` into `infrastructure/.env`, run a one-shot auth script, scp the resulting token JSON into the Dagster home.
+
+### Source data — Google Takeout (file-based, no OAuth)
+
+Takeout is a manual export, not an API. Workflow:
+
+1. Request the export at <https://takeout.google.com/> (YouTube history + Maps Timeline). Wait for the email (can take hours).
+2. Download to laptop.
+3. scp into a known landing path on the VM:
+   ```bash
+   scp ~/Downloads/takeout-2026-05-24-*.zip <VM_USER>@<VM_IP>:~/landing/
+   ```
+4. A Dagster sensor on `~/landing/*.zip` triggers the parser asset that unpacks → cleans → INSERTs into bronze. Long-term: switch from VM-local landing to R2 so multiple backfills don't fill the VM disk.
+
+### The day-to-day loop
+
+```
+[laptop]  edit code → run/test against local CH (./start-all.sh)
+          git commit + git push origin dev
+[laptop]  ssh <VM_USER>@<VM_IP> 'cd mylife-in-data && git pull origin dev'
+[VM]      dagster picks up modified Python on its next code-server reload
+          (or restart explicitly: docker compose -f infrastructure/compose/dagster/docker-compose.yml restart)
+[laptop]  watch dagster.<DOMAIN> for runs, grafana.<DOMAIN> for metrics
+          when stable: git checkout main && git merge --ff-only dev && git push origin main
+```
+
+Compose configs already match between laptop and VM, so the only laptop-only oddity is the port override (`DAGSTER_PORT=3030`) if you have something else holding `:3000`. The VM uses the default.
+
+### What you'll never need to ship via git
+
+- `.spotify_cache`, `google_token.json`, any per-user OAuth artifact — these are credentials, gitignored
+- `infrastructure/.env` — gitignored, edited by hand on each machine
+- Takeout exports / raw source files — gitignored, scp'd or stored in R2
+- `PERSONAL.md` — your placeholder cheat-sheet, gitignored
+
+---
+
 ## Open architectural questions
 
 Decisions to make before writing real code:
