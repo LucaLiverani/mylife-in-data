@@ -14,11 +14,12 @@ The next workstream: build the ingest + transform + serve loop on the new Dagste
   Spotify Web API ────► spotify backfill            (direct INSERT)       gold_spotify_*           /api/spotify/{summary,data,recent}
    (history)            scheduled Dagster asset                                                     KPIs, top artists, daily listening
 
-  Google Takeout ─────► takeout parser              (direct INSERT)       gold_youtube_*           /api/youtube/data
-   (manual upload)      ingestion/google/youtube/                          gold_maps_*              /api/travel/data
-                        + maps/                                            gold_home_*              /api/overview/stats, /api/home/recent-events
+  Google APIs ────────► google ingestion            (direct INSERT)       gold_youtube_*           /api/youtube/data
+   (Data Portability    ingestion/google/youtube/                          gold_maps_*              /api/travel/data
+   + YouTube Data v3)   + maps/ parsers                                    gold_home_*              /api/overview/stats, /api/home/recent-events
 
-  Google Calendar ────► calendar producer (TBD)     Redpanda or direct    gold_calendar_*          /api/google/calendar
+  Google Calendar ────► events.watch webhook        (direct INSERT)       gold_calendar_*          /api/google/calendar
+   API (push, OAuth)    + Dagster sync sensor
 ```
 
 The dashboard already expects this shape (see `dashboard/functions/api/*.ts` for the queries each endpoint runs). Replicate the column names + shapes from the mock files in `dashboard/public/mocks/<path>.json` — those are the contract.
@@ -43,8 +44,9 @@ ingestion/
     producer.py            # poll Spotify "currently playing", produce to Redpanda
     backfill.py            # paginate recently-played history, INSERT directly to bronze
   google/
-    youtube/parser.py      # parse Google Takeout YouTube history JSON
-    maps/parser.py         # parse Google Maps Timeline JSON
+    portability.py         # Data Portability API client: initiate → poll → download → unpack
+    youtube/parser.py      # parse YouTube watch + search history JSON (same payload as Takeout)
+    maps/parser.py         # parse Maps Timeline JSON (same payload as Takeout)
     calendar/producer.py   # ICS or Calendar API → Redpanda or direct INSERT
   _shared/
     clickhouse.py          # python-clickhouse-connect client + retry policy
@@ -99,7 +101,7 @@ The platform layer is identical between laptop and VM (same compose stack, same 
 | **Pipeline code** (Python, SQL, dbt models) | yes (`dev` branch) | `ingestion/`, `orchestration/`, `transformations/` | `git push origin dev` → `ssh; git pull origin dev` |
 | **OAuth app credentials** (`SPOTIFY_CLIENT_ID`, `GOOGLE_CLIENT_ID`, etc.) | no | `infrastructure/.env` (gitignored) | Edit the VM's copy of `infrastructure/.env` once |
 | **OAuth user token cache** (`.spotify_cache`, `google_token.json` — the refresh_token cookie that proves consent) | no, never | Dagster home volume on each machine | Authenticate locally, scp the cache file to the VM, drop it into the Dagster home path |
-| **Source data files** (Google Takeout zips, .ics exports) | no | wherever the pipeline expects (e.g. `~/landing/` or R2) | scp / `aws s3 cp` once per backfill |
+| **Source data archives** (Data Portability downloads, optional Takeout/Timeline fallbacks, `.ics` exports) | no | producer-managed (e.g. `~/landing/` or R2) | Data Portability fetched in-pipeline; manual paths scp'd or `aws s3 cp` for one-offs |
 | **PERSONAL.md** | no | repo root, gitignored | Stays on your laptop |
 
 ### Auth flow — Spotify (template for any OAuth source)
@@ -142,19 +144,95 @@ ssh <VM_USER>@<VM_IP> 'docker cp /tmp/.spotify_cache dagster-webserver:/opt/dags
 
 After this, the Dagster `SpotifyResource` opens the cache file at startup, reads the refresh_token, and uses Spotipy's auto-refresh to keep `access_token` fresh on its own. **You only ever re-authenticate (and re-scp) if you revoke consent in Spotify's account dashboard or if Spotify expires the refresh_token (rare; multi-month TTL).**
 
-Same pattern for **Google Calendar** if you go the OAuth route — register the app in the Google Cloud Console, drop `GOOGLE_*` into `infrastructure/.env`, run a one-shot auth script, scp the resulting token JSON into the Dagster home.
+Same pattern for **all Google sources** (YouTube + Maps via the Data Portability API, Calendar via the Calendar API or `.ics` poll) — register one app in the Google Cloud Console, enable the scopes you need, drop `GOOGLE_*` into `infrastructure/.env`, run a one-shot auth script, drop the resulting token JSON into the Dagster home alongside `.spotify_cache`. A single Google OAuth app can cover all three sources if you enable each scope on it.
 
-### Source data — Google Takeout (file-based, no OAuth)
+### Source data — Google Data Portability API (OAuth, programmatic)
 
-Takeout is a manual export, not an API. Workflow:
+For **Maps**, Data Portability is the only viable programmatic path —
+Google deprecated other Maps Timeline access. For **YouTube** the API is
+**TBD**: Data Portability returns the same watch + search history payload
+as Takeout, while YouTube Data API v3 has richer per-video / per-channel
+metadata but Google deprecated reliable watch-history endpoints in 2016.
+The two can be combined (DP for raw history rows, v3 for enrichment).
 
-1. Request the export at <https://takeout.google.com/> (YouTube history + Maps Timeline). Wait for the email (can take hours).
-2. Download to laptop.
-3. scp into a known landing path on the VM:
-   ```bash
-   scp ~/Downloads/takeout-2026-05-24-*.zip <VM_USER>@<VM_IP>:~/landing/
-   ```
-4. A Dagster sensor on `~/landing/*.zip` triggers the parser asset that unpacks → cleans → INSERTs into bronze. Long-term: switch from VM-local landing to R2 so multiple backfills don't fill the VM disk.
+The flow below describes the **Data Portability** path — certain for Maps,
+candidate for YouTube. If YouTube ends up on Data API v3 instead, steps
+1–3 are replaced by direct REST queries against `/videos`, `/channels`,
+`/activities` — same bronze schema, different producer.
+
+One Google Cloud Console app, OAuth'd once, can cover all three (DP
+scopes + YouTube Data API + Calendar API) — each scope enabled
+individually. Each Data Portability ingest tick is:
+
+1. **`archives.initiate`** — Dagster schedule POSTs the list of resource
+   scopes it wants (e.g. `dataportability.youtube.activity`,
+   `dataportability.youtube.searches`,
+   `dataportability.maps.starred_places`). Returns an `archiveJobId`.
+2. **Poll** `archiveJobs.getPortabilityArchiveState` until status flips to
+   `COMPLETE` (minutes for incremental, longer on the first backfill).
+3. **Download** each signed URL → unpack the zip. Layout matches Google
+   Takeout 1:1 (same JSON file paths and shapes), so parsers are
+   interchangeable between the two paths.
+4. **INSERT into bronze.** `ReplacingMergeTree(_ingested_at)` collapses
+   any row overlapping a previous run, so a day's archive is safe to
+   re-fetch without duplicates.
+
+Apps stay in **"testing" mode** for self-only use — you're the only test
+user, no Google brand verification needed. Same pattern as the Spotify
+dev app.
+
+**Caveat — Maps Timeline**: Google migrated Maps location history to
+on-device storage in late 2024 / early 2025. Pre-migration data is still
+in Data Portability; new visits may only live in your phone's local
+Timeline. Fallback is the on-device "Export Timeline" feature (periodic
+manual export, parsed by the same `maps/parser.py`).
+
+**Initial backfill**: one big archive job covering all-time history
+(slow but unattended). **Incremental**: a daily Dagster schedule requests
+just the last day's archive — cheap, small, completes in minutes.
+
+Manual Takeout (`https://takeout.google.com/`) remains a usable fallback
+for one-shot loads or if the API path breaks; the parsers don't care
+which path the archive came from. Long-term: stage downloads in R2
+rather than VM-local landing if multiple backfills risk filling the disk.
+
+### Calendar push architecture
+
+Google Calendar API exposes `events.watch`: register a webhook URL per
+calendar, and Google POSTs a notification when any event in that calendar
+is created / modified / deleted. That's our event-driven ingest — same
+latency story as the Spotify "Now playing" tile, just driven by Google's
+push rather than our poll.
+
+Flow:
+
+1. **One-time setup per calendar** — Dagster asset calls
+   `calendars.events.watch(calendarId, channelId, address, token)`. Google
+   returns `resourceId` + `expiration` (max 7-day TTL). We persist the
+   channel metadata so we can renew before expiration.
+2. **Push receipt** — Google POSTs to a Cloudflare Pages Function at
+   `https://<PAGES_DOMAIN>/api/_internal/calendar-webhook`. The function
+   validates `X-Goog-Channel-Token` against our secret, INSERTs a row
+   into `bronze.calendar_sync_notifications` over the same tunnel +
+   Access service token that the dashboard already uses, and returns
+   200 quickly (Google retries on slow/failed responses).
+3. **Sensor pickup** — A Dagster sensor ticks every ~30s, SELECTs
+   unprocessed rows from the sync queue, and for each affected calendar
+   calls `events.list?syncToken=…` for the delta. Delta lands in
+   `bronze.calendar_events`; syncToken advances; notification is marked
+   processed.
+4. **Channel renewal** — Separate Dagster schedule re-watches each
+   channel daily (before the 7-day expiration) to keep the push alive.
+
+Categorization is free: every event carries `calendarId`, and we use
+`calendar_name` directly as the category. Pretty-printing (if raw calendar
+names need it) goes in `silver.calendar_category_aliases`.
+
+**Fallback** if the webhook plumbing is more friction than it's worth:
+drop steps 1–2 and run a Dagster schedule every 60s calling
+`events.list?syncToken=…` for each calendar. Same delta logic minus the
+webhook receiver. Latency rises from seconds to minute-scale; everything
+else is identical.
 
 ### The day-to-day loop
 
@@ -174,7 +252,7 @@ Compose configs already match between laptop and VM, so the only laptop-only odd
 
 - `.spotify_cache`, `google_token.json`, any per-user OAuth artifact — these are credentials, gitignored
 - `infrastructure/.env` — gitignored, edited by hand on each machine
-- Takeout exports / raw source files — gitignored, scp'd or stored in R2
+- Raw export archives (Data Portability downloads, fallback Takeout zips, on-device Timeline exports) — gitignored, fetched in-pipeline or scp'd for one-offs, optionally staged in R2
 - `PERSONAL.md` — your placeholder cheat-sheet, gitignored
 
 ---
@@ -185,8 +263,11 @@ Decisions to make before writing real code:
 
 1. **dbt vs Dagster-native SQL assets?** Either works. `dagster-dbt` is well-supported; pure `@asset` with embedded SQL keeps everything in one tool. The legacy stack used dbt — leaning that way for continuity.
 2. **R2 vs MinIO for raw landing?** MinIO no longer starts on the VM. R2 is the long-term target. Producers could write raw payloads to R2 first (for replay-ability), then INSERT to ClickHouse — or skip the lake entirely for low-volume sources.
-3. **Backfill strategy for Google Takeout?** Manual upload to a known path → Dagster sensor → parser → bronze. Or skip the orchestrator for one-shot loads and just run a python script.
-4. **Calendar source?** Google Calendar API (needs OAuth) vs published `.ics` URL (no OAuth, polling). The latter is much simpler if it fits the use case.
+### Resolved (2026-05-24)
+
+3. ~~Backfill strategy~~ → **1 year initial pull** via each source's API. Deeper history filled later by one-shot manual exports (Spotify "Account Privacy → Request data" Extended Streaming History; Google Takeout zips; on-device Maps Timeline exports) — same Dagster parser assets, run only after live pipelines are stable so no data is missed on cutover.
+4. ~~Calendar source~~ → **Google Calendar API + `events.watch` push notifications.** Multi-calendar import; `calendar_name` is the category directly. Fallback: 60s incremental polling with `syncToken`. See the "Calendar push architecture" subsection above for the full flow.
+5. ~~YouTube API choice~~ → **Hybrid.** Data Portability for the raw watch + search history rows; YouTube Data API v3 as a `video_id → channel/category/duration` enricher (Dagster sensor, batched 50 IDs/call). Watch-time tiles stay an explicit `count × duration_seconds` proxy — Google doesn't track partial-watch time anywhere.
 
 ## What to leave alone
 
