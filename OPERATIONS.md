@@ -192,16 +192,25 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 
 All eight phases of the build are landed (see `IMPLEMENTATION_PLAN.md` for the spec, `git log` for the actual sequence). The Dagster code location loads ~30+ assets across Spotify, Google Maps, YouTube, Calendar, plus observability. dbt builds 40+ silver/gold views on top.
 
-### Weekly Google re-auth
+### Google token lifecycle
 
-External-user-type apps in Testing mode get refresh tokens that expire after 7 days. Steady-state workflow:
+The behaviour depends on the GCP app's OAuth consent screen publishing status:
 
-1. The `google_token_health_schedule` (Monday 09:00 UTC) inspects `auth.google_tokens.issued_at` and INSERTs a row in `auth.alerts` when a token is ≥ 6 days old.
-2. The dashboard's `/api/system/health` endpoint surfaces these alerts.
-3. Open `https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect` in a browser, complete Google's consent screen; the callback writes fresh tokens to `auth.google_tokens`.
-4. Dagster reads from `auth.google_tokens` on every resource init — no restart needed.
+| Publishing status | Refresh-token lifetime | Cadence |
+|---|---|---|
+| **Testing** (default for unsubmitted apps) | 7 days, hard expiry | Weekly re-auth required. Set `GOOGLE_TOKEN_AGE_ALERT_DAYS=6` in `infrastructure/.env`. |
+| **In production** (unverified) | Long-lived for basic + sensitive scopes; restricted scopes (Data Portability) *may* still rotate sooner | Monthly inactivity check. Default `GOOGLE_TOKEN_AGE_ALERT_DAYS=90`. |
+| **In production + verified** | Long-lived for all granted scopes (revoked only on password change / 6 months inactive / manual revoke) | Same as above. |
 
-Long-term escape: apply for OAuth verification (Phase 9) to get permanent refresh tokens. Restricted scopes (Data Portability) additionally require a security assessment.
+`google_token_health_schedule` runs on the 1st of each month at 09:00 UTC. It inspects `auth.google_tokens.issued_at` and INSERTs a `token_stale` row in `auth.alerts` when older than the threshold. The dashboard's `/api/system/health` surfaces these.
+
+When you do need to re-auth (or want to rotate manually):
+
+1. Open `https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect` in a browser.
+2. Walk Google's consent screen.
+3. The callback writes fresh tokens to `auth.google_tokens`; Dagster picks them up on the next resource init — no restart needed.
+
+If `invalid_grant` starts appearing in Dagster logs for any Google asset, the refresh token has been revoked or expired — re-auth via the link above.
 
 ---
 
