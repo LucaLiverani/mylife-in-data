@@ -98,7 +98,7 @@ Every `/api/*` endpoint tries ClickHouse first; on failure (network, auth, missi
 
 `public/mocks/` is the single source of truth for both dev (`npm run dev` via the Vite plugin in `vite-plugins/mock-api.ts`) and production fallback. Regenerate the seeded sample data with `npm run seed`.
 
-Three endpoints (`/api/now/timeline`, `/api/google/calendar`, `/api/system/health`) have no Pages Function yet — they're rewritten directly to the mock via `public/_redirects` until real handlers are written.
+One endpoint (`/api/now/timeline`) is the only remaining mock-only route — Phase 8 turned the rest (`/api/google/calendar`, `/api/system/health`) into real Pages Functions.
 
 ---
 
@@ -188,9 +188,20 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 
 ---
 
-## Pipelines (next workstream)
+## Pipelines
 
-Currently the VM's ClickHouse has only the empty `default` database — no `gold.*` tables yet, no data flowing. The dashboard serves mocks transparently. Reactivating real data is its own workstream — see **`PIPELINES.md`** for the plan.
+All eight phases of the build are landed (see `IMPLEMENTATION_PLAN.md` for the spec, `git log` for the actual sequence). The Dagster code location loads ~30+ assets across Spotify, Google Maps, YouTube, Calendar, plus observability. dbt builds 40+ silver/gold views on top.
+
+### Weekly Google re-auth
+
+External-user-type apps in Testing mode get refresh tokens that expire after 7 days. Steady-state workflow:
+
+1. The `google_token_health_schedule` (Monday 09:00 UTC) inspects `auth.google_tokens.issued_at` and INSERTs a row in `auth.alerts` when a token is ≥ 6 days old.
+2. The dashboard's `/api/system/health` endpoint surfaces these alerts.
+3. Open `https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect` in a browser, complete Google's consent screen; the callback writes fresh tokens to `auth.google_tokens`.
+4. Dagster reads from `auth.google_tokens` on every resource init — no restart needed.
+
+Long-term escape: apply for OAuth verification (Phase 9) to get permanent refresh tokens. Restricted scopes (Data Portability) additionally require a security assessment.
 
 ---
 

@@ -29,3 +29,8 @@ models:
     gold:
       +schema: gold
       +materialized: view
+
+# Re-test everything on every `dbt run`. Hard-fails the run if any test fails;
+# we lean on this in CI / Dagster to surface schema drift early.
+on-run-end:
+  - "{{ run_query('SELECT 1') }}"
