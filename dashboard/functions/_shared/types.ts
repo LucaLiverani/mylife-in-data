@@ -18,6 +18,17 @@ export interface Env {
   // Kafka connection (for polling endpoint)
   KAFKA_BOOTSTRAP_SERVERS?: string;
   KAFKA_TOPIC?: string;
+
+  // Google OAuth — Web Application client (see IMPLEMENTATION_PLAN.md §1.2).
+  // Used by /api/_internal/google-auth-{redirect,callback}.
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  GOOGLE_REDIRECT_URI?: string;
+  GOOGLE_REAUTH_STATE_SECRET?: string;
+
+  // Calendar webhook — shared secret between Pages Function and Google's
+  // events.watch subscriptions. Validated on every notification POST.
+  CALENDAR_WEBHOOK_TOKEN?: string;
 }
 
 /**

@@ -22,3 +22,18 @@ CREATE TABLE IF NOT EXISTS auth.alerts (
     message           String
 ) ENGINE = MergeTree
 ORDER BY (raised_at);
+
+-- Calendar push channels — one row per (calendar_id, channel_id). Phase 7
+-- writes here on events.watch setup; the sync sensor uses sync_token to
+-- resume from the last delta.
+CREATE TABLE IF NOT EXISTS auth.calendar_channels (
+    calendar_id        String,
+    calendar_name      String,
+    channel_id         String,                -- our UUID, passed to events.watch
+    resource_id        String,                -- Google's resource ID
+    sync_token         String DEFAULT '',     -- nextSyncToken from latest events.list
+    expiration         DateTime,              -- when Google says it'll stop pushing
+    started_at         DateTime DEFAULT now(),
+    _updated_at        DateTime DEFAULT now()
+) ENGINE = ReplacingMergeTree(_updated_at)
+ORDER BY (calendar_id, channel_id);
