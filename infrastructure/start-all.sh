@@ -38,6 +38,12 @@ echo "[2/4] Warehouse (ClickHouse)..."
 (cd "$COMPOSE_DIR/clickhouse" && docker compose up -d)
 sleep 10
 
+echo "      Applying ClickHouse DDL..."
+# Source env so apply.sh sees CLICKHOUSE_USER / CLICKHOUSE_PASSWORD.
+set -a; source "$SCRIPT_DIR/.env"; set +a
+CLICKHOUSE_DDL_HOST=localhost bash "$SCRIPT_DIR/../warehouse/ddl/apply.sh" || \
+    echo "      (DDL apply failed — check ClickHouse logs)"
+
 echo
 echo "[3/4] Orchestration (Dagster)..."
 # Dagster image is built from a local Dockerfile (not on Docker Hub).

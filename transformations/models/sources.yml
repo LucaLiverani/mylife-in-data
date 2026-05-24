@@ -1,0 +1,11 @@
+version: 2
+
+# Sources declared here are tracked by dbt for ref() lineage and freshness.
+# Real bronze tables are created by warehouse/ddl/*.sql files — this is just
+# the manifest dbt sees.
+
+sources:
+  - name: bronze
+    description: "Raw, append-only event tables populated by Dagster producers."
+    schema: bronze
+    tables: []
