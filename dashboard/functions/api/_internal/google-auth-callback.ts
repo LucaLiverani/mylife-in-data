@@ -1,17 +1,22 @@
 /**
  * GET /api/_internal/google-auth-callback?code=...&state=...
  *
- * - validates `state` (HMAC + 5-min TTL)
+ * - validates `state` (HMAC + 5-min TTL); extracts the scope_group from it
  * - exchanges `code` for tokens at Google's OAuth endpoint
- * - upserts into auth.google_tokens via the ClickHouse HTTP interface
- *   (same tunnel + Access service token as the dashboard's other handlers)
+ * - upserts into auth.google_tokens via the ClickHouse HTTP interface,
+ *   tagging the row with the right scope_group
  */
 
 import type { Env } from '../../_shared/types';
-import { exchangeCodeForTokens, verifyState, emailFromIdToken, GOOGLE_SCOPES } from '../../_shared/google-auth';
+import {
+  exchangeCodeForTokens,
+  verifyState,
+  emailFromIdToken,
+  GOOGLE_SCOPES,
+} from '../../_shared/google-auth';
 import { queryClickHouse } from '../../_shared/clickhouse';
 
-const NEXT_RENEWAL_DAYS = 7;
+const NEXT_RENEWAL_DAYS = 90;
 
 function htmlPage(title: string, body: string): Response {
   return new Response(
@@ -67,13 +72,14 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
     );
   }
 
-  const stateOk = await verifyState(state, env.GOOGLE_REAUTH_STATE_SECRET);
-  if (!stateOk) {
+  const stateResult = await verifyState(state, env.GOOGLE_REAUTH_STATE_SECRET);
+  if (!stateResult.ok) {
     return htmlPage(
       'Invalid state',
       '<h1 class="err">Invalid state</h1><p>The link expired or was tampered with. Re-start the re-auth flow.</p>'
     );
   }
+  const scopeGroup = stateResult.group;
 
   let tokens;
   try {
@@ -87,17 +93,16 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
   const expiresAt = new Date(Date.now() + (tokens.expires_in - 30) * 1000).toISOString().replace('T', ' ').slice(0, 19);
   const nextRenewal = new Date(Date.now() + NEXT_RENEWAL_DAYS * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
-  // Build INSERT and run via the same queryClickHouse wrapper.
-  // ClickHouse arrays are passed as `['scope1','scope2']` — JSON would also work but we go with array literal.
   const escSql = (s: string) => s.replace(/'/g, "''");
-  const scopes = (tokens.scope || GOOGLE_SCOPES.join(' ')).split(/\s+/).filter(Boolean);
+  const scopes = (tokens.scope || GOOGLE_SCOPES[scopeGroup].join(' ')).split(/\s+/).filter(Boolean);
   const scopesArr = `[${scopes.map(s => `'${escSql(s)}'`).join(', ')}]`;
 
   const insertSql =
     `INSERT INTO auth.google_tokens ` +
-    `(account_email, refresh_token, access_token, expires_at, scopes, issued_at) ` +
+    `(account_email, scope_group, refresh_token, access_token, expires_at, scopes, issued_at) ` +
     `VALUES (` +
       `'${escSql(accountEmail)}', ` +
+      `'${escSql(scopeGroup)}', ` +
       `'${escSql(tokens.refresh_token || '')}', ` +
       `'${escSql(tokens.access_token)}', ` +
       `toDateTime('${expiresAt}'), ` +
@@ -115,11 +120,15 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
     );
   }
 
+  const otherGroup = scopeGroup === 'standard' ? 'portability' : 'standard';
   return htmlPage(
     'Re-auth complete',
     `<h1 class="ok">Re-auth complete</h1>` +
     `<p>Account: <code>${accountEmail}</code></p>` +
+    `<p>Scope group: <strong>${scopeGroup}</strong></p>` +
     `<p>Next renewal due: <strong>${nextRenewal}</strong>.</p>` +
+    `<p>If you also need to refresh the <strong>${otherGroup}</strong> group, ` +
+    `open <a href="/api/_internal/google-auth-redirect?group=${otherGroup}">this link</a>.</p>` +
     `<p>You can close this tab.</p>`
   );
 }

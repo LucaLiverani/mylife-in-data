@@ -84,15 +84,32 @@ def _row_from_activity_segment(seg: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _records_in_file(path: Path) -> Iterator[dict[str, Any]]:
-    """Yield each `timelineObjects` entry from a Records.json or per-month file."""
+    """Yield records from a Timeline JSON file.
+
+    Handles three known shapes:
+      - Old Takeout: `{"timelineObjects": [...]}`
+      - DP archive:  `[{...}, {...}]` (top-level list)
+      - MyActivity:  `[{"header": "Maps", "title": "...", ...}]`
+
+    Returns whatever it can find; downstream code filters by content shape
+    (placeVisit / activitySegment / activity entries)."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError):
         log.warning("skipping unreadable file: %s", path)
         return
-    objects = data.get("timelineObjects") or []
-    for obj in objects:
-        yield obj
+
+    if isinstance(data, list):
+        for obj in data:
+            if isinstance(obj, dict):
+                yield obj
+        return
+
+    if isinstance(data, dict):
+        objects = data.get("timelineObjects") or data.get("locations") or []
+        for obj in objects:
+            if isinstance(obj, dict):
+                yield obj
 
 
 def parse_archive(root: Path) -> tuple[list[dict], list[dict]]:

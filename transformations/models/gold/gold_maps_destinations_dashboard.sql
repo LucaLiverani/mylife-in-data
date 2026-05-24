@@ -1,17 +1,18 @@
--- Top 10 destinations. Handler keys: destination, count, type.
+-- Top neighborhoods you searched/viewed (aggregated, no per-place detail).
 
 {{ config(materialized='view', schema='gold') }}
 
 SELECT
-    place_name                                  AS destination,
-    count()                                     AS count,
-    CASE
-        WHEN avg(dwell_seconds) >= 3600 THEN 'extended'
-        WHEN avg(dwell_seconds) >= 600  THEN 'frequent'
-        ELSE 'passing'
-    END                                         AS type
-FROM {{ ref('silver_maps_visits') }}
-WHERE place_name != ''
-GROUP BY place_name
+    multiIf(
+        neighborhood != '' AND locality != '', concat(neighborhood, ', ', locality),
+        locality != '',                        locality,
+        country != '',                         country,
+        'Unknown'
+    )                                                AS destination,
+    count()                                          AS count,
+    anyHeavy(primary_type)                           AS type
+FROM {{ ref('silver_maps_activity_enriched') }}
+WHERE is_private = 0
+GROUP BY destination
 ORDER BY count DESC
 LIMIT 10

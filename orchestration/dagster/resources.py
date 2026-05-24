@@ -114,20 +114,24 @@ class SpotifyResource(ConfigurableResource):
 class GoogleAuthResource(ConfigurableResource):
     """Google OAuth credentials, loaded from `auth.google_tokens`.
 
-    Each call to `get_credentials()` re-reads the latest row and refreshes the
-    access token in-process if it's near expiry. Rotated tokens are written
-    back to ClickHouse so other Dagster runs (and the Pages re-auth callback)
-    pick up the freshest value.
+    Each call to `get_credentials()` re-reads the latest row for
+    (account_email, scope_group) and refreshes the access token in-process if
+    it's near expiry. Rotated tokens are written back to ClickHouse so other
+    Dagster runs (and the Pages re-auth callback) pick up the freshest value.
 
-    `account_email=None` picks the first row in the table — fine for the
-    single-user setup. Set explicitly to disambiguate if you ever seed
-    multiple accounts.
+    Two scope groups, one row each:
+      'standard'    — Calendar API + YouTube Data API + userinfo
+      'portability' — Data Portability API (Maps, YouTube history)
+
+    Google enforces the split (DP scopes can't be requested with anything else).
+    Resources are registered once per group; assets pull whichever one they need.
     """
 
     account_email: Optional[str] = None
+    scope_group: str = "standard"
 
     def get_credentials(self):  # type: ignore[no-untyped-def]
         from ingestion._shared.google_oauth import GoogleCredentials
 
         email = self.account_email or os.environ.get("GOOGLE_ACCOUNT_EMAIL") or None
-        return GoogleCredentials.load_and_refresh(email)
+        return GoogleCredentials.load_and_refresh(email, scope_group=self.scope_group)

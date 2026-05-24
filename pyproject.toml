@@ -1,0 +1,17 @@
+[project]
+name = "mylife-in-data"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.14",
+    "clickhouse-connect>=1.0.1",
+    "google-api-python-client>=2.196.0",
+    "google-auth>=2.53.0",
+    "google-auth-oauthlib>=1.4.0",
+    "kafka-python>=2.3.1",
+    "python-dotenv>=1.2.2",
+    "requests>=2.34.2",
+    "spotipy>=2.26.0",
+]

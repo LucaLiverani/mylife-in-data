@@ -77,6 +77,9 @@ defs = Definitions(
         "redpanda": RedpandaResource(),
         "r2": R2Resource(),
         "spotify": SpotifyResource(),
-        "google_auth": GoogleAuthResource(),
+        # Google enforces that Data Portability scopes can't share an OAuth
+        # flow with anything else, so we keep two separate credential rows.
+        "google_auth_standard": GoogleAuthResource(scope_group="standard"),
+        "google_auth_portability": GoogleAuthResource(scope_group="portability"),
     },
 )

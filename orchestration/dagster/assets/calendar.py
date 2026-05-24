@@ -63,7 +63,7 @@ def calendar_schema(context) -> str:
     group_name="google",
     description="Subscribe events.watch for every Calendar the user owns.",
     deps=[calendar_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_standard"},
 )
 def calendar_channels_setup(context) -> dict:
     from ingestion._shared.clickhouse import insert_rows
@@ -76,7 +76,7 @@ def calendar_channels_setup(context) -> dict:
     if not webhook:
         raise RuntimeError("Cannot derive webhook URL — set GOOGLE_REDIRECT_URI.")
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_standard.get_credentials()
     client = CalendarClient(creds)
 
     calendars = client.list_calendars()
@@ -115,7 +115,7 @@ def calendar_channels_setup(context) -> dict:
     group_name="google",
     description="Re-subscribe each Calendar channel before its 7-day TTL expires.",
     deps=[calendar_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_standard"},
 )
 def calendar_channels_renew(context) -> int:
     from ingestion._shared.clickhouse import get_client, insert_rows
@@ -135,7 +135,7 @@ def calendar_channels_renew(context) -> int:
         context.log.info("No calendar channels to renew.")
         return 0
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_standard.get_credentials()
     cal_client = CalendarClient(creds)
     renewed = []
     for calendar_id, calendar_name in rows:
@@ -168,7 +168,7 @@ def calendar_channels_renew(context) -> int:
     group_name="google",
     description="Drain unprocessed sync notifications: fetch delta + INSERT bronze.",
     deps=[calendar_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_standard"},
 )
 def calendar_sync_drain(context) -> dict:
     from ingestion._shared.clickhouse import get_client, insert_rows
@@ -195,7 +195,7 @@ def calendar_sync_drain(context) -> dict:
     for channel_id, calendar_id, msg_num in rows:
         by_cal.setdefault(calendar_id, []).append((channel_id, msg_num))
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_standard.get_credentials()
     cal_client = CalendarClient(creds)
 
     n_events = 0
@@ -247,7 +247,7 @@ def calendar_sync_drain(context) -> dict:
     group_name="google",
     description="60s polling fallback for Calendar (off by default; enable when webhook breaks).",
     deps=[calendar_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_standard"},
 )
 def calendar_polling_fallback(context) -> dict:
     """Identical to calendar_sync_drain minus the notification check.
@@ -267,7 +267,7 @@ def calendar_polling_fallback(context) -> dict:
     if not rows:
         return {"events_inserted": 0}
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_standard.get_credentials()
     cal_client = CalendarClient(creds)
 
     inserted = 0

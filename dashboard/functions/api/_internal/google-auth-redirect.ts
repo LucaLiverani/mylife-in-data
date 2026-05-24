@@ -1,15 +1,16 @@
 /**
- * GET /api/_internal/google-auth-redirect
+ * GET /api/_internal/google-auth-redirect?group=standard|portability
  *
- * Builds the Google OAuth consent URL with a signed `state` value and 302s
- * the browser there. The callback validates the state and persists tokens.
+ * Builds the Google OAuth consent URL with a signed `state` value (which
+ * encodes the chosen scope group so the callback knows which row to write)
+ * and 302s the browser there.
  */
 
 import type { Env } from '../../_shared/types';
-import { buildState, GOOGLE_SCOPES } from '../../_shared/google-auth';
+import { buildState, GOOGLE_SCOPES, type ScopeGroup } from '../../_shared/google-auth';
 
 export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
-  const { env } = context;
+  const { env, request } = context;
 
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_REDIRECT_URI || !env.GOOGLE_REAUTH_STATE_SECRET) {
     return new Response(
@@ -18,15 +19,26 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
     );
   }
 
-  const state = await buildState(env.GOOGLE_REAUTH_STATE_SECRET);
+  const url = new URL(request.url);
+  const requested = (url.searchParams.get('group') || 'standard') as ScopeGroup;
+  if (requested !== 'standard' && requested !== 'portability') {
+    return new Response(
+      'Invalid group. Use ?group=standard or ?group=portability.',
+      { status: 400 }
+    );
+  }
+
+  const state = await buildState(env.GOOGLE_REAUTH_STATE_SECRET, requested);
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: env.GOOGLE_REDIRECT_URI,
     response_type: 'code',
     access_type: 'offline',
-    prompt: 'consent',  // forces refresh_token issue on every re-auth
-    include_granted_scopes: 'true',
-    scope: GOOGLE_SCOPES.join(' '),
+    prompt: 'consent',
+    // `include_granted_scopes` is rejected by Data Portability scopes
+    // ("Incremental auth is not allowed"). prompt=consent already forces a
+    // fresh grant, so incremental auth was redundant anyway.
+    scope: GOOGLE_SCOPES[requested].join(' '),
     state,
   });
 

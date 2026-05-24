@@ -34,19 +34,25 @@ def _ddl_path(filename: str) -> Path:
     return Path(__file__).resolve().parents[3] / "warehouse" / "ddl" / filename
 
 
-# Maps DP resource scopes — keep in sync with scopes requested by the OAuth
-# flow (dashboard/functions/_shared/google-auth.ts).
-MAPS_RESOURCES = [
-    "https://www.googleapis.com/auth/dataportability.maps.aliased_places",
-    "https://www.googleapis.com/auth/dataportability.maps.starred_places",
-]
+# Data Portability resource names — short form, NOT the full scope URL.
+# (scope URL  https://www.googleapis.com/auth/dataportability.myactivity.maps
+#  → resource  myactivity.maps)
+#
+# Split into two groups because Google enforces different export semantics:
+#   - myactivity.maps supports time-windowed exports (daily incremental works)
+#   - maps.aliased_places + maps.starred_places are full-snapshot only
+MAPS_ACTIVITY_RESOURCES = ["myactivity.maps"]
+MAPS_SAVED_PLACES_RESOURCES = ["maps.aliased_places", "maps.starred_places"]
 
 
-@asset(group_name="google", description="DDL bootstrap for Maps bronze + silver tables.")
+@asset(group_name="google", description="DDL bootstrap for Maps tables (Timeline + activity).")
 def maps_schema(context) -> str:
     from ingestion._shared.clickhouse import execute_file
 
+    # 50 = Timeline tables (legacy, filled by manual export only)
+    # 51 = activity + place catalog + private filter (the primary daily flow)
     execute_file(str(_ddl_path("50_maps.sql")))
+    execute_file(str(_ddl_path("51_maps_activity.sql")))
     return "ok"
 
 
@@ -57,55 +63,164 @@ def _maps_ingest_window(years_back: float = 0, days_back: int = 1) -> tuple[date
     return end - timedelta(days=days_back), end
 
 
-def _run_maps_archive(context, *, years_back: float, days_back: int) -> dict:
+def _run_maps_activity_ingest(context, *, years_back: float, days_back: int) -> dict:
     from ingestion.google.portability import DataPortabilityClient
-    from ingestion.google.maps.parser import parse_archive
-    from ingestion.google.maps.insert import insert_visits, insert_paths
+    from ingestion.google.maps.activity_parser import parse_archive_for_activity
+    from ingestion.google.maps.insert import insert_activity
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_portability.get_credentials()
     client = DataPortabilityClient(creds)
 
     start_time, end_time = _maps_ingest_window(years_back=years_back, days_back=days_back)
-    context.log.info("Maps DP window: %s → %s", start_time.isoformat(), end_time.isoformat())
+    context.log.info("Maps activity DP window: %s → %s", start_time.isoformat(), end_time.isoformat())
 
-    job_id = client.initiate_archive(MAPS_RESOURCES, start_time=start_time, end_time=end_time)
+    job_id = client.initiate_archive(
+        MAPS_ACTIVITY_RESOURCES, start_time=start_time, end_time=end_time
+    )
     job = client.wait_for_archive(job_id)
 
-    with tempfile.TemporaryDirectory(prefix="maps-dp-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="maps-act-") as tmp:
         root = Path(tmp)
         client.download_archive(job, root)
-        visits, paths = parse_archive(root)
+        rows = parse_archive_for_activity(root)
 
-    n_visits = insert_visits(visits)
-    n_paths = insert_paths(paths)
-    context.log.info("Inserted %d visits, %d paths", n_visits, n_paths)
-    return {"visits": n_visits, "paths": n_paths}
+    n = insert_activity(rows)
+    context.log.info("Inserted %d activity rows into bronze.maps_activity", n)
+    return {"activity_rows": n}
 
 
 @asset(
     group_name="google",
-    description="One-shot 1y backfill of Maps Timeline.",
+    description="One-shot 1y backfill of Maps activity (search/view/directions).",
     deps=[maps_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_portability"},
 )
-def maps_initial_backfill(context) -> dict:
-    return _run_maps_archive(context, years_back=1.0, days_back=0)
+def maps_activity_initial_backfill(context) -> dict:
+    return _run_maps_activity_ingest(context, years_back=1.0, days_back=0)
 
 
 @asset(
     group_name="google",
-    description="Daily incremental Maps DP archive for the last 24h.",
+    description="Daily incremental Maps activity for the last 24h.",
     deps=[maps_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_portability"},
 )
-def maps_daily_incremental(context) -> dict:
-    return _run_maps_archive(context, years_back=0, days_back=1)
+def maps_activity_daily(context) -> dict:
+    return _run_maps_activity_ingest(context, years_back=0, days_back=1)
 
 
 @asset(
     group_name="google",
-    description="Rebuild silver.maps_trips after each maps ingest.",
-    deps=[maps_daily_incremental],
+    description="Sync starred places (coords only) into silver.maps_private_places for spatial filtering.",
+    deps=[maps_schema],
+    required_resource_keys={"google_auth_portability"},
+)
+def maps_private_places_sync(context) -> int:
+    """Pull starred places via DP (full snapshot — no time window), extract
+    ONLY lat/lng (no names), and refresh silver.maps_private_places.
+
+    The starred-places file contains friends' home addresses. Names never
+    enter the warehouse — only coordinates, used as a spatial exclusion
+    filter so those rows never reach gold tables."""
+    from ingestion._shared.clickhouse import get_client
+    from ingestion.google.portability import DataPortabilityClient
+    from ingestion.google.maps.activity_parser import parse_starred_places_coords
+    from ingestion.google.maps.insert import insert_private_places
+
+    creds = context.resources.google_auth_portability.get_credentials()
+    client = DataPortabilityClient(creds)
+
+    job_id = client.initiate_archive(MAPS_SAVED_PLACES_RESOURCES)
+    try:
+        job = client.wait_for_archive(job_id)
+    except Exception as exc:
+        # 24h rate-limit can hit; parse the existing job_id from the error.
+        import re
+
+        m = re.search(r"job ([a-f0-9-]{36})", str(exc))
+        if not m:
+            raise
+        job = client.get_state(m.group(1))
+
+    with tempfile.TemporaryDirectory(prefix="maps-saved-") as tmp:
+        root = Path(tmp)
+        client.download_archive(job, root)
+        coords = parse_starred_places_coords(root)
+
+    # TRUNCATE + INSERT so removed stars drop from the filter on next sync.
+    ch = get_client()
+    ch.command("TRUNCATE TABLE silver.maps_private_places")
+    n = insert_private_places(coords)
+    context.log.info("Refreshed silver.maps_private_places: %d private coordinates", n)
+    return n
+
+
+@asset(
+    group_name="google",
+    description="Enrich unknown places in bronze.maps_activity via Places API → catalog.",
+    deps=[maps_activity_daily],
+)
+def maps_place_enrichment(context) -> dict:
+    """Walk distinct place_ids / queries in bronze.maps_activity that aren't
+    yet in bronze.maps_place_catalog. Each unknown place gets one Places API
+    lookup (Find Place from Text, then Place Details) and is persisted.
+    Catalog is monotonic — we never re-lookup."""
+    import os
+
+    if not os.environ.get("GOOGLE_MAPS_API_KEY"):
+        context.log.warning("GOOGLE_MAPS_API_KEY not set — skipping place enrichment")
+        return {"looked_up": 0, "skipped": True}
+
+    from ingestion._shared.clickhouse import get_client
+    from ingestion.google.maps.places_api import PlacesAPIClient, get_or_lookup
+
+    ch = get_client()
+    # Build a worklist of unknown places: distinct (place_id, place_name, lat, lng)
+    # tuples where place_id isn't cached. Limit per-run for cost control.
+    rows = ch.query(
+        """
+        SELECT
+            argMax(place_id, event_ts) AS place_id,
+            argMax(place_name, event_ts) AS place_name,
+            avg(lat) AS lat,
+            avg(lng) AS lng
+        FROM bronze.maps_activity
+        WHERE place_id != ''
+          AND place_id NOT IN (SELECT place_id FROM bronze.maps_place_catalog)
+        GROUP BY place_id
+        LIMIT 200
+        """
+    ).result_rows
+
+    client = PlacesAPIClient()
+    looked_up = 0
+    failed = 0
+    for place_id, place_name, lat, lng in rows:
+        text = place_name or ""
+        try:
+            result = get_or_lookup(
+                place_id=place_id,
+                text=text,
+                lat=float(lat or 0),
+                lng=float(lng or 0),
+                client=client,
+            )
+        except Exception as exc:
+            context.log.warning("lookup failed for %s (%s): %s", place_id, text, exc)
+            failed += 1
+            continue
+        if result is None:
+            failed += 1
+        else:
+            looked_up += 1
+    context.log.info("Place enrichment: looked_up=%d, failed=%d (limit 200/run)", looked_up, failed)
+    return {"looked_up": looked_up, "failed": failed}
+
+
+@asset(
+    group_name="google",
+    description="Rebuild silver.maps_trips after each Timeline import (manual export-driven).",
+    deps=[maps_schema],
 )
 def maps_trip_segmentation(context) -> int:
     from ingestion.google.maps.trip_segmentation import segment_trips
@@ -118,7 +233,7 @@ def maps_trip_segmentation(context) -> int:
 # ── Jobs + schedules ───────────────────────────────────────────────────────
 maps_daily_job = define_asset_job(
     "maps_daily_job",
-    selection=AssetSelection.assets(maps_daily_incremental, maps_trip_segmentation),
+    selection=AssetSelection.assets(maps_activity_daily, maps_place_enrichment),
 )
 
 
@@ -126,14 +241,30 @@ maps_daily_schedule = ScheduleDefinition(
     job=maps_daily_job,
     cron_schedule="0 4 * * *",
     name="maps_daily_schedule",
-    description="Daily 04:00 Maps DP incremental + trip re-segmentation.",
+    description="Daily 04:00 Maps activity DP + place enrichment.",
+)
+
+
+maps_private_places_job = define_asset_job(
+    "maps_private_places_job",
+    selection=AssetSelection.assets(maps_private_places_sync),
+)
+
+
+maps_private_places_schedule = ScheduleDefinition(
+    job=maps_private_places_job,
+    cron_schedule="0 5 * * 1",  # Monday 05:00 — saved places change slowly
+    name="maps_private_places_schedule",
+    description="Weekly refresh of the private-places spatial filter from starred places.",
 )
 
 
 # ── YouTube ────────────────────────────────────────────────────────────────
+# Watch + search history live under `myactivity.youtube` (a DP resource short
+# name, NOT a scope URL). Scope-side, the OAuth grant uses the full URL
+# https://www.googleapis.com/auth/dataportability.myactivity.youtube.
 YOUTUBE_RESOURCES = [
-    "https://www.googleapis.com/auth/dataportability.youtube.watch_history",
-    "https://www.googleapis.com/auth/dataportability.youtube.search_history",
+    "myactivity.youtube",
 ]
 
 
@@ -150,7 +281,7 @@ def _youtube_ingest(context, *, years_back: float, days_back: int) -> dict:
     from ingestion.google.youtube.parser import parse_archive
     from ingestion.google.youtube.insert import insert_watch_history, insert_search_history
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_portability.get_credentials()
     client = DataPortabilityClient(creds)
 
     start_time, end_time = _maps_ingest_window(years_back=years_back, days_back=days_back)
@@ -174,7 +305,7 @@ def _youtube_ingest(context, *, years_back: float, days_back: int) -> dict:
     group_name="google",
     description="One-shot 1y YouTube history backfill.",
     deps=[youtube_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_portability"},
 )
 def youtube_history_initial_backfill(context) -> dict:
     return _youtube_ingest(context, years_back=1.0, days_back=0)
@@ -184,7 +315,7 @@ def youtube_history_initial_backfill(context) -> dict:
     group_name="google",
     description="Daily incremental YouTube history (last 24h).",
     deps=[youtube_schema],
-    required_resource_keys={"google_auth"},
+    required_resource_keys={"google_auth_portability"},
 )
 def youtube_history_daily(context) -> dict:
     return _youtube_ingest(context, years_back=0, days_back=1)
@@ -194,12 +325,13 @@ def youtube_history_daily(context) -> dict:
     group_name="google",
     description="Enrich unknown YouTube videos + channels via Data API v3.",
     deps=[youtube_history_daily],
-    required_resource_keys={"google_auth"},
+    # Data API v3 uses youtube.readonly (a standard scope), NOT Data Portability.
+    required_resource_keys={"google_auth_standard"},
 )
 def youtube_metadata_enricher(context) -> dict:
     from ingestion.google.youtube.enricher import enrich
 
-    creds = context.resources.google_auth.get_credentials()
+    creds = context.resources.google_auth_standard.get_credentials()
     counts = enrich(creds)
     context.log.info("Enricher: %s", counts)
     return counts

@@ -15,9 +15,17 @@ sources:
       - name: spotify_artists
       - name: spotify_saved_tracks
       - name: maps_visits
+        description: "Filled only by manual Timeline export (script). Empty in DP-only mode."
       - name: maps_path
+        description: "Filled only by manual Timeline export. Empty in DP-only mode."
       - name: maps_search
+        description: "Legacy — superseded by maps_activity (which captures all search/view/direction events)."
       - name: maps_directions
+        description: "Legacy — superseded by maps_activity."
+      - name: maps_activity
+        description: "Per-event Maps activity (search/view/directions) from MyActivity DP export."
+      - name: maps_place_catalog
+        description: "Cached Places API + Geocoding lookups. Monotonic — each place looked up once."
       - name: youtube_watch_history
       - name: youtube_search_history
       - name: youtube_videos

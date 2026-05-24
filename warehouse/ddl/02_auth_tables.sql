@@ -3,8 +3,15 @@
 -- Pages Function and the Dagster GoogleAuthResource both upsert into this
 -- table; the ReplacingMergeTree's _updated_at column resolves concurrent writes.
 
+-- Google enforces a hard rule: Data Portability scopes can only be requested
+-- in an OAuth flow that requests nothing else (no calendar, no youtube, no
+-- userinfo). So we run two separate OAuth flows and store two rows per email,
+-- keyed by scope_group:
+--   'standard'    — openid, userinfo, calendar, youtube.readonly
+--   'portability' — dataportability.* only
 CREATE TABLE IF NOT EXISTS auth.google_tokens (
     account_email     String,
+    scope_group       LowCardinality(String) DEFAULT 'standard',
     refresh_token     String,
     access_token      String,
     expires_at        DateTime,
@@ -12,7 +19,7 @@ CREATE TABLE IF NOT EXISTS auth.google_tokens (
     issued_at         DateTime,
     _updated_at       DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree(_updated_at)
-ORDER BY account_email;
+ORDER BY (account_email, scope_group);
 
 -- Operator-visible alerts: token expiry, auth failures, freshness misses, etc.
 CREATE TABLE IF NOT EXISTS auth.alerts (
