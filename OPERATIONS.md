@@ -192,6 +192,18 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 
 All eight phases of the build are landed (see `IMPLEMENTATION_PLAN.md` for the spec, `git log` for the actual sequence). The Dagster code location loads ~30+ assets across Spotify, Google Maps, YouTube, Calendar, plus observability. dbt builds 40+ silver/gold views on top.
 
+### Pivots from the original plan
+
+Two architectural pivots happened during integration, both forced by Google constraints:
+
+- **Two Google OAuth flows** (`standard` + `portability`). Google rejects mixed-scope consent requests when Data Portability scopes are involved, so each scope group gets its own bootstrap (`scripts/bootstrap_google_auth.py --scope-group {standard|portability}`) and its own row in `auth.google_tokens` keyed by `scope_group`. The `GoogleAuthResource` is registered twice in Dagster (`google_auth_standard` + `google_auth_portability`); assets declare which one they need.
+
+- **Maps is activity-based, not Timeline-based.** Google migrated Timeline (continuous location tracking) on-device only for many accounts in 2024. The pipeline now consumes `myactivity.maps` (search + view + directions) into `bronze.maps_activity` and enriches via Places API into `bronze.maps_place_catalog` (neighborhood + place type). Starred places are ingested as **coordinates only** into `silver.maps_private_places` and used as a spatial exclusion filter (within 100m → `is_private=1` → row never reaches gold tables; friends' home addresses stay private). Timeline data still flows in but only via monthly manual phone export through `scripts/import_maps_timeline_export.py`.
+
+### Where data currently lives
+
+The laptop has been the canonical dev environment. The VM is up and idle but contains no real data yet. See **`SYNC_TO_VM.md`** for the three paths (sync-then-deploy, deploy-auth-only, or temporary laptop tunnel) and the recommended procedure.
+
 ### Google token lifecycle
 
 The behaviour depends on the GCP app's OAuth consent screen publishing status:
