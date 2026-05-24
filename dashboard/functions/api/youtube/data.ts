@@ -1,13 +1,12 @@
 /**
  * YouTube Data API Route (Cloudflare Workers Function)
- * Queries ClickHouse gold tables for dashboard data
  *
- * Note: Google Takeout YouTube history doesn't include:
- * - Channel names/IDs (grouped by video instead)
- * - Actual watch duration (using video count as proxy)
+ * Note: Google Takeout YouTube history doesn't include channel names/IDs
+ * (grouped by video instead) or actual watch duration (count as proxy).
  */
 
 import { queryClickHouse } from '../../_shared/clickhouse';
+import { queryWithFallback, addCacheHeaders } from '../../_shared/fallback';
 import type { Env } from '../../_shared/types';
 
 interface YouTubeKPIsWithWatchTime {
@@ -49,12 +48,6 @@ interface CategoryBreakdown {
   unique_channels: number;
 }
 
-interface ActivityType {
-  name: string;
-  value: number;
-  activity_count: number;
-}
-
 interface DailyWatchTimeBreakdown {
   date: string;
   watched_hours: number;
@@ -84,135 +77,86 @@ interface HourlyActivity {
   activities: number;
 }
 
-/**
- * GET /api/youtube/data
- */
-export async function onRequest(context: { env: Env }): Promise<Response> {
-  const { env } = context;
+export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
+  const { env, request } = context;
 
-  try {
-    // Query gold tables created by dbt
-    // These are pre-aggregated and optimized for dashboard queries
+  const { data, isFromCache, error } = await queryWithFallback<any>(
+    async () => {
+      const [kpisResult, topChannels, categoryBreakdown, dailyWatchTimeBreakdown, recentVideos, hourlyActivity] =
+        await Promise.all([
+          queryClickHouse<YouTubeKPIsWithWatchTime>(env, `SELECT * FROM gold.gold_youtube_kpis_with_watch_time_dashboard LIMIT 1`),
+          queryClickHouse<TopChannel>(env, `SELECT * FROM gold.gold_youtube_top_channels_dashboard ORDER BY total_watch_time_seconds DESC LIMIT 10`),
+          queryClickHouse<CategoryBreakdown>(env, `SELECT * FROM gold.gold_youtube_category_breakdown_dashboard`),
+          queryClickHouse<DailyWatchTimeBreakdown>(env, `SELECT * FROM gold.gold_youtube_daily_watch_time_breakdown_dashboard ORDER BY date ASC`),
+          queryClickHouse<RecentVideo>(env, `SELECT * FROM gold.gold_youtube_recent_videos_dashboard LIMIT 10`),
+          queryClickHouse<HourlyActivity>(env, `SELECT * FROM gold.gold_youtube_hourly_activity_dashboard`),
+        ]);
 
-    const kpisQuery = `
-      SELECT *
-      FROM gold.gold_youtube_kpis_with_watch_time_dashboard
-      LIMIT 1
-    `;
+      const kpis = kpisResult[0] || null;
 
-    const topChannelsQuery = `
-      SELECT *
-      FROM gold.gold_youtube_top_channels_dashboard
-      ORDER BY total_watch_time_seconds DESC
-      LIMIT 10
-    `;
-
-    const categoryBreakdownQuery = `
-      SELECT *
-      FROM gold.gold_youtube_category_breakdown_dashboard
-    `;
-
-    const dailyWatchTimeBreakdownQuery = `
-      SELECT *
-      FROM gold.gold_youtube_daily_watch_time_breakdown_dashboard
-      ORDER BY date ASC
-    `;
-
-    const recentVideosQuery = `
-      SELECT *
-      FROM gold.gold_youtube_recent_videos_dashboard
-      LIMIT 10
-    `;
-
-    const hourlyActivityQuery = `
-      SELECT *
-      FROM gold.gold_youtube_hourly_activity_dashboard
-    `;
-
-    // Execute all queries in parallel
-    const [kpisResult, topChannels, categoryBreakdown, dailyWatchTimeBreakdown, recentVideos, hourlyActivity] = await Promise.all([
-      queryClickHouse<YouTubeKPIsWithWatchTime>(env, kpisQuery),
-      queryClickHouse<TopChannel>(env, topChannelsQuery),
-      queryClickHouse<CategoryBreakdown>(env, categoryBreakdownQuery),
-      queryClickHouse<DailyWatchTimeBreakdown>(env, dailyWatchTimeBreakdownQuery),
-      queryClickHouse<RecentVideo>(env, recentVideosQuery),
-      queryClickHouse<HourlyActivity>(env, hourlyActivityQuery),
-    ]);
-
-    const kpis = kpisResult[0] || null;
-
-    // Format response
-    const response = {
-      kpis: {
-        videosWatched: kpis?.videos_watched?.toLocaleString() || '0',
-        totalSearches: kpis?.total_searches?.toLocaleString() || '0',
-        totalAdsWatched: kpis?.total_ads_watched?.toLocaleString() || '0',
-        adsPercentage: kpis?.ads_percentage?.toFixed(1) || '0',
-        // Format watch time as hours only for fixed size display
-        totalWatchTime: kpis?.total_watch_time_seconds
-          ? `${Math.round(kpis.total_watch_time_seconds / 3600)}h`
-          : '0h',
-        totalChannels: kpis?.unique_channels?.toLocaleString() || '0',
-        avgWatchTimePerDay: Math.round(kpis?.avg_activities_per_day || 0),
-        enrichmentPercentage: kpis?.enrichment_percentage?.toFixed(1) || '0',
-        firstActivityDate: kpis?.first_activity_date || '',
-        lastActivityDate: kpis?.last_activity_date || '',
-      },
-      topChannels: topChannels.map(channel => ({
-        channelId: channel.channel_id,
-        channelTitle: channel.channel_title.length > 50 ? channel.channel_title.substring(0, 50) + '...' : channel.channel_title,
-        watchCount: Number(channel.watch_count) || 0,
-        totalWatchTime: channel.total_watch_time_formatted,
-        watchTimeHours: Math.round((Number(channel.total_watch_time_seconds) || 0) / 3600 * 10) / 10, // Round to 1 decimal
-        category: channel.primary_category,
-        uniqueVideos: Number(channel.unique_videos_watched) || 0,
-      })),
-      categoryBreakdown: categoryBreakdown.map(cat => ({
-        name: cat.category_name,
-        watchCount: Number(cat.watch_count) || 0,
-        watchTime: cat.total_watch_time_formatted,
-        watchPercentage: Number(cat.watch_percentage) || 0,
-        timePercentage: Number(cat.time_percentage) || 0,
-        uniqueChannels: Number(cat.unique_channels) || 0,
-      })),
-      dailyWatchTimeBreakdown: dailyWatchTimeBreakdown.map(day => ({
-        date: day.date,
-        watchedHours: Number(day.watched_hours) || 0,
-        searchesHours: Number(day.searches_hours) || 0,
-        visitsHours: Number(day.visits_hours) || 0,
-        adsHours: Number(day.ads_hours) || 0,
-        otherHours: Number(day.other_hours) || 0,
-        totalHours: Number(day.total_hours) || 0,
-        watchedCount: Number(day.watched_count) || 0,
-        searchesCount: Number(day.searches_count) || 0,
-        visitsCount: Number(day.visits_count) || 0,
-        adsCount: Number(day.ads_count) || 0,
-        dayName: day.day_name,
-        isWeekend: day.is_weekend === 1,
-      })),
-      recentVideos: recentVideos.map(video => ({
-        title: video.title.length > 80 ? video.title.substring(0, 80) + '...' : video.title,
-        time: video.time,
-        relativeTime: video.relative_time,
-        timeOfDay: video.time_of_day,
-        isFromAds: video.is_from_ads === 1,
-      })),
-      hourlyActivity: hourlyActivity.map(h => ({
-        hour: h.hour,
-        activities: Number(h.activities) || 0,
-      })),
-    };
-
-    return Response.json(response, {
-      headers: {
-        'Cache-Control': 'public, max-age=60',
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching YouTube data:', error);
-
-    // Return empty data instead of error to allow page to load
-    return Response.json({
+      return {
+        kpis: {
+          videosWatched: kpis?.videos_watched?.toLocaleString() || '0',
+          totalSearches: kpis?.total_searches?.toLocaleString() || '0',
+          totalAdsWatched: kpis?.total_ads_watched?.toLocaleString() || '0',
+          adsPercentage: kpis?.ads_percentage?.toFixed(1) || '0',
+          totalWatchTime: kpis?.total_watch_time_seconds
+            ? `${Math.round(kpis.total_watch_time_seconds / 3600)}h`
+            : '0h',
+          totalChannels: kpis?.unique_channels?.toLocaleString() || '0',
+          avgWatchTimePerDay: Math.round(kpis?.avg_activities_per_day || 0),
+          enrichmentPercentage: kpis?.enrichment_percentage?.toFixed(1) || '0',
+          firstActivityDate: kpis?.first_activity_date || '',
+          lastActivityDate: kpis?.last_activity_date || '',
+        },
+        topChannels: topChannels.map(c => ({
+          channelId: c.channel_id,
+          channelTitle: c.channel_title.length > 50 ? c.channel_title.substring(0, 50) + '...' : c.channel_title,
+          watchCount: Number(c.watch_count) || 0,
+          totalWatchTime: c.total_watch_time_formatted,
+          watchTimeHours: Math.round((Number(c.total_watch_time_seconds) || 0) / 3600 * 10) / 10,
+          category: c.primary_category,
+          uniqueVideos: Number(c.unique_videos_watched) || 0,
+        })),
+        categoryBreakdown: categoryBreakdown.map(cat => ({
+          name: cat.category_name,
+          watchCount: Number(cat.watch_count) || 0,
+          watchTime: cat.total_watch_time_formatted,
+          watchPercentage: Number(cat.watch_percentage) || 0,
+          timePercentage: Number(cat.time_percentage) || 0,
+          uniqueChannels: Number(cat.unique_channels) || 0,
+        })),
+        dailyWatchTimeBreakdown: dailyWatchTimeBreakdown.map(d => ({
+          date: d.date,
+          watchedHours: Number(d.watched_hours) || 0,
+          searchesHours: Number(d.searches_hours) || 0,
+          visitsHours: Number(d.visits_hours) || 0,
+          adsHours: Number(d.ads_hours) || 0,
+          otherHours: Number(d.other_hours) || 0,
+          totalHours: Number(d.total_hours) || 0,
+          watchedCount: Number(d.watched_count) || 0,
+          searchesCount: Number(d.searches_count) || 0,
+          visitsCount: Number(d.visits_count) || 0,
+          adsCount: Number(d.ads_count) || 0,
+          dayName: d.day_name,
+          isWeekend: d.is_weekend === 1,
+        })),
+        recentVideos: recentVideos.map(v => ({
+          title: v.title.length > 80 ? v.title.substring(0, 80) + '...' : v.title,
+          time: v.time,
+          relativeTime: v.relative_time,
+          timeOfDay: v.time_of_day,
+          isFromAds: v.is_from_ads === 1,
+        })),
+        hourlyActivity: hourlyActivity.map(h => ({
+          hour: h.hour,
+          activities: Number(h.activities) || 0,
+        })),
+      };
+    },
+    'youtube/data',
+    request,
+    {
       kpis: {
         videosWatched: '0',
         totalSearches: '0',
@@ -230,6 +174,9 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
       dailyWatchTimeBreakdown: [],
       recentVideos: [],
       hourlyActivity: [],
-    });
-  }
+    }
+  );
+
+  const { body, headers } = addCacheHeaders(data, isFromCache, error);
+  return Response.json(body, { headers });
 }

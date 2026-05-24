@@ -19,13 +19,19 @@ export async function queryClickHouse<T = any>(
   url.searchParams.set('database', CLICKHOUSE_DATABASE);
   url.searchParams.set('default_format', 'JSONEachRow');
 
+  const headers: Record<string, string> = {
+    'Authorization': `Basic ${auth}`,
+    'Content-Type': 'text/plain',
+  };
+  if (env.CF_ACCESS_CLIENT_ID && env.CF_ACCESS_CLIENT_SECRET) {
+    headers['CF-Access-Client-Id'] = env.CF_ACCESS_CLIENT_ID;
+    headers['CF-Access-Client-Secret'] = env.CF_ACCESS_CLIENT_SECRET;
+  }
+
   try {
     const response = await fetch(url.toString(), {
       method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'text/plain',
-      },
+      headers,
       body: query,
     });
 

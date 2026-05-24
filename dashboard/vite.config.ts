@@ -6,7 +6,7 @@ import { mockApi } from './vite-plugins/mock-api';
 export default defineConfig({
   plugins: [
     react(),
-    mockApi(path.resolve(__dirname, './mocks')),
+    mockApi(path.resolve(__dirname, './public/mocks')),
   ],
   resolve: {
     alias: {

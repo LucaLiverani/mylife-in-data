@@ -1,11 +1,10 @@
 /**
  * Spotify Summary API Route (Cloudflare Workers Function)
- * Quick summary stats for the dashboard overview
- *
- * Ported from: dashboard-nextjs/app/api/spotify/summary/route.ts
+ * Quick summary stats for the dashboard overview.
  */
 
 import { queryClickHouse } from '../../_shared/clickhouse';
+import { queryWithFallback, addCacheHeaders } from '../../_shared/fallback';
 import type { Env } from '../../_shared/types';
 
 interface SummaryStat {
@@ -14,48 +13,42 @@ interface SummaryStat {
   total_hours: string;
 }
 
-/**
- * GET /api/spotify/summary
- */
-export async function onRequest(context: { env: Env }): Promise<Response> {
-  const { env } = context;
+interface SummaryResponse {
+  stats: { label: string; value: string }[];
+  totalHours: string;
+}
 
-  try {
-    // Query pre-aggregated gold KPIs dashboard view
-    const query = `
-      SELECT *
-      FROM gold.gold_spotify_kpis_summary
-      LIMIT 1
-    `;
+export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
+  const { env, request } = context;
 
-    const results = await queryClickHouse<SummaryStat>(env, query);
-    const result = results[0] || null;
+  const { data, isFromCache, error } = await queryWithFallback<SummaryResponse>(
+    async () => {
+      const query = `SELECT * FROM gold.gold_spotify_kpis_summary LIMIT 1`;
+      const results = await queryClickHouse<SummaryStat>(env, query);
+      const result = results[0] || null;
 
-    // Parse the values to integers, removing any decimals
-    const artists = parseInt(String(result?.artists || 0), 10);
-    const songs = parseInt(String(result?.songs || 0), 10);
+      const artists = parseInt(String(result?.artists || 0), 10);
+      const songs = parseInt(String(result?.songs || 0), 10);
 
-    return Response.json({
-      stats: [
-        { label: 'Artists', value: artists.toString() },
-        { label: 'Songs', value: songs.toString() },
-      ],
-      totalHours: result?.total_hours || '0 hrs',
-    }, {
-      headers: {
-        'Cache-Control': 'public, max-age=60',
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching Spotify summary:', error);
-
-    // Return empty data instead of error to allow page to load
-    return Response.json({
+      return {
+        stats: [
+          { label: 'Artists', value: artists.toString() },
+          { label: 'Songs', value: songs.toString() },
+        ],
+        totalHours: result?.total_hours || '0 hrs',
+      };
+    },
+    'spotify/summary',
+    request,
+    {
       stats: [
         { label: 'Artists', value: '0' },
         { label: 'Songs', value: '0' },
       ],
       totalHours: '0 hrs',
-    });
-  }
+    }
+  );
+
+  const { body, headers } = addCacheHeaders(data, isFromCache, error);
+  return Response.json(body, { headers });
 }

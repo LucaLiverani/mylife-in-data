@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Generate mock JSON for every /api/* endpoint into dashboard/mocks/.
- * Single source of truth for dev-mode sample data. Re-run with `npm run seed`.
+ * Generate mock JSON for every /api/* endpoint into dashboard/public/mocks/.
+ * Single source of truth for both dev-mode sample data (via the mock-api Vite
+ * plugin) and production fallback when ClickHouse is unreachable (served as a
+ * static asset under /mocks/<path>.json).
  *
  * Shapes match the Cloudflare Functions response — keep in sync when adding endpoints.
  */
@@ -10,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const MOCKS_ROOT = resolve(__dirname, '..', 'mocks');
+const MOCKS_ROOT = resolve(__dirname, '..', 'public', 'mocks');
 
 const DAYS = 90;
 const TODAY = new Date('2026-05-21T12:00:00Z');

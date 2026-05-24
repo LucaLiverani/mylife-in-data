@@ -34,8 +34,8 @@ interface OverviewStats {
  * Cloudflare Pages Function handler
  * GET /api/overview/stats
  */
-export async function onRequest(context: { env: Env }): Promise<Response> {
-  const { env } = context;
+export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
+  const { env, request } = context;
 
   const { data, isFromCache, error } = await queryWithFallback(
     async () => {
@@ -115,7 +115,8 @@ export async function onRequest(context: { env: Env }): Promise<Response> {
         },
       };
     },
-    'overview-stats',
+    'overview/stats',
+    request,
     {
       summary: {
         songsStreamed: '0',

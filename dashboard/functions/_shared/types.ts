@@ -9,6 +9,12 @@ export interface Env {
   CLICKHOUSE_PASSWORD: string;
   CLICKHOUSE_DATABASE: string;
 
+  // Cloudflare Access service token — only set in production when
+  // CLICKHOUSE_HOST is behind Cloudflare Access. Local dev hits ClickHouse
+  // directly and leaves these unset.
+  CF_ACCESS_CLIENT_ID?: string;
+  CF_ACCESS_CLIENT_SECRET?: string;
+
   // Kafka connection (for polling endpoint)
   KAFKA_BOOTSTRAP_SERVERS?: string;
   KAFKA_TOPIC?: string;

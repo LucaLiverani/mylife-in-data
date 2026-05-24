@@ -1,113 +1,103 @@
 /**
  * Fallback data helper
- * Returns static cached data when ClickHouse is unavailable
+ *
+ * Returns the mock JSON for a given endpoint when ClickHouse is unavailable.
+ * The same `public/mocks/<path>.json` files power both:
+ *   - the Vite dev plugin (`vite-plugins/mock-api.ts`) so `npm run dev` works
+ *     without ClickHouse, and
+ *   - the production fallback path when the Workers Function can't reach CH.
+ *
+ * Mocks are full API-response objects (not JSONEachRow rows), so the response
+ * shape is already correct — callers just return it as-is.
+ *
+ * Workers `fetch` requires absolute URLs; we rebuild the URL against the
+ * incoming request's origin so the fetch loops back through the Pages router
+ * and hits the static asset.
  */
 
 /**
- * Fetch fallback data from static files
+ * Fetch the mock for an endpoint. `endpoint` is the API path without the
+ * `/api/` prefix or `.json` suffix, e.g. `'spotify/summary'`.
  */
-export async function getFallbackData<T>(endpoint: string): Promise<T[]> {
+export async function getFallbackData<T>(endpoint: string, request: Request): Promise<T | null> {
   try {
-    // Fetch from static fallback files deployed with the site
-    const response = await fetch(`/fallback-data/${endpoint}.json`);
+    const url = new URL(`/mocks/${endpoint}.json`, request.url);
+    const response = await fetch(url.toString());
 
     if (!response.ok) {
-      console.warn(`Fallback data not found for ${endpoint}`);
-      return [];
+      console.warn(`Mock data not found for ${endpoint} (HTTP ${response.status})`);
+      return null;
     }
 
-    const text = await response.text();
-
-    // Parse JSONEachRow format (newline-delimited JSON)
-    if (!text.trim()) {
-      return [];
-    }
-
-    const data = text
-      .trim()
-      .split('\n')
-      .filter(Boolean)
-      .map(line => JSON.parse(line));
-
-    return data as T[];
+    return (await response.json()) as T;
   } catch (error) {
-    console.error(`Error loading fallback data for ${endpoint}:`, error);
-    return [];
+    console.error(`Error loading mock data for ${endpoint}:`, error);
+    return null;
   }
 }
 
 /**
- * Query ClickHouse with automatic fallback to static data
+ * Query ClickHouse with automatic fallback to the matching mock.
  *
- * @param queryFn - Function that performs the ClickHouse query
- * @param fallbackEndpoint - Name of the fallback file (without .json)
- * @param defaultFallback - Optional default data if fallback file also fails
- * @returns Object with data, isFromCache flag, and optional error
+ * @param queryFn - Function that performs the ClickHouse query and returns
+ *                  the final API response object (post-transformation).
+ * @param fallbackEndpoint - API path without /api/ prefix, e.g. 'spotify/summary'.
+ *                           Used to look up `public/mocks/<path>.json`.
+ * @param request - The incoming Request (needed to resolve the absolute URL).
+ * @param defaultFallback - Last-resort value if even the mock fails to load.
  */
 export async function queryWithFallback<T>(
   queryFn: () => Promise<T>,
   fallbackEndpoint: string,
+  request: Request,
   defaultFallback?: T
 ): Promise<{ data: T; isFromCache: boolean; error?: string }> {
   try {
-    // Try ClickHouse first
     const data = await queryFn();
     return { data, isFromCache: false };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`ClickHouse query failed: ${errorMessage}`);
-    console.log(`Attempting to use fallback data: ${fallbackEndpoint}`);
+    console.warn(`ClickHouse query failed (${fallbackEndpoint}): ${errorMessage}`);
 
-    try {
-      // Try static fallback files
-      const cachedData = await getFallbackData<any>(fallbackEndpoint);
-
-      if (cachedData && (Array.isArray(cachedData) ? cachedData.length > 0 : cachedData)) {
-        console.log(`✅ Using fallback data for ${fallbackEndpoint}`);
-        return {
-          data: cachedData as T,
-          isFromCache: true,
-          error: errorMessage,
-        };
-      }
-    } catch (fallbackError) {
-      console.error(`Failed to load fallback data: ${fallbackError}`);
+    const cached = await getFallbackData<T>(fallbackEndpoint, request);
+    if (cached !== null) {
+      return { data: cached, isFromCache: true, error: errorMessage };
     }
 
-    // Last resort: use provided default fallback data
     if (defaultFallback !== undefined) {
-      console.log(`Using default fallback data for ${fallbackEndpoint}`);
-      return {
-        data: defaultFallback,
-        isFromCache: true,
-        error: errorMessage,
-      };
+      return { data: defaultFallback, isFromCache: true, error: errorMessage };
     }
 
-    // If everything fails, throw the original error
     throw error;
   }
 }
 
 /**
- * Add cache metadata to response
+ * Add cache metadata + cache-control headers to a response.
+ *
+ * For object responses, `_meta` is spread inline (the frontend reads it to
+ * show a "cached" badge). For array responses, `_meta` would break the
+ * contract — callers rely on `X-Data-Source: cache|live` header instead.
  */
 export function addCacheHeaders(
   data: any,
   isFromCache: boolean,
-  error?: string
+  error?: string,
+  cacheControl?: string
 ): { body: any; headers: Record<string, string> } {
-  const body = {
-    ...data,
-    _meta: {
-      cached: isFromCache,
-      timestamp: new Date().toISOString(),
-      ...(error && { error: 'ClickHouse unavailable, using cached data' }),
-    },
-  };
+  const body = Array.isArray(data)
+    ? data
+    : {
+        ...data,
+        _meta: {
+          cached: isFromCache,
+          timestamp: new Date().toISOString(),
+          ...(error && { error: 'ClickHouse unavailable, using cached data' }),
+        },
+      };
 
   const headers = {
-    'Cache-Control': isFromCache ? 'public, max-age=300' : 'public, max-age=60',
+    'Cache-Control': cacheControl ?? (isFromCache ? 'public, max-age=300' : 'public, max-age=60'),
     'X-Data-Source': isFromCache ? 'cache' : 'live',
     ...(error && { 'X-Error': error }),
   };

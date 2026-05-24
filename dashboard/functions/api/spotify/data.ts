@@ -1,11 +1,10 @@
 /**
  * Spotify Data API Route (Cloudflare Workers Function)
- * Queries ClickHouse gold tables for dashboard data
- *
- * Ported from: dashboard-nextjs/app/api/spotify/data/route.ts
+ * Aggregated data for the Spotify dashboard page.
  */
 
 import { queryClickHouse } from '../../_shared/clickhouse';
+import { queryWithFallback, addCacheHeaders } from '../../_shared/fallback';
 import type { Env } from '../../_shared/types';
 
 interface SpotifyKPIs {
@@ -33,95 +32,61 @@ interface DailyListening {
   hours: number;
 }
 
-/**
- * GET /api/spotify/data
- */
-export async function onRequest(context: { env: Env }): Promise<Response> {
-  const { env } = context;
+interface SpotifyDataResponse {
+  kpis: {
+    totalTime: string;
+    songsStreamed: string;
+    uniqueArtists: string;
+    avgDaily: string;
+  };
+  topArtists: TopArtist[];
+  genres: Genre[];
+  timeSeries: { dates: string[]; values: number[] };
+}
 
-  try {
-    // Query gold tables created by dbt
-    // These are pre-aggregated and optimized for dashboard queries
+export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
+  const { env, request } = context;
 
-    const kpisQuery = `
-      SELECT *
-      FROM gold.gold_spotify_kpis_dashboard
-      LIMIT 1
-    `;
+  const { data, isFromCache, error } = await queryWithFallback<SpotifyDataResponse>(
+    async () => {
+      const [kpisResult, topArtists, genres, timeSeries] = await Promise.all([
+        queryClickHouse<SpotifyKPIs>(env, `SELECT * FROM gold.gold_spotify_kpis_dashboard LIMIT 1`),
+        queryClickHouse<TopArtist>(env, `SELECT * FROM gold.gold_spotify_top_artists LIMIT 10`),
+        queryClickHouse<Genre>(env, `SELECT * FROM gold.gold_spotify_genres LIMIT 20`),
+        queryClickHouse<DailyListening>(env, `SELECT * FROM gold.gold_spotify_daily_listening ORDER BY date ASC`),
+      ]);
 
-    const topArtistsQuery = `
-      SELECT *
-      FROM gold.gold_spotify_top_artists
-      LIMIT 10
-    `;
+      const kpis = kpisResult[0] || null;
 
-    const genresQuery = `
-      SELECT *
-      FROM gold.gold_spotify_genres
-      LIMIT 20
-    `;
-
-    const timeSeriesQuery = `
-      SELECT *
-      FROM gold.gold_spotify_daily_listening
-      ORDER BY date ASC
-    `;
-
-    // Execute all queries in parallel
-    const [kpisResult, topArtists, genres, timeSeries] = await Promise.all([
-      queryClickHouse<SpotifyKPIs>(env, kpisQuery),
-      queryClickHouse<TopArtist>(env, topArtistsQuery),
-      queryClickHouse<Genre>(env, genresQuery),
-      queryClickHouse<DailyListening>(env, timeSeriesQuery),
-    ]);
-
-    const kpis = kpisResult[0] || null;
-
-    // Format response - parse values to integers to remove decimals
-    const response = {
-      kpis: {
-        totalTime: kpis?.total_time || '0 hrs',
-        songsStreamed: parseInt(String(kpis?.songs_streamed || 0), 10).toString(),
-        uniqueArtists: parseInt(String(kpis?.unique_artists || 0), 10).toString(),
-        avgDaily: kpis?.avg_daily || '0 hrs',
-      },
-      topArtists: topArtists.map(artist => ({
-        ...artist,
-        plays: Number(artist.plays) || 0,
-        hours: Number(artist.hours) || 0,
-      })),
-      genres: genres.map(genre => ({
-        name: genre.name,
-        value: Number(genre.value) || 0,
-      })),
-      timeSeries: {
-        dates: timeSeries.map(d => d.date),
-        values: timeSeries.map(d => Number(d.hours) || 0),
-      },
-    };
-
-    return Response.json(response, {
-      headers: {
-        'Cache-Control': 'public, max-age=60',
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching Spotify data:', error);
-
-    // Return empty data instead of error to allow page to load
-    return Response.json({
-      kpis: {
-        totalTime: '0 hrs',
-        songsStreamed: '0',
-        uniqueArtists: '0',
-        avgDaily: '0 hrs',
-      },
+      return {
+        kpis: {
+          totalTime: kpis?.total_time || '0 hrs',
+          songsStreamed: parseInt(String(kpis?.songs_streamed || 0), 10).toString(),
+          uniqueArtists: parseInt(String(kpis?.unique_artists || 0), 10).toString(),
+          avgDaily: kpis?.avg_daily || '0 hrs',
+        },
+        topArtists: topArtists.map(a => ({
+          ...a,
+          plays: Number(a.plays) || 0,
+          hours: Number(a.hours) || 0,
+        })),
+        genres: genres.map(g => ({ name: g.name, value: Number(g.value) || 0 })),
+        timeSeries: {
+          dates: timeSeries.map(d => d.date),
+          values: timeSeries.map(d => Number(d.hours) || 0),
+        },
+      };
+    },
+    'spotify/data',
+    request,
+    {
+      kpis: { totalTime: '0 hrs', songsStreamed: '0', uniqueArtists: '0', avgDaily: '0 hrs' },
       topArtists: [],
       genres: [],
-      timeSeries: {
-        dates: [],
-        values: [],
-      },
-    });
-  }
+      timeSeries: { dates: [], values: [] },
+    }
+  );
+
+  const { body, headers } = addCacheHeaders(data, isFromCache, error);
+  return Response.json(body, { headers });
 }

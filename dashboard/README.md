@@ -29,15 +29,13 @@ A real-time personal analytics dashboard built with React and deployed on Cloudf
 
 ```
 dashboard/
-├── mocks/                  # Dev-mode sample data, served by Vite at /api/*
+├── public/mocks/           # Single source of truth for mock/fallback data
 │   ├── overview/stats.json
 │   ├── home/recent-events.json
 │   ├── spotify/{data,recent,summary,current}.json
 │   ├── youtube/data.json
 │   └── travel/data.json
-├── public/
-│   └── fallback-data/      # PROD fallback (raw ClickHouse rows, used by Workers)
-├── src/                    # React app (unchanged layout)
+├── src/                    # React app
 │   ├── components/         # animations/, charts/, maps/, spotify/, ui/
 │   ├── lib/                # api.ts, utils.ts
 │   ├── pages/              # Home, Spotify, YouTube, Google, Maps
@@ -47,9 +45,9 @@ dashboard/
 │   ├── _shared/            # clickhouse.ts, fallback.ts, types.ts
 │   └── api/                # overview/, spotify/, youtube/, travel/, home/
 ├── vite-plugins/
-│   └── mock-api.ts         # Dev-only Vite middleware: /api/* → mocks/*.json
+│   └── mock-api.ts         # Dev-only Vite middleware: /api/* → public/mocks/*.json
 ├── scripts/
-│   ├── seed-mocks.mjs      # Regenerate mocks/ with `npm run seed`
+│   ├── seed-mocks.mjs      # Regenerate public/mocks/ with `npm run seed`
 │   ├── deploy-to-pages.sh
 │   └── export-fallback-data.sh
 ├── wrangler.toml
@@ -57,13 +55,19 @@ dashboard/
 └── package.json
 ```
 
-### Two data systems, on purpose
+### One mock corpus, two consumers
 
-- **`mocks/`** — shaped JSON matching the frontend's expected response. Used
-  only by `npm run dev` (Vite middleware). Easiest path to iterate on UI.
-- **`public/fallback-data/`** — raw ClickHouse rows in JSONEachRow format.
-  Used by the Cloudflare Workers Functions at runtime when ClickHouse is
-  unreachable. Ship-time fallback, not dev-time.
+`public/mocks/<path>.json` is the single source of truth for "what should
+`/api/<path>` return". It powers both:
+
+- **Dev mode (`npm run dev`)**: the Vite plugin in `vite-plugins/mock-api.ts`
+  intercepts `/api/*` requests and serves the matching mock from the
+  filesystem. No ClickHouse, no Workers needed.
+- **Production fallback**: when a Cloudflare Workers Function can't reach
+  ClickHouse (network, auth, missing tables…), `_shared/fallback.ts` fetches
+  the same JSON via `/mocks/<path>.json` (vite bundles `public/` → `dist/`)
+  and serves it as the cached response with `_meta.cached: true` (object
+  bodies) or `X-Data-Source: cache` (array bodies).
 
 ## Getting Started
 
@@ -79,17 +83,17 @@ dashboard/
 ```bash
 cd dashboard
 npm install
-npm run dev          # http://localhost:3000 — Vite + mock /api/* from mocks/
+npm run dev          # http://localhost:3000 — Vite + mock /api/* from public/mocks/
 ```
 
 That's it. No ClickHouse, no wrangler, no env vars. The Vite dev plugin in
 `vite-plugins/mock-api.ts` serves any `/api/<path>` request from
-`mocks/<path>.json` and returns 404 with a helpful message for paths that
+`public/mocks/<path>.json` and returns 404 with a helpful message for paths that
 don't have a mock yet.
 
 #### Adding a new page or endpoint
 
-1. Add `mocks/<area>/<name>.json` with the shape you want the frontend to consume.
+1. Add `public/mocks/<area>/<name>.json` with the shape you want the frontend to consume.
 2. Add the matching client call in `src/lib/api.ts`.
 3. Add the page in `src/pages/` and route in `src/App.tsx`.
 4. Reload the browser — no server restart needed.
@@ -97,7 +101,7 @@ don't have a mock yet.
 #### Regenerating richer sample data
 
 ```bash
-npm run seed         # regenerates everything under mocks/ via scripts/seed-mocks.mjs
+npm run seed         # regenerates everything under public/mocks/ via scripts/seed-mocks.mjs
 ```
 
 Edit `scripts/seed-mocks.mjs` to change row counts, date ranges, or shapes.

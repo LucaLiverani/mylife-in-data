@@ -44,6 +44,12 @@ transformations/logs/
 .idea/
 .vscode/
 
-# Legacy data (to be migrated to R2 and removed)
-.legacy-data/*
-!.legacy-data/.gitkeep
+# Claude Code per-user settings (paths leak local home dir)
+.claude/settings.local.json
+.claude/settings.json
+
+# Personal notes (real VM IP, user, tunnel UUID, etc. live here — gitignored)
+PERSONAL.md
+
+# Legacy data dumps (Google Takeout extracts etc.) — never commit
+.legacy-data/

@@ -12,7 +12,8 @@ orchestration/dagster/  Dagster code location (placeholder — pipelines TBD)
 infrastructure/         Docker Compose stack + provisioning scripts
 dashboard/              React + Vite + Cloudflare Pages Functions
 exploration/            Jupyter sandbox (not part of the prod path)
-DEPLOYMENT_PLAN.md      Step-by-step plan: local → VM → tunnel → dashboard rewire
+OPERATIONS.md           How to run, deploy, debug the live system (start here)
+PIPELINES.md            Plan for the next workstream — ingest + transform + serve
 ```
 
 ## Stack
@@ -42,4 +43,6 @@ URLs printed at the end. The stack uses one identity across every service — us
 
 ## Production deploy
 
-See `DEPLOYMENT_PLAN.md` — five phases ending with the Cloudflare Pages dashboard reading live ClickHouse via a Cloudflare Tunnel.
+Live at `https://mylife-in-data.pages.dev` (Cloudflare Pages) talking to a Netcup ARM64 VM through a Cloudflare Tunnel + Access. Until real pipelines land, the dashboard transparently serves bundled mocks (`dashboard/public/mocks/`) — every `/api/*` response is tagged `_meta.cached: true` while ClickHouse is empty.
+
+See **`OPERATIONS.md`** for running, deploying, and debugging the live system. See **`PIPELINES.md`** for the next workstream.
