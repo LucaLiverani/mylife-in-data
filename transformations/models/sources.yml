@@ -8,4 +8,6 @@ sources:
   - name: bronze
     description: "Raw, append-only event tables populated by Dagster producers."
     schema: bronze
-    tables: []
+    tables:
+      - name: spotify_player_current
+        description: "Polls of /me/player/currently-playing, deduped by (track_id, captured_at)."

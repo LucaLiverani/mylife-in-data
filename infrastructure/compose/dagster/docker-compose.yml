@@ -90,6 +90,22 @@ services:
       - data-platform-network
     restart: unless-stopped
 
+  spotify-current-producer:
+    # Same image as Dagster (already has spotipy + kafka-python).
+    image: mylife-dagster:latest
+    container_name: spotify-current-producer
+    command: ["python", "/opt/dagster/repo/ingestion/spotify/producer_current.py"]
+    environment: *dagster-env
+    volumes:
+      - ../../..:/opt/dagster/repo:ro
+      - ../../../tokens:/opt/dagster/tokens:ro
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+    depends_on:
+      dagster-webserver:
+        condition: service_started
+
 volumes:
   dagster-postgres-data:
   dagster-home:

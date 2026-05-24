@@ -2,21 +2,21 @@
 One-time authentication script to create Spotify token cache.
 This MUST be run on your host machine (not in Docker).
 
-Usage:
-    python scripts/authenticate_spotify.py
+Usage (from repo root, with venv active):
+    .venv/bin/python ingestion/spotify/authenticate_local.py
 
 This will:
 1. Open browser for Spotify authentication
-2. Create token cache file in ./tokens/.spotify_cache
-3. This file will be mounted into Docker container
+2. Create token cache file at <repo_root>/tokens/.spotify_cache
+3. The tokens/ directory is bind-mounted into the Dagster container.
 """
 
 import os
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 from dotenv import load_dotenv
 import spotipy
@@ -29,18 +29,17 @@ log = logging.getLogger(__name__)
 
 def authenticate():
     """Perform interactive Spotify authentication"""
-    
-    load_dotenv()
-    
+
+    load_dotenv(REPO_ROOT / "infrastructure" / ".env")
+
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI", "http://localhost:8888/callback")
     scopes = "user-read-recently-played user-read-playback-state user-read-currently-playing user-read-private"
-    
-    # Create tokens directory if it doesn't exist
-    tokens_dir = Path("./tokens")
+
+    tokens_dir = REPO_ROOT / "tokens"
     tokens_dir.mkdir(exist_ok=True)
-    
+
     cache_path = tokens_dir / ".spotify_cache"
     
     log.info("="*60)
