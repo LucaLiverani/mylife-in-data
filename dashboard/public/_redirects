@@ -3,5 +3,4 @@
 # without URL change. The eight endpoints with real Functions take
 # precedence over these rules — Pages routes them first.
 /api/now/timeline       /mocks/now/timeline.json       200
-/api/google/calendar    /mocks/google/calendar.json    200
 /api/system/health      /mocks/system/health.json      200

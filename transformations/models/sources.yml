@@ -22,3 +22,5 @@ sources:
       - name: youtube_search_history
       - name: youtube_videos
       - name: youtube_channels
+      - name: calendar_events
+      - name: calendar_sync_notifications
