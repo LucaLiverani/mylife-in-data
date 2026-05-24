@@ -19,3 +19,11 @@ sources:
         description: "Artist metadata catalog (genres live here)."
       - name: spotify_saved_tracks
         description: "Saved (Liked) tracks from /me/tracks; dedup by (track_id, added_at)."
+      - name: maps_visits
+        description: "Maps Timeline place visits (Data Portability)."
+      - name: maps_path
+        description: "Maps Timeline activity segments."
+      - name: maps_search
+        description: "Maps search queries."
+      - name: maps_directions
+        description: "Maps directions requests."
