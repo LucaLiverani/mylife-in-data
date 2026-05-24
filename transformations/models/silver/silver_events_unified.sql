@@ -9,3 +9,5 @@ UNION ALL
 SELECT * FROM {{ ref('silver_events_unified_spotify_liked') }}
 UNION ALL
 SELECT * FROM {{ ref('silver_events_unified_maps_visits') }}
+UNION ALL
+SELECT * FROM {{ ref('silver_events_unified_youtube_watches') }}
