@@ -14,10 +14,10 @@ Tested on Debian 13 (trixie), ARM64. Should work on any modern Debian/Ubuntu.
 
 ## What You'll End Up With
 
-- A non-root admin user (this guide uses `perry` — substitute your own name)
+- A non-root admin user (this guide uses `admin` — substitute your own name)
 - Root SSH login restricted to keys only
 - All password-based SSH login disabled
-- A `ssh perry` shortcut on your laptop
+- A `ssh admin` shortcut on your laptop
 
 ---
 
@@ -86,11 +86,11 @@ apt update && apt full-upgrade -y
 
 ## Step 5 — Create a Non-Root Admin User
 
-Replace `perry` with whatever name you want for your admin user. The rest of this guide assumes `perry` — adjust accordingly.
+Replace `admin` with whatever name you want for your admin user. The rest of this guide assumes `admin` — adjust accordingly.
 
 ```bash
-adduser perry
-usermod -aG sudo perry
+adduser admin
+usermod -aG sudo admin
 ```
 
 `adduser` will prompt for a password and some optional info. The optional fields can be left blank with Enter.
@@ -110,11 +110,11 @@ Copy the entire line (starts with `ssh-ed25519 AAAA...`).
 Back on the **server** (as root), install it for the new user:
 
 ```bash
-mkdir -p /home/perry/.ssh
-echo 'PASTE_YOUR_PUBLIC_KEY_HERE' > /home/perry/.ssh/authorized_keys
-chown -R perry:perry /home/perry/.ssh
-chmod 700 /home/perry/.ssh
-chmod 600 /home/perry/.ssh/authorized_keys
+mkdir -p /home/admin/.ssh
+echo 'PASTE_YOUR_PUBLIC_KEY_HERE' > /home/admin/.ssh/authorized_keys
+chown -R admin:admin /home/admin/.ssh
+chmod 700 /home/admin/.ssh
+chmod 600 /home/admin/.ssh/authorized_keys
 ```
 
 ---
@@ -126,7 +126,7 @@ chmod 600 /home/perry/.ssh/authorized_keys
 On your **laptop**, in a new terminal (leave the root session open):
 
 ```bash
-ssh perry@$IP
+ssh admin@$IP
 ```
 
 Must log in **without prompting for a password**. If it asks for a password or fails, stop and debug before continuing.
@@ -159,10 +159,10 @@ You should see `PermitRootLogin prohibit-password` and `PasswordAuthentication n
 
 ```bash
 # Should still work (key login):
-ssh perry@$IP
+ssh admin@$IP
 
 # Should be rejected with "Permission denied (publickey)":
-ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no perry@$IP
+ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no admin@$IP
 ```
 
 If both behave as expected, hardening is complete. You can now close the root session.
@@ -174,9 +174,9 @@ If both behave as expected, hardening is complete. You can now close the root se
 Edit `~/.ssh/config` and add (replace `YOUR.SERVER.IP.HERE` with the real IP — SSH config files don't expand `$IP`):
 
 ```
-Host perry
+Host admin
     HostName YOUR.SERVER.IP.HERE
-    User perry
+    User admin
     IdentityFile ~/.ssh/id_ed25519
 ```
 
@@ -184,16 +184,16 @@ Then:
 
 ```bash
 chmod 600 ~/.ssh/config
-ssh perry
+ssh admin
 ```
 
-From now on, `ssh perry` is enough.
+From now on, `ssh admin` is enough.
 
 ---
 
 ## Step 11 — Optional: Day-One Hardening
 
-On the server, as `perry`:
+On the server, as `admin`:
 
 ```bash
 # Firewall — only SSH open, deny everything else by default
@@ -235,7 +235,7 @@ Copy the entire line.
 From an **already-trusted device**:
 
 ```bash
-ssh perry
+ssh admin
 echo 'PASTE_THE_NEW_PUBLIC_KEY_HERE' >> ~/.ssh/authorized_keys
 ```
 
@@ -243,7 +243,7 @@ echo 'PASTE_THE_NEW_PUBLIC_KEY_HERE' >> ~/.ssh/authorized_keys
 
 ```bash
 export IP=YOUR.SERVER.IP.HERE
-ssh perry@$IP
+ssh admin@$IP
 ```
 
 ### 5. (Optional) Add the shortcut on the new device
@@ -267,10 +267,10 @@ If a device is lost, stolen, or just retired:
 
 | Task | Command |
 |---|---|
-| Connect to server | `ssh perry` |
-| Copy file to server | `scp file.txt perry:~/` |
-| Copy file from server | `scp perry:~/file.txt .` |
-| Sync a folder to server | `rsync -avz ./folder/ perry:~/folder/` |
+| Connect to server | `ssh admin` |
+| Copy file to server | `scp file.txt admin:~/` |
+| Copy file from server | `scp admin:~/file.txt .` |
+| Sync a folder to server | `rsync -avz ./folder/ admin:~/folder/` |
 | Check who's logged in | `who` (on the server) |
 | List authorized keys | `cat ~/.ssh/authorized_keys` (on the server) |
 | Update the server | `sudo apt update && sudo apt full-upgrade -y` |
