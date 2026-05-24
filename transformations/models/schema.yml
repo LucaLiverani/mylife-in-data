@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: silver_spotify_plays
+    description: "One row per play, joined with track + artist catalogs."
+    columns:
+      - name: played_at
+        tests: [not_null]
+      - name: track_id
+        tests: [not_null]
+  - name: silver_spotify_saved
+    description: "Saved/liked tracks, joined with track catalog."
+    columns:
+      - name: added_at
+        tests: [not_null]
+      - name: track_id
+        tests: [not_null]
+  - name: gold_spotify_current_track
+    description: "Latest currently-playing track (one row)."
+  - name: gold_spotify_recent_tracks
+    description: "Last 50 plays, mapped for /api/spotify/recent."
+  - name: gold_spotify_kpis_summary
+    description: "Cross-time KPI summary for /api/spotify/summary."
+  - name: gold_spotify_kpis_dashboard
+    description: "KPI row for /api/spotify/data."
+  - name: gold_spotify_top_artists
+    description: "Top 15 artists with 30-day trend array."
+  - name: gold_spotify_genres
+    description: "Top 20 genres by play count."
+  - name: gold_spotify_daily_listening
+    description: "Last 90 days of daily listening hours."

@@ -35,7 +35,10 @@ def authenticate():
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI", "http://localhost:8888/callback")
-    scopes = "user-read-recently-played user-read-playback-state user-read-currently-playing user-read-private"
+    scopes = (
+        "user-read-recently-played user-read-playback-state "
+        "user-read-currently-playing user-read-private user-library-read"
+    )
 
     tokens_dir = REPO_ROOT / "tokens"
     tokens_dir.mkdir(exist_ok=True)
