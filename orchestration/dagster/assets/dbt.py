@@ -23,7 +23,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from dagster import AssetExecutionContext
 from dagster_dbt import DbtCliResource, dbt_assets
 
 
@@ -92,11 +91,15 @@ if DBT_PROJECT_DIR.exists():
 # missing, breaking every other asset registration.
 if MANIFEST_PATH.exists():
     @dbt_assets(manifest=MANIFEST_PATH)
-    def mylife_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
+    def mylife_dbt_assets(context, dbt: DbtCliResource):
         """Run `dbt build` over every model — compiles, runs, then tests each one.
 
         Materializing this asset from the Dagster UI runs the full silver +
         gold DAG. Individual model selection via the UI's asset-selection
         filter is supported by dagster-dbt automatically.
+
+        Note: `context` is intentionally unannotated — Dagster's validator
+        rejects an explicit AssetExecutionContext hint here due to a class-
+        identity mismatch between dagster and dagster-dbt's resolution path.
         """
         yield from dbt.cli(["build"], context=context).stream()
