@@ -1,6 +1,8 @@
 # Laptop → VM sync plan
 
-The data platform has two homes: your laptop (current dev environment) and the ARM64 VM behind Cloudflare Tunnel + Access (the public dashboard's backend). Right now, everything we've built today lives on the laptop only — the VM stack is provisioned but its ClickHouse is empty. This doc captures the path forward.
+> **Status: completed 2026-05-26.** The VM is now the canonical production environment — bronze ingest, OAuth refresh, dbt build, the spotify-current-producer all run there. The laptop is dev-only. This doc is preserved as a reference for the procedure if the VM ever needs to be rebuilt from scratch. For day-to-day operation see `OPERATIONS.md` → "Daily dev cycle".
+
+The data platform has two homes: your laptop (current dev environment) and the ARM64 VM behind Cloudflare Tunnel + Access (the public dashboard's backend). This doc captures the original cutover path: laptop-only bronze + tokens → VM as the canonical source of truth.
 
 ## Current state (2026-05-25)
 

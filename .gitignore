@@ -53,3 +53,6 @@ PERSONAL.md
 
 # Legacy data dumps (Google Takeout extracts etc.) — never commit
 .legacy-data/
+
+# Scratch / TODO files for next-day sessions — never committed.
+TODO_*.md

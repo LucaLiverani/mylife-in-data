@@ -27,7 +27,6 @@ warehouse/ddl/           Source-of-truth CREATE TABLEs, applied by apply.sh
 infrastructure/          Docker Compose stack + provisioning scripts
 dashboard/               React + Vite + Cloudflare Pages Functions
 scripts/                 Bootstrap + verify_phase_N + connection probes
-exploration/             Jupyter sandbox (not part of the prod path)
 ```
 
 ## Stack
@@ -67,8 +66,8 @@ All eight phases (0 → 8) are implemented and committed; `scripts/verify_phase_
 
 Setup gates that require user action before data flows:
 
-- **Spotify** — run `ingestion/spotify/authenticate_local.py` once to seed `tokens/.spotify_cache`. Then `docker compose ... up -d spotify-current-producer`.
-- **Google** — fill `GOOGLE_CLIENT_*` + `GOOGLE_MAPS_API_KEY` in `infrastructure/.env`, then `scripts/bootstrap_google_auth.py` (runs both scope-group flows).
+- **Spotify** — run `.venv/bin/python ingestion/spotify/authenticate_local.py` once per host to seed `tokens/.spotify_cache`. The `spotify-current-producer` container starts automatically via `start-all.sh` when `DAGSTER_SCHEDULES_ENABLED=1` (VM-only by default).
+- **Google** — fill `GOOGLE_CLIENT_*` + `GOOGLE_MAPS_API_KEY` in `infrastructure/.env`. For the first-time bootstrap, either run `scripts/bootstrap_google_auth.py` locally or use the Pages re-auth flow (`https://<PAGES_DOMAIN>/api/internal/google-auth-redirect?group={standard,portability}`) which writes tokens directly into VM ClickHouse over the Cloudflare Tunnel.
 - **R2** — fill the 5 `R2_*` keys in `infrastructure/.env`; smoke-test with `scripts/test_r2_connection.py`.
 - **Maps home anchor** (optional, for trip segmentation) — `scripts/set_home_location.py`.
 
@@ -78,6 +77,13 @@ Until each gate is done, the dashboard transparently serves `public/mocks/*.json
 
 ## Production deploy
 
-Live at `https://<PAGES_DOMAIN>` (Cloudflare Pages) talking to an ARM64 VM through a Cloudflare Tunnel + Access. The Pages site is currently still serving mocks because all the ingested data lives on the laptop, not the VM — see **`SYNC_TO_VM.md`** for the three paths to bridging that.
+Live at `https://<PAGES_DOMAIN>` (Cloudflare Pages) talking to an ARM64 VM through a Cloudflare Tunnel + Access. The VM owns OAuth-token refresh and runs every scheduled ingest; the laptop is dev-only (`DAGSTER_SCHEDULES_ENABLED=0`, `MYLIFE_TOKEN_WRITER=0` — see `OPERATIONS.md` → "Daily dev cycle").
 
-See **`OPERATIONS.md`** for setup, secret rotation, and common failure modes.
+Daily auto-loop:
+```
+bronze ingest (Spotify every 1m, Maps 04:00, YouTube 04:30, Calendar webhook + 06:00 renew, freshness monitor 08:00)
+  → dbt build (silver + gold rebuild at 09:00 UTC)
+  → public dashboard serves live ClickHouse data
+```
+
+See **`OPERATIONS.md`** for setup, secret rotation, and common failure modes. **`SYNC_TO_VM.md`** documents the original laptop→VM cutover (already executed; kept as a reference for future fresh-VM builds).

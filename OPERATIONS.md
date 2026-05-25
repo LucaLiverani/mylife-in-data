@@ -274,7 +274,31 @@ Two architectural pivots happened during integration, both forced by Google cons
 
 ### Where data currently lives
 
-The laptop has been the canonical dev environment. The VM is up and idle but contains no real data yet. See **`SYNC_TO_VM.md`** for the three paths (sync-then-deploy, deploy-auth-only, or temporary laptop tunnel) and the recommended procedure.
+The **VM is the canonical production environment** (cutover 2026-05-26). Bronze ingest, OAuth token refresh, and the spotify-current-producer all run there. The laptop is dev-only (`MYLIFE_TOKEN_WRITER=0`, `DAGSTER_SCHEDULES_ENABLED=0`); use `scripts/sync_tokens_from_vm.sh` if you need to borrow VM tokens for a one-shot local run.
+
+The original cutover procedure is preserved in **`SYNC_TO_VM.md`** as a reference for future fresh-VM builds.
+
+### dbt + the daily auto-loop
+
+`orchestration/dagster/assets/dbt.py` exposes every silver + gold dbt model as a Dagster asset via `dagster-dbt`. The asset module self-bootstraps on Dagster startup:
+
+1. If `transformations/profiles.yml` is missing, copy it from `profiles.yml.example` (all values are env_var()-interpolated, no secrets in the example).
+2. If `transformations/target/manifest.json` is missing or older than any `.sql`/`.yml` in `models/` or `macros/`, run `dbt parse` to regenerate.
+
+`dbt_build_schedule` runs `dbt build` daily at 09:00 UTC — after every bronze ingest schedule has run, so silver + gold reflect the freshest data. Default status is `RUNNING`; the toggle persists in Dagster Postgres so a manual stop survives restarts.
+
+Run `dbt build` manually whenever you change a model: in Dagster UI → Lineage → `mylife_dbt_assets` → Materialize. Logs stream into the run page.
+
+### Schedule + sensor defaults
+
+Every schedule and sensor uses `default_status=DefaultScheduleStatus.RUNNING` / `DefaultSensorStatus.RUNNING`. On a fresh VM (or after wiping `dagster-home`), they all come up auto-ticking — no manual UI toggling required. On an existing Dagster instance the defaults are ignored (Postgres state wins), so the first VM bootstrap still needed each toggle flipped once in the UI.
+
+### Known limitations
+
+- **Google Data Portability 24h cooldown is per OAuth client, not per resource.** Two scheduled DP jobs in the same calendar day will collide: `maps_daily_schedule` (04:00 UTC) initiates first; `youtube_daily_schedule` (04:30 UTC) hits 429 because the OAuth client is locked. Same for `maps_private_places_schedule` (Monday 05:00 UTC). Daily runs eventually succeed; `freshness_monitor_schedule` (08:00 UTC) surfaces anything that goes truly stale. Future fix: combine all DP resources into one daily call (`DataPortabilityClient.initiate_archive([maps, youtube, starred_places])`).
+- **Spotify `/me/player/recently-played` returns at most 50 plays.** `spotify_recently_played_schedule` runs every minute to pull frequently, but if you skip listening for a week the oldest play in `bronze.spotify_plays_raw` won't reach back further than ~50 tracks. No fix — that's the API limit.
+- **Spotify saved-tracks pagination caps at 200.** The asset stops after the first page; real libraries can be much larger. Outstanding fix.
+- **Spotify producer emits only on transitions.** `bronze.spotify_player_current` is empty whenever nothing's playing → the "Now playing" tile falls back to mock until something starts. By design (avoids constant duplicate inserts), but the UX implication is intentional.
 
 ### Google token lifecycle
 
