@@ -75,11 +75,22 @@ def insert_rows(
 
 
 def execute_file(path: str, *, database: str | None = None) -> None:
-    """Apply a `.sql` file, splitting on `;` at the end of lines."""
+    """Apply a `.sql` file, splitting on `;` after stripping comments.
+
+    Mirrors warehouse/ddl/apply.sh: comments must be stripped BEFORE splitting
+    on `;`, otherwise a `;` inside a line comment ("…dedup keys; Kafka would
+    be overkill.") splits the comment in two and the right-hand fragment
+    gets sent to ClickHouse as a bare statement → SYNTAX_ERROR.
+    """
+    import re
 
     with open(path, "r", encoding="utf-8") as fh:
         sql = fh.read()
 
-    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+    # Strip --line and /* block */ comments before splitting on `;`.
+    sql = re.sub(r"--[^\n]*", "", sql)
+    sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.S)
+
+    statements = [s.strip() for s in sql.split(";") if s.strip()]
     for stmt in statements:
         execute(stmt, database=database)
