@@ -1,14 +1,24 @@
 """
 One-time authentication script to create Spotify token cache.
-This MUST be run on your host machine (not in Docker).
 
-Usage (from repo root, with venv active):
+Usage (from repo root, with the host venv built):
     .venv/bin/python ingestion/spotify/authenticate_local.py
 
-This will:
-1. Open browser for Spotify authentication
-2. Create token cache file at <repo_root>/tokens/.spotify_cache
-3. The tokens/ directory is bind-mounted into the Dagster container.
+Flow (works on any host — laptop, headless VM via SSH, doesn't matter):
+  1. Script prints a Spotify authorization URL.
+  2. You open it in any browser (your local laptop is fine), sign in, click Accept.
+  3. Spotify redirects to `http://127.0.0.1:8000/callback?code=...` — that page
+     fails to load ("This site can't be reached") because nothing is listening
+     there. That's expected.
+  4. Copy the entire failed URL from the browser's address bar.
+  5. Paste it into this script's prompt and press Enter.
+  6. Script exchanges the code for tokens, writes `<repo_root>/tokens/.spotify_cache`,
+     exits.
+
+Run once per environment (laptop + VM). Caches are per-host — DO NOT scp the
+cache file; spotipy rewrites it on every 401 inside the running producer
+container, so copying mid-flight corrupts it. Spotify issues independent
+refresh tokens per OAuth grant, so two grants is fine.
 """
 
 import os
@@ -56,14 +66,21 @@ def authenticate():
     # Create cache handler
     cache_handler = CacheFileHandler(cache_path=str(cache_path))
     
-    # Create auth manager
+    # Create auth manager.
+    # open_browser=False forces spotipy's paste-the-URL-into-stdin flow instead
+    # of spinning up a local HTTP server on the redirect_uri port. The local
+    # server flow breaks when the script runs on a headless host (VM via SSH)
+    # because the browser is on a different machine — it would hit the
+    # laptop's localhost, never reaching the VM's server. The paste flow works
+    # regardless of where the script runs.
     auth_manager = SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=redirect_uri,
         scope=scopes,
         cache_handler=cache_handler,
-        show_dialog=True,  # Always show auth dialog
+        show_dialog=True,        # always show consent (vs silently re-using a session)
+        open_browser=False,      # paste-the-URL flow; portable across hosts
     )
     
     # This will trigger browser authentication if needed

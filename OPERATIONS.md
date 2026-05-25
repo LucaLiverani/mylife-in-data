@@ -161,7 +161,7 @@ will go bad whenever the VM rotates them — just re-run the script.
 
 **Don't share the Spotify cache.** `tokens/.spotify_cache` is rewritten by
 spotipy on every 401; SCPing it mid-flight is race city. Each environment
-bootstraps its own Spotify OAuth (`python ingestion/spotify/authenticate_local.py`
+bootstraps its own Spotify OAuth (`.venv/bin/python ingestion/spotify/authenticate_local.py`
 once per host — Spotify issues independent refresh tokens per grant).
 
 ### Re-auth flows (Google + Spotify)
@@ -169,7 +169,7 @@ once per host — Spotify issues independent refresh tokens per grant).
 | Provider | How |
 |---|---|
 | Google (either scope group) | Open `https://<PAGES_DOMAIN>/api/internal/google-auth-redirect?group=standard` (or `?group=portability`) on any device → Pages Function writes fresh tokens into VM ClickHouse → next Dagster asset run picks them up. |
-| Spotify (VM)   | `ssh <VM> 'cd ~/mylife-in-data && python ingestion/spotify/authenticate_local.py'` — one-time browser auth; refresh tokens last ~60 days. |
+| Spotify (VM)   | `ssh <VM> 'cd ~/mylife-in-data && .venv/bin/python ingestion/spotify/authenticate_local.py'` — one-time browser auth; refresh tokens last ~60 days. Run `uv sync` first if `.venv` doesn't exist yet (e.g., right after a fresh bootstrap or before the host venv was added to the provisioning flow). |
 | Spotify (laptop) | Same script on the laptop. Cache files don't sync. |
 
 ---

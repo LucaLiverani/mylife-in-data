@@ -47,7 +47,7 @@ are already wired through the code (they are — see `OPERATIONS.md` "Daily dev 
    ```
 7. On VM, bootstrap a VM-local Spotify cache (one-time browser auth on the VM; Spotify allows independent grants per host, so the laptop's cache stays valid too):
    ```bash
-   cd ~/mylife-in-data && python ingestion/spotify/authenticate_local.py
+   cd ~/mylife-in-data && .venv/bin/python ingestion/spotify/authenticate_local.py
    ```
 8. On VM, re-run the historical backfills (Calendar pull, YouTube DP, Maps activity ingest) using the same direct-Python scripts you used on the laptop. **Don't** `rsync` bronze data — re-running gives clean dedup state.
 9. On VM, kick off Maps Places API enrichment (will eat ~$45 of the $200 monthly free credit).

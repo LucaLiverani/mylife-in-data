@@ -199,6 +199,27 @@ if ! grep -q "$GH_REPO_HOST" "$KNOWN_HOSTS" 2>/dev/null; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 9. uv (Python project + interpreter manager)
+# ─────────────────────────────────────────────────────────────────────────────
+# Dagster runs in containers with its own venv (baked into the image at build
+# time). uv is for host-side scripts: OAuth bootstraps (Spotify), one-shot
+# backfills, scripts/verify_phase_*.py, etc. uv reads .python-version and
+# pyproject.toml + uv.lock; first `uv sync` after `git clone` creates a .venv/
+# with the exact pinned deps.
+UV_BIN="$USER_HOME/.local/bin/uv"
+if [[ -x "$UV_BIN" ]]; then
+  echo "▶ uv already installed at $UV_BIN — skipping"
+else
+  echo "▶ Installing uv for $USERNAME (host-side Python tooling)"
+  if sudo -u "$USERNAME" bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'; then
+    echo "  ✓ uv installed → $UV_BIN"
+  else
+    echo "  ⚠ uv install failed (network?). Re-run later as $USERNAME:"
+    echo "     curl -LsSf https://astral.sh/uv/install.sh | sh"
+  fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Done — print next steps
 # ─────────────────────────────────────────────────────────────────────────────
 DEPLOY_PUBKEY=$(cat "$KEY_PATH.pub")
@@ -213,6 +234,7 @@ cat <<EOF
   Hostname:   $HOSTNAME_NEW
   Timezone:   $TIMEZONE
   Docker:     $(docker --version)
+  uv:         $([[ -x "$UV_BIN" ]] && echo "installed at $UV_BIN" || echo "NOT installed — install manually")
   Firewall:   UFW active — only 22/tcp open
   fail2ban:   active
   Updates:    unattended-upgrades enabled
@@ -244,15 +266,22 @@ $DEPLOY_PUBKEY
       ssh $USERNAME@<VM_IP>
       git clone git@github.com:<you>/mylife-in-data.git
       cd mylife-in-data
-      cp .env.example .env
-      \$EDITOR .env       # fill in credentials
+      cp infrastructure/.env.example infrastructure/.env
+      \$EDITOR infrastructure/.env       # fill in credentials, set MYLIFE_TOKEN_WRITER=1 + DAGSTER_SCHEDULES_ENABLED=1
 
- 4. Bring the stack up:
+ 4. Build the host venv (one-shot, reads pyproject.toml + uv.lock):
 
-      cd infrastructure
+      cd ~/mylife-in-data
+      uv sync       # ~30s on first run; cached afterwards
+
+    From now on, host-side scripts run as: .venv/bin/python <script>
+
+ 5. Bring the stack up:
+
+      cd ~/mylife-in-data/infrastructure
       ./start-all.sh
 
- 5. Install cloudflared and wire up the tunnel
+ 6. Install cloudflared and wire up the tunnel
     (see infrastructure/provisioning/cloudflared-config.example.yml)
 
 ═══════════════════════════════════════════════════════════════════════════════

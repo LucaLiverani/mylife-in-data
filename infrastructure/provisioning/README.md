@@ -61,7 +61,7 @@ If you missed it, fetch it again:
 ssh $VM_USER@$VM_IP 'cat ~/.ssh/github_mylife.pub'
 ```
 
-## 4. Clone the repo + start the stack
+## 4. Clone the repo + host venv + start the stack
 
 ```bash
 ssh $VM_USER@$VM_IP "
@@ -72,9 +72,17 @@ ssh $VM_USER@$VM_IP "
 "
 
 # Edit .env (interactive) — set CLICKHOUSE_PASSWORD, GRAFANA_ADMIN_PASSWORD,
-# DAGSTER_POSTGRES_PASSWORD, R2 credentials. Remove the DAGSTER_PORT=3030
-# override (only needed on dev machines where port 3000 is taken).
+# DAGSTER_POSTGRES_PASSWORD, R2 credentials. Set MYLIFE_TOKEN_WRITER=1 and
+# DAGSTER_SCHEDULES_ENABLED=1 (these are the VM defaults — laptop leaves
+# both as 0). Remove the DAGSTER_PORT=3030 override (only needed on dev
+# machines where port 3000 is taken).
 ssh -t $VM_USER@$VM_IP 'cd mylife-in-data/infrastructure && nano .env'
+
+# Build the host venv from pyproject.toml + uv.lock. uv was installed by
+# bootstrap.sh; this populates .venv/ with the project's pinned deps. Used by
+# OAuth bootstraps + ad-hoc backfill scripts. Dagster has its own venv inside
+# the container — they don't share.
+ssh $VM_USER@$VM_IP 'cd mylife-in-data && uv sync'
 
 # Bring everything up
 ssh $VM_USER@$VM_IP 'cd mylife-in-data/infrastructure && ./start-all.sh'
@@ -128,6 +136,6 @@ ssh $VM_USER@$VM_IP "
 
 ## What's still manual
 
-- Running `python ingestion/spotify/authenticate_local.py` once on your laptop to mint a Spotify OAuth token cache, then `scp`-ing the resulting file into the volume mount on the VM where the (future) producer will read it.
+- Running `.venv/bin/python ingestion/spotify/authenticate_local.py` once on the VM (and once on the laptop) to mint per-host Spotify OAuth caches. Spotify issues independent refresh tokens per OAuth grant, so each environment keeps its own `tokens/.spotify_cache` — do NOT share via SCP (the running producer container rewrites it on every 401, so copying mid-flight corrupts the cache).
 - Putting Cloudflare Access in front of admin UIs (`dagster`, `grafana`, `redpanda`) with an email policy; `clickhouse.<DOMAIN>` gets a Service Token policy so the dashboard Pages Functions can authenticate.
 - Setting up `clickhouse-backup` → R2 (separate follow-up).
