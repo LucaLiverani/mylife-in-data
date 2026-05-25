@@ -46,8 +46,13 @@ fi
 echo ""
 
 # Step 3: Deploy to Pages
+# --branch=main forces every deploy (regardless of the laptop's current git
+# branch) to promote to the production environment, so the custom domain
+# (mylife-in-data.com) and the uploaded Pages secrets are picked up. Without
+# this, a deploy from `dev` lands as a preview at `dev.mylife-in-data.pages.dev`
+# with no production secrets.
 echo "📤 Step 3/3: Deploying to Cloudflare Pages..."
-npx wrangler pages deploy dist
+npx wrangler pages deploy dist --branch=main
 echo ""
 
 echo "🎉 Deployment complete!"

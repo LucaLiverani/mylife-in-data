@@ -113,7 +113,7 @@ def check_tables() -> bool:
 
 def check_webhook_function() -> bool:
     print("[2/4] Pages webhook function")
-    path = "dashboard/functions/api/_internal/calendar-webhook.ts"
+    path = "dashboard/functions/api/internal/calendar-webhook.ts"
     if not os.path.exists(path):
         _fail(f"{path} missing")
         return False

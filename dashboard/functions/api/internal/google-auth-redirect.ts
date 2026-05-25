@@ -1,5 +1,5 @@
 /**
- * GET /api/_internal/google-auth-redirect?group=standard|portability
+ * GET /api/internal/google-auth-redirect?group=standard|portability
  *
  * Builds the Google OAuth consent URL with a signed `state` value (which
  * encodes the chosen scope group so the callback knows which row to write)

@@ -3,7 +3,7 @@
 Checks:
   - auth.google_tokens has at least one row (requires bootstrap_google_auth.py).
   - GoogleAuthResource.load_from_clickhouse() returns valid credentials.
-  - /api/_internal/google-auth-redirect builds a URL with valid state (smoke
+  - /api/internal/google-auth-redirect builds a URL with valid state (smoke
     test — runs the helper directly in node-less mode using a python port of
     the HMAC step is overkill; we just check the env vars are present).
   - Refresh path: if expires_at is in the past, load_and_refresh() succeeds.

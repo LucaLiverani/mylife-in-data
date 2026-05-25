@@ -211,7 +211,7 @@ Flow:
    returns `resourceId` + `expiration` (max 7-day TTL). We persist the
    channel metadata so we can renew before expiration.
 2. **Push receipt** — Google POSTs to a Cloudflare Pages Function at
-   `https://<PAGES_DOMAIN>/api/_internal/calendar-webhook`. The function
+   `https://<PAGES_DOMAIN>/api/internal/calendar-webhook`. The function
    validates `X-Goog-Channel-Token` against our secret, INSERTs a row
    into `bronze.calendar_sync_notifications` over the same tunnel +
    Access service token that the dashboard already uses, and returns

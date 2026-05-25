@@ -168,7 +168,7 @@ once per host — Spotify issues independent refresh tokens per grant).
 
 | Provider | How |
 |---|---|
-| Google (either scope group) | Open `https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect?group=standard` (or `?group=portability`) on any device → Pages Function writes fresh tokens into VM ClickHouse → next Dagster asset run picks them up. |
+| Google (either scope group) | Open `https://<PAGES_DOMAIN>/api/internal/google-auth-redirect?group=standard` (or `?group=portability`) on any device → Pages Function writes fresh tokens into VM ClickHouse → next Dagster asset run picks them up. |
 | Spotify (VM)   | `ssh <VM> 'cd ~/mylife-in-data && python ingestion/spotify/authenticate_local.py'` — one-time browser auth; refresh tokens last ~60 days. |
 | Spotify (laptop) | Same script on the laptop. Cache files don't sync. |
 
@@ -290,7 +290,7 @@ The behaviour depends on the GCP app's OAuth consent screen publishing status:
 
 When you do need to re-auth (or want to rotate manually):
 
-1. Open `https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect` in a browser.
+1. Open `https://<PAGES_DOMAIN>/api/internal/google-auth-redirect` in a browser.
 2. Walk Google's consent screen.
 3. The callback writes fresh tokens to `auth.google_tokens`; Dagster picks them up on the next resource init — no restart needed.
 

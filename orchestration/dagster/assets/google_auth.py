@@ -12,7 +12,7 @@ behaviour back.
 
 Re-auth still happens via the Pages Function flow (kept around as a
 break-glass path):
-  dashboard/functions/api/_internal/google-auth-{redirect,callback}.ts
+  dashboard/functions/api/internal/google-auth-{redirect,callback}.ts
 """
 
 from __future__ import annotations

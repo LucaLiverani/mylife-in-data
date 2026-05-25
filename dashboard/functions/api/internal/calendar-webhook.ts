@@ -1,5 +1,5 @@
 /**
- * POST /api/_internal/calendar-webhook
+ * POST /api/internal/calendar-webhook
  *
  * Google calls this endpoint on every Calendar `events.watch` notification.
  * Headers:

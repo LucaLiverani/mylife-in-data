@@ -1,5 +1,5 @@
 /**
- * GET /api/_internal/google-auth-callback?code=...&state=...
+ * GET /api/internal/google-auth-callback?code=...&state=...
  *
  * - validates `state` (HMAC + 5-min TTL); extracts the scope_group from it
  * - exchanges `code` for tokens at Google's OAuth endpoint
@@ -128,7 +128,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
     `<p>Scope group: <strong>${scopeGroup}</strong></p>` +
     `<p>Next renewal due: <strong>${nextRenewal}</strong>.</p>` +
     `<p>If you also need to refresh the <strong>${otherGroup}</strong> group, ` +
-    `open <a href="/api/_internal/google-auth-redirect?group=${otherGroup}">this link</a>.</p>` +
+    `open <a href="/api/internal/google-auth-redirect?group=${otherGroup}">this link</a>.</p>` +
     `<p>You can close this tab.</p>`
   );
 }

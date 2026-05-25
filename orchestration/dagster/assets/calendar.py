@@ -1,6 +1,6 @@
 """Google Calendar push pipeline.
 
-The Pages Function webhook (`/api/_internal/calendar-webhook`) catches
+The Pages Function webhook (`/api/internal/calendar-webhook`) catches
 notifications and writes one row to `bronze.calendar_sync_notifications` per
 event. This file holds:
   - `calendar_channels_setup` (one-shot): subscribe events.watch on every
@@ -42,7 +42,7 @@ def _ddl_path(filename: str) -> Path:
 
 def _webhook_url() -> str:
     base = os.environ.get("GOOGLE_REDIRECT_URI", "")
-    # GOOGLE_REDIRECT_URI ends with /api/_internal/google-auth-callback;
+    # GOOGLE_REDIRECT_URI ends with /api/internal/google-auth-callback;
     # swap the leaf for the calendar webhook.
     if not base:
         return ""

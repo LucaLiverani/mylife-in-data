@@ -42,13 +42,13 @@ The new scopes added are:
    - Application type: **Web application** (NOT Desktop — we need to declare the Pages-Function callback as a valid redirect URI)
    - Authorized redirect URIs:
      - `http://127.0.0.1:8000/callback` (one-time local auth on laptop)
-     - `https://<PAGES_DOMAIN>/api/_internal/google-auth-callback` (re-auth from anywhere)
+     - `https://<PAGES_DOMAIN>/api/internal/google-auth-callback` (re-auth from anywhere)
    - Note the **Client ID** and **Client Secret**
 5. **Drop into `infrastructure/.env`** (auto-mode will pre-create the empty keys in §0 scaffolding):
    ```
    GOOGLE_CLIENT_ID=
    GOOGLE_CLIENT_SECRET=
-   GOOGLE_REDIRECT_URI=https://<PAGES_DOMAIN>/api/_internal/google-auth-callback
+   GOOGLE_REDIRECT_URI=https://<PAGES_DOMAIN>/api/internal/google-auth-callback
    ```
 
 > ⚠️ **Maps Timeline probe**: After OAuth is wired (Phase 5), run `scripts/probe_maps_data_portability.py`. If it returns no recent visits, your Maps history is now on-device only (post-2024 migration) — you'll need to fall back to manual on-device Timeline exports for Maps. The probe takes 5 minutes; better to know up-front.
@@ -90,7 +90,7 @@ The Pages project hosts two new internal endpoints (calendar webhook + Google re
 
 ### 1.5 — DNS for the Google re-auth UI
 
-The Google OAuth client ID expects a public HTTPS callback URL. The existing Pages project already serves at `https://<PAGES_DOMAIN>`. No new DNS work needed — just confirm `https://<PAGES_DOMAIN>/api/_internal/google-auth-callback` resolves to the Pages deployment after Phase 4 ships.
+The Google OAuth client ID expects a public HTTPS callback URL. The existing Pages project already serves at `https://<PAGES_DOMAIN>`. No new DNS work needed — just confirm `https://<PAGES_DOMAIN>/api/internal/google-auth-callback` resolves to the Pages deployment after Phase 4 ships.
 
 ---
 
@@ -116,9 +116,9 @@ For a personal data project on personal Gmail, we accept the 7-day reality and b
 │   → if refresh_token issued > 6 days ago: send notification   │
 │                                                                │
 │ User clicks the re-auth link from the notification             │
-│   → opens browser to /api/_internal/google-auth-redirect       │
+│   → opens browser to /api/internal/google-auth-redirect       │
 │   → redirects to Google consent screen                         │
-│   → Google redirects back to /api/_internal/google-auth-callback│
+│   → Google redirects back to /api/internal/google-auth-callback│
 │   → Pages Function exchanges code for tokens                   │
 │   → writes new {refresh_token, access_token, expires_at} into │
 │     auth.google_tokens in ClickHouse (via tunnel + service     │
@@ -357,11 +357,11 @@ Each phase has: **Goal**, **Depends on**, **Build**, **Verify**. Auto-mode shoul
     - Optional Phase 8: send email via Cloudflare Email Service
 
 **Frontend (Cloudflare Pages Functions)**:
-- `dashboard/functions/api/_internal/google-auth-redirect.ts`:
+- `dashboard/functions/api/internal/google-auth-redirect.ts`:
   - GET endpoint, validates a session/Cookie or simple shared-secret in query
   - Builds Google OAuth URL with the full scope list + `state=<random_nonce_signed_with_GOOGLE_REAUTH_STATE_SECRET>`
   - Returns 302 to that URL
-- `dashboard/functions/api/_internal/google-auth-callback.ts`:
+- `dashboard/functions/api/internal/google-auth-callback.ts`:
   - GET endpoint, validates `state` against the signing secret (prevents CSRF)
   - Takes `?code=...`, POSTs to `https://oauth2.googleapis.com/token` with `client_id`, `client_secret`, `redirect_uri`, `grant_type=authorization_code`
   - On success: INSERT/UPSERT into `auth.google_tokens` via the existing tunnel + Access service token (using `queryClickHouse` helper already in `dashboard/functions/_shared/`)
@@ -376,7 +376,7 @@ Each phase has: **Goal**, **Depends on**, **Build**, **Verify**. Auto-mode shoul
 - `scripts/verify_phase_4.py`:
   - `auth.google_tokens` has ≥1 row
   - `python -c "from ingestion._shared.google_oauth import GoogleCredentials; c = GoogleCredentials.load_from_clickhouse('YOUR_EMAIL'); print(c.access_token[:10])"` returns first 10 chars of a valid token
-  - `curl https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect` returns 302 to Google
+  - `curl https://<PAGES_DOMAIN>/api/internal/google-auth-redirect` returns 302 to Google
   - Walk through the full re-auth flow in browser; new row appears in `auth.google_tokens`
 
 > 🛑 **USER ACTION**: After Phase 4 build completes, run `python scripts/bootstrap_google_auth.py` once on your laptop to seed the first token. Subsequent re-auths happen via the Pages link.
@@ -475,7 +475,7 @@ Each phase has: **Goal**, **Depends on**, **Build**, **Verify**. Auto-mode shoul
 **Build**:
 
 **Pages Function**:
-- `dashboard/functions/api/_internal/calendar-webhook.ts`:
+- `dashboard/functions/api/internal/calendar-webhook.ts`:
   - POST endpoint, validates `X-Goog-Channel-Token` against `env.CALENDAR_WEBHOOK_TOKEN`
   - Reads `X-Goog-Channel-ID`, `X-Goog-Message-Number`, `X-Goog-Resource-ID`, `X-Goog-Resource-State`
   - INSERTs into `bronze.calendar_sync_notifications` via the tunnel + service token

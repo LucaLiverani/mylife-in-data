@@ -52,7 +52,7 @@ are already wired through the code (they are — see `OPERATIONS.md` "Daily dev 
 8. On VM, re-run the historical backfills (Calendar pull, YouTube DP, Maps activity ingest) using the same direct-Python scripts you used on the laptop. **Don't** `rsync` bronze data — re-running gives clean dedup state.
 9. On VM, kick off Maps Places API enrichment (will eat ~$45 of the $200 monthly free credit).
 10. **On laptop**, `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh` to ship the Pages Functions + secrets.
-11. From the Dagster UI on the VM, trigger `calendar_channels_setup` to switch Calendar from polling → webhook-driven (the webhook URL `https://<PAGES_HOST>/api/_internal/calendar-webhook` is now live).
+11. From the Dagster UI on the VM, trigger `calendar_channels_setup` to switch Calendar from polling → webhook-driven (the webhook URL `https://<PAGES_HOST>/api/internal/calendar-webhook` is now live).
 
 From now on, day-to-day code changes ship via `make deploy-vm` on the laptop
 (see `OPERATIONS.md` → "Daily dev cycle").
@@ -62,7 +62,7 @@ From now on, day-to-day code changes ship via `make deploy-vm` on the laptop
 Best when you specifically want the re-auth link working *before* doing the full sync (e.g., to renew tokens from anywhere while you're not at your laptop). Dashboard tiles will keep showing mocks until Path A is done.
 
 1. `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh`
-2. Test: visit `https://<PAGES_HOST>/api/_internal/google-auth-redirect?group=standard` in a browser → walks OAuth → token lands in **VM** ClickHouse (which is what `CLICKHOUSE_HOST` in `dashboard/.env.production` points at).
+2. Test: visit `https://<PAGES_HOST>/api/internal/google-auth-redirect?group=standard` in a browser → walks OAuth → token lands in **VM** ClickHouse (which is what `CLICKHOUSE_HOST` in `dashboard/.env.production` points at).
 
 The calendar webhook would technically also work end-to-end after deploy (Google → Pages → VM ClickHouse → idle Dagster on VM), but until you do Path A the Dagster sensor on the VM can't drain notifications into events because there's no `auth.calendar_channels` row to look up calendar IDs from.
 
