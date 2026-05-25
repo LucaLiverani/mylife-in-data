@@ -12,8 +12,19 @@ WITH activity AS (
 catalog AS (
     SELECT * FROM {{ source('bronze', 'maps_place_catalog') }} FINAL
 ),
-private_places AS (
-    SELECT * FROM silver.maps_private_places FINAL
+-- Aggregate all private places into a single row of three parallel arrays.
+-- ClickHouse rejects correlated EXISTS subqueries that reference outer-scope
+-- columns ("Resolve identifier 'e.lat' from parent scope only supported for
+-- constants and CTE"), so we cross-join this 1-row aggregate against the
+-- enriched activity rows and use arrayExists() to scan for a match.
+-- When silver.maps_private_places is empty, the arrays are empty too and
+-- arrayExists returns 0 (correct: no private rows to flag).
+private_places_arr AS (
+    SELECT
+        groupArray(lat)      AS p_lats,
+        groupArray(lng)      AS p_lngs,
+        groupArray(radius_m) AS p_radii
+    FROM silver.maps_private_places FINAL
 ),
 enriched AS (
     SELECT
@@ -43,16 +54,18 @@ enriched AS (
 SELECT
     e.*,
     -- Spatial check against private-places. Haversine in km, compared to
-    -- radius_m/1000. EXISTS subquery short-circuits on first match.
-    toUInt8(EXISTS (
-        SELECT 1 FROM private_places p
-        WHERE e.lat != 0 AND e.lng != 0
-          AND 6371.0 * 2 * asin(
-                sqrt(
-                    pow(sin((p.lat - e.lat) * pi() / 360), 2) +
-                    cos(e.lat * pi() / 180) * cos(p.lat * pi() / 180) *
-                    pow(sin((p.lng - e.lng) * pi() / 360), 2)
-                )
-            ) <= (p.radius_m / 1000.0)
+    -- radius_m/1000. Short-circuits on first match within the array.
+    toUInt8(arrayExists(
+        i ->
+            e.lat != 0 AND e.lng != 0
+            AND 6371.0 * 2 * asin(
+                    sqrt(
+                        pow(sin((pp.p_lats[i] - e.lat) * pi() / 360), 2) +
+                        cos(e.lat * pi() / 180) * cos(pp.p_lats[i] * pi() / 180) *
+                        pow(sin((pp.p_lngs[i] - e.lng) * pi() / 360), 2)
+                    )
+                ) <= (pp.p_radii[i] / 1000.0),
+        range(1, length(pp.p_lats) + 1)
     ))                                                   AS is_private
 FROM enriched e
+CROSS JOIN private_places_arr pp

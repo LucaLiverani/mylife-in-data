@@ -23,6 +23,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from dagster import (
+    AssetSelection,
+    DefaultScheduleStatus,
+    ScheduleDefinition,
+    define_asset_job,
+)
 from dagster_dbt import DbtCliResource, dbt_assets
 
 
@@ -103,3 +109,21 @@ if MANIFEST_PATH.exists():
         identity mismatch between dagster and dagster-dbt's resolution path.
         """
         yield from dbt.cli(["build"], context=context).stream()
+
+
+    # Daily rebuild at 09:00 UTC. By this time all bronze ingest schedules
+    # have run (Maps 04:00, YouTube 04:30, Calendar renew 06:00, freshness
+    # monitor 08:00), so silver + gold pick up the latest bronze data.
+    dbt_build_job = define_asset_job(
+        "dbt_build_job",
+        selection=AssetSelection.assets(mylife_dbt_assets),
+    )
+
+
+    dbt_build_schedule = ScheduleDefinition(
+        job=dbt_build_job,
+        cron_schedule="0 9 * * *",
+        name="dbt_build_schedule",
+        description="Daily 09:00 UTC — rebuild all silver + gold dbt models.",
+        default_status=DefaultScheduleStatus.RUNNING,
+    )

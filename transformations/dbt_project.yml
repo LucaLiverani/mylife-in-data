@@ -30,7 +30,8 @@ models:
       +schema: gold
       +materialized: view
 
-# Re-test everything on every `dbt run`. Hard-fails the run if any test fails;
-# we lean on this in CI / Dagster to surface schema drift early.
-on-run-end:
-  - "{{ run_query('SELECT 1') }}"
+# Note: the original on-run-end hook ran `{{ run_query('SELECT 1') }}` —
+# which executes immediately at template-render time and returns an
+# AgateTable that dbt then formatted as a markdown table and tried to run
+# as SQL. That broke `dbt build` with a SYNTAX_ERROR. Tests are already
+# part of `dbt build` (model + tests + on-run-end), so no extra hook needed.
