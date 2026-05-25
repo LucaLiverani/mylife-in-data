@@ -16,6 +16,7 @@ event. This file holds:
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dagster import (
@@ -227,7 +228,7 @@ def calendar_sync_drain(context) -> dict:
                     "channel_id": notifs[0][0],
                     "resource_id": "",
                     "sync_token": next_token,
-                    "expiration": "1970-01-01 00:00:00",
+                    "expiration": datetime(1970, 1, 1, tzinfo=timezone.utc),
                 }],
                 database="auth",
                 column_names=["calendar_id", "calendar_name", "channel_id", "resource_id", "sync_token", "expiration"],
@@ -288,7 +289,7 @@ def calendar_polling_fallback(context) -> dict:
                     "channel_id": "polling",
                     "resource_id": "",
                     "sync_token": next_token,
-                    "expiration": "1970-01-01 00:00:00",
+                    "expiration": datetime(1970, 1, 1, tzinfo=timezone.utc),
                 }],
                 database="auth",
                 column_names=["calendar_id", "calendar_name", "channel_id", "resource_id", "sync_token", "expiration"],
