@@ -14,6 +14,8 @@ from pathlib import Path
 
 from dagster import (
     AssetSelection,
+    DefaultScheduleStatus,
+    DefaultSensorStatus,
     RunRequest,
     ScheduleDefinition,
     SensorEvaluationContext,
@@ -242,6 +244,7 @@ maps_daily_schedule = ScheduleDefinition(
     cron_schedule="0 4 * * *",
     name="maps_daily_schedule",
     description="Daily 04:00 Maps activity DP + place enrichment.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -256,6 +259,7 @@ maps_private_places_schedule = ScheduleDefinition(
     cron_schedule="0 5 * * 1",  # Monday 05:00 — saved places change slowly
     name="maps_private_places_schedule",
     description="Weekly refresh of the private-places spatial filter from starred places.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -348,6 +352,7 @@ youtube_daily_schedule = ScheduleDefinition(
     cron_schedule="30 4 * * *",
     name="youtube_daily_schedule",
     description="Daily 04:30 YouTube DP incremental + enrichment.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -362,6 +367,7 @@ youtube_enricher_job = define_asset_job(
     minimum_interval_seconds=600,
     name="youtube_metadata_enricher_sensor",
     description="Trigger enrichment when bronze has unknown video/channel IDs.",
+    default_status=DefaultSensorStatus.RUNNING,
 )
 def youtube_metadata_enricher_sensor(context: SensorEvaluationContext):
     """Fire when bronze.youtube_watch_history has video_ids missing from bronze.youtube_videos."""

@@ -21,6 +21,7 @@ import os
 
 from dagster import (
     AssetSelection,
+    DefaultScheduleStatus,
     ScheduleDefinition,
     asset,
     define_asset_job,
@@ -106,4 +107,5 @@ google_token_health_schedule = ScheduleDefinition(
     cron_schedule="0 9 1 * *",  # 1st of the month, 09:00
     name="google_token_health_schedule",
     description="Monthly Google token inactivity check.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )

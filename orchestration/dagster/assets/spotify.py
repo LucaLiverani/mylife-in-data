@@ -12,6 +12,8 @@ from pathlib import Path
 from dagster import (
     AssetExecutionContext,
     AssetSelection,
+    DefaultScheduleStatus,
+    DefaultSensorStatus,
     ScheduleDefinition,
     SensorEvaluationContext,
     RunRequest,
@@ -115,6 +117,7 @@ spotify_recently_played_schedule = ScheduleDefinition(
     cron_schedule="*/1 * * * *",
     name="spotify_recently_played_schedule",
     description="Pull recently-played every minute.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -123,6 +126,7 @@ spotify_saved_tracks_schedule = ScheduleDefinition(
     cron_schedule="*/5 * * * *",
     name="spotify_saved_tracks_schedule",
     description="Pull saved tracks every 5 minutes.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -131,6 +135,7 @@ spotify_saved_tracks_schedule = ScheduleDefinition(
     minimum_interval_seconds=600,
     name="spotify_metadata_enricher_sensor",
     description="Trigger an enrichment run when bronze has unknown track/artist IDs.",
+    default_status=DefaultSensorStatus.RUNNING,
 )
 def spotify_metadata_enricher_sensor(context: SensorEvaluationContext):
     """Fire when bronze.spotify_plays_raw has track_ids missing from bronze.spotify_tracks.

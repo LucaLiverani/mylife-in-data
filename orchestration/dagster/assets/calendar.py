@@ -20,6 +20,8 @@ from pathlib import Path
 
 from dagster import (
     AssetSelection,
+    DefaultScheduleStatus,
+    DefaultSensorStatus,
     RunRequest,
     ScheduleDefinition,
     SensorEvaluationContext,
@@ -306,6 +308,7 @@ calendar_renew_schedule = ScheduleDefinition(
     cron_schedule="0 6 * * *",
     name="calendar_renew_schedule",
     description="Daily 06:00 — re-subscribe each Calendar channel.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -320,6 +323,7 @@ calendar_sync_job = define_asset_job(
     minimum_interval_seconds=30,
     name="calendar_sync_sensor",
     description="Fire when bronze.calendar_sync_notifications has unprocessed rows.",
+    default_status=DefaultSensorStatus.RUNNING,
 )
 def calendar_sync_sensor(context: SensorEvaluationContext):
     from ingestion._shared.clickhouse import get_client

@@ -11,6 +11,7 @@ from datetime import timedelta
 
 from dagster import (
     AssetSelection,
+    DefaultScheduleStatus,
     ScheduleDefinition,
     asset,
     define_asset_job,
@@ -98,4 +99,5 @@ freshness_monitor_schedule = ScheduleDefinition(
     cron_schedule="0 8 * * *",
     name="freshness_monitor_schedule",
     description="Daily 08:00 cross-source freshness check.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
