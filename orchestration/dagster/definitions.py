@@ -24,6 +24,8 @@ from dagster import (
     load_assets_from_modules,
 )
 
+from dagster_dbt import DbtCliResource
+
 from orchestration.dagster import assets as assets_pkg
 from orchestration.dagster.resources import (
     ClickHouseResource,
@@ -90,5 +92,13 @@ defs = Definitions(
         # flow with anything else, so we keep two separate credential rows.
         "google_auth_standard": GoogleAuthResource(scope_group="standard"),
         "google_auth_portability": GoogleAuthResource(scope_group="portability"),
+        # dbt project lives at /opt/dagster/transformations in the container
+        # (bind-mounted from the host). profiles.yml is auto-created from
+        # profiles.yml.example by orchestration/dagster/assets/dbt.py on
+        # first code-location load.
+        "dbt": DbtCliResource(
+            project_dir="/opt/dagster/transformations",
+            profiles_dir="/opt/dagster/transformations",
+        ),
     },
 )
