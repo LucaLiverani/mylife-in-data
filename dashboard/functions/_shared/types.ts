@@ -25,6 +25,9 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string;
   GOOGLE_REDIRECT_URI?: string;
   GOOGLE_REAUTH_STATE_SECRET?: string;
+  // Fallback for the portability flow, whose response carries no id_token
+  // (no openid/userinfo.email scopes) and otherwise lands as unknown@unknown.
+  GOOGLE_ACCOUNT_EMAIL?: string;
 
   // Calendar webhook — shared secret between Pages Function and Google's
   // events.watch subscriptions. Validated on every notification POST.

@@ -89,7 +89,12 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
     return htmlPage('Auth failed', `<h1 class="err">Token exchange failed</h1><pre>${msg}</pre>`);
   }
 
-  const accountEmail = emailFromIdToken(tokens.id_token) || 'unknown@unknown';
+  // Portability scope group doesn't include openid/userinfo.email, so
+  // Google's response has no id_token to extract email from. Fall back to
+  // GOOGLE_ACCOUNT_EMAIL (set as a Pages secret) so the row is keyed by the
+  // real account and Dagster's GoogleAuthResource can find it.
+  const accountEmail =
+    emailFromIdToken(tokens.id_token) || env.GOOGLE_ACCOUNT_EMAIL || 'unknown@unknown';
   const expiresAt = new Date(Date.now() + (tokens.expires_in - 30) * 1000).toISOString().replace('T', ' ').slice(0, 19);
   const nextRenewal = new Date(Date.now() + NEXT_RENEWAL_DAYS * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
