@@ -59,27 +59,38 @@ def google_token_health(context) -> dict:
         )
         return {"checked": 0, "alerts_raised": 0, "threshold_days": threshold}
 
+    # Laptop dev runs that manually materialize this asset shouldn't write
+    # phantom alerts to the VM's auth.alerts. Gate the insert on the same
+    # writer flag the OAuth refresh persist uses.
+    is_writer = os.environ.get("MYLIFE_TOKEN_WRITER") == "1"
     alerts = 0
     for email, issued_at, age_days in rows:
         context.log.info("Token age for %s: %d days (issued %s)", email, age_days, issued_at)
         if age_days >= threshold:
-            insert_rows(
-                "alerts",
-                [
-                    {
-                        "kind": "token_stale",
-                        "account_email": email,
-                        "message": (
-                            f"Google refresh token for {email} is {age_days} day(s) old "
-                            f"(threshold {threshold}). Consider rotating via the Pages re-auth link."
-                        ),
-                    }
-                ],
-                database="auth",
-                column_names=["kind", "account_email", "message"],
-            )
-            alerts += 1
-    context.log.info("Checked %d tokens, raised %d alerts (threshold=%dd)", len(rows), alerts, threshold)
+            if is_writer:
+                insert_rows(
+                    "alerts",
+                    [
+                        {
+                            "kind": "token_stale",
+                            "account_email": email,
+                            "message": (
+                                f"Google refresh token for {email} is {age_days} day(s) old "
+                                f"(threshold {threshold}). Consider rotating via the Pages re-auth link."
+                            ),
+                        }
+                    ],
+                    database="auth",
+                    column_names=["kind", "account_email", "message"],
+                )
+                alerts += 1
+            else:
+                context.log.info(
+                    "Skipping alert write (MYLIFE_TOKEN_WRITER!=1); would have flagged %s as stale.",
+                    email,
+                )
+    context.log.info("Checked %d tokens, raised %d alerts (threshold=%dd, writer=%s)",
+                     len(rows), alerts, threshold, is_writer)
     return {"checked": len(rows), "alerts_raised": alerts, "threshold_days": threshold}
 
 

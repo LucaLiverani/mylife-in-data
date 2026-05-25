@@ -102,6 +102,78 @@ One endpoint (`/api/now/timeline`) is the only remaining mock-only route — Pha
 
 ---
 
+## Daily dev cycle (laptop ↔ VM)
+
+The platform runs in two homes. The **VM is canonical production** — runs all
+Dagster schedules + sensors, refreshes Google/Spotify tokens, serves the
+public dashboard. The **laptop is dev/staging** — code edits + occasional
+one-shot experiments. Two env flags keep them coherent:
+
+| Flag | Laptop | VM |
+|---|---|---|
+| `MYLIFE_TOKEN_WRITER` | `0` | `1` |
+| `DAGSTER_SCHEDULES_ENABLED` | `0` | `1` |
+
+`MYLIFE_TOKEN_WRITER` gates `google_oauth.load_and_refresh`'s persist step
+(refreshed tokens are still usable in-memory but aren't written back to
+ClickHouse). It also gates the `auth.alerts` insert in
+`google_token_health`. `DAGSTER_SCHEDULES_ENABLED` gates schedule + sensor
+registration in `orchestration/dagster/definitions.py` AND the `producer`
+compose profile that runs `spotify-current-producer`. The laptop never
+auto-ticks anything; the VM does it all.
+
+### Pushing code laptop → VM
+
+```bash
+# from laptop, after editing
+make deploy-vm
+```
+
+Runs `git push origin dev` then `ssh <VM> 'cd ~/mylife-in-data && ./infrastructure/deploy.sh'`.
+`deploy.sh` pulls, reapplies DDL (idempotent), and recreates only the compose
+services whose backing files actually changed. Pure docs/scripts/dashboard
+edits don't touch any container.
+
+`VM_SSH` / `VM_REPO_PATH` come from `infrastructure/.env` (gitignored — see
+`PERSONAL.md` for real values). `VM_SSH` is anything `ssh` can resolve: a
+`~/.ssh/config` alias (recommended — carries the key + port) or a literal
+`user@host`. Override on the CLI:
+
+```bash
+make deploy-vm VM_SSH=other-alias
+```
+
+### Borrowing tokens for a one-shot laptop run
+
+When the laptop needs to hit Google APIs directly (e.g., re-running a
+historical backfill while editing the script), pull the latest tokens from
+the VM first:
+
+```bash
+make pull-tokens     # or: ./scripts/sync_tokens_from_vm.sh
+```
+
+The script reads VM ClickHouse over the existing Cloudflare Tunnel using
+the dashboard's service token (`CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`
+in `dashboard/.env.production`), pulls `auth.google_tokens FINAL`, and
+INSERTs into the laptop's local ClickHouse. Stale-by-design: laptop tokens
+will go bad whenever the VM rotates them — just re-run the script.
+
+**Don't share the Spotify cache.** `tokens/.spotify_cache` is rewritten by
+spotipy on every 401; SCPing it mid-flight is race city. Each environment
+bootstraps its own Spotify OAuth (`python ingestion/spotify/authenticate_local.py`
+once per host — Spotify issues independent refresh tokens per grant).
+
+### Re-auth flows (Google + Spotify)
+
+| Provider | How |
+|---|---|
+| Google (either scope group) | Open `https://<PAGES_DOMAIN>/api/_internal/google-auth-redirect?group=standard` (or `?group=portability`) on any device → Pages Function writes fresh tokens into VM ClickHouse → next Dagster asset run picks them up. |
+| Spotify (VM)   | `ssh <VM> 'cd ~/mylife-in-data && python ingestion/spotify/authenticate_local.py'` — one-time browser auth; refresh tokens last ~60 days. |
+| Spotify (laptop) | Same script on the laptop. Cache files don't sync. |
+
+---
+
 ## VM operations
 
 ### Service control

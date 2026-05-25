@@ -48,7 +48,18 @@ echo
 echo "[3/4] Orchestration (Dagster)..."
 # Dagster image is built from a local Dockerfile (not on Docker Hub).
 # --build is a no-op when the image is fresh, builds on first run / Dockerfile changes.
-(cd "$COMPOSE_DIR/dagster" && docker compose up -d --build)
+# spotify-current-producer is gated behind the `producer` compose profile —
+# only started on the VM (DAGSTER_SCHEDULES_ENABLED=1). The laptop runs
+# Dagster without producer so it doesn't compete with the VM's continuous
+# polling of Spotify's currently-playing endpoint.
+DAGSTER_COMPOSE_PROFILES=()
+if [ "${DAGSTER_SCHEDULES_ENABLED:-0}" = "1" ]; then
+    DAGSTER_COMPOSE_PROFILES+=(--profile producer)
+    echo "      Schedules enabled — starting spotify-current-producer."
+else
+    echo "      Schedules disabled (DAGSTER_SCHEDULES_ENABLED!=1) — skipping spotify-current-producer."
+fi
+(cd "$COMPOSE_DIR/dagster" && docker compose "${DAGSTER_COMPOSE_PROFILES[@]}" up -d --build)
 sleep 10
 
 echo

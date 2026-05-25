@@ -147,8 +147,14 @@ class GoogleCredentials:
         *,
         scope_group: str = "standard",
     ) -> Credentials:
-        """Load + refresh + persist rotated tokens. Returns a ready-to-use
-        `google.oauth2.credentials.Credentials`."""
+        """Load + refresh + (conditionally) persist rotated tokens. Returns a
+        ready-to-use `google.oauth2.credentials.Credentials`.
+
+        Refreshed tokens are only written back to ClickHouse when
+        `MYLIFE_TOKEN_WRITER=1`. The VM (prod) sets this; the laptop (dev)
+        leaves it unset so it can borrow tokens via
+        `scripts/sync_tokens_from_vm.sh` without racing the VM's writer.
+        """
 
         wrapped = cls.load_from_clickhouse(account_email, scope_group=scope_group)
         creds = wrapped.to_google_credentials()
@@ -162,6 +168,7 @@ class GoogleCredentials:
                 wrapped.expires_at = creds.expiry.replace(tzinfo=timezone.utc)
             else:
                 wrapped.expires_at = now + timedelta(hours=1)
-            wrapped.persist_to_clickhouse()
+            if os.environ.get("MYLIFE_TOKEN_WRITER") == "1":
+                wrapped.persist_to_clickhouse()
 
         return creds

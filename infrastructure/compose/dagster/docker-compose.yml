@@ -56,6 +56,12 @@ services:
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       CALENDAR_WEBHOOK_TOKEN: ${CALENDAR_WEBHOOK_TOKEN}
       GOOGLE_REAUTH_STATE_SECRET: ${GOOGLE_REAUTH_STATE_SECRET}
+      # Laptop ↔ VM split: VM sets both to 1, laptop leaves them unset/0.
+      # MYLIFE_TOKEN_WRITER gates google_oauth.persist_to_clickhouse and
+      # google_token_health alert writes. DAGSTER_SCHEDULES_ENABLED gates
+      # schedule + sensor registration in definitions.py.
+      MYLIFE_TOKEN_WRITER: ${MYLIFE_TOKEN_WRITER:-0}
+      DAGSTER_SCHEDULES_ENABLED: ${DAGSTER_SCHEDULES_ENABLED:-0}
     volumes:
       - dagster-home:/opt/dagster/dagster_home
       - ../../..:/opt/dagster/repo:ro
@@ -94,10 +100,14 @@ services:
 
   spotify-current-producer:
     # Same image as Dagster (already has spotipy + kafka-python).
+    # Only started when the `producer` profile is enabled (VM only). Laptop
+    # starts the dagster stack without --profile, so this stays down.
     image: mylife-dagster:latest
     container_name: spotify-current-producer
     command: ["python", "/opt/dagster/repo/ingestion/spotify/producer_current.py"]
     environment: *dagster-env
+    profiles:
+      - producer
     volumes:
       - ../../..:/opt/dagster/repo:ro
       - ../../../tokens:/opt/dagster/tokens:ro

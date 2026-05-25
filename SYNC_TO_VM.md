@@ -20,27 +20,42 @@ The data platform has two homes: your laptop (current dev environment) and the A
 
 ### Path A — sync laptop state to VM, then deploy Pages (recommended)
 
-Best when you have a free hour and want the cleanest end-state.
+Best when you have a free hour and want the cleanest end-state. Assumes the
+laptop ↔ VM split flags (`MYLIFE_TOKEN_WRITER`, `DAGSTER_SCHEDULES_ENABLED`)
+are already wired through the code (they are — see `OPERATIONS.md` "Daily dev cycle").
 
 1. `scp infrastructure/.env <VM_USER>@<VM_IP>:~/mylife-in-data/infrastructure/.env`
-2. `scp tokens/.spotify_cache <VM_USER>@<VM_IP>:~/mylife-in-data/tokens/.spotify_cache`
-3. SSH to VM, `cd ~/mylife-in-data && git pull origin dev`
-4. On VM: `cd infrastructure && ./stop-all.sh && ./start-all.sh`
-5. On VM: apply DDL: `set -a; source infrastructure/.env; set +a; CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh`
-6. On VM: re-bootstrap Google (laptop tokens won't work for VM ClickHouse): `.venv/bin/python scripts/bootstrap_google_auth.py` — opens browser on the **laptop** with a redirect to `http://127.0.0.1:8000/callback`; you'd need to either run the bootstrap script *from* the VM (X11 forward, or temporarily expose port 8000) OR copy the token rows from laptop ClickHouse:
+2. **On the VM**, flip the split flags from laptop defaults to prod:
    ```bash
-   # On laptop, dump the tokens
+   ssh <VM_USER>@<VM_IP>
+   cd ~/mylife-in-data
+   sed -i 's/^MYLIFE_TOKEN_WRITER=.*/MYLIFE_TOKEN_WRITER=1/'        infrastructure/.env
+   sed -i 's/^DAGSTER_SCHEDULES_ENABLED=.*/DAGSTER_SCHEDULES_ENABLED=1/' infrastructure/.env
+   ```
+3. On VM: `git pull origin dev` (picks up the gating code + `deploy.sh` + the `producer` compose profile).
+4. On VM: `./infrastructure/start-all.sh` — idempotent. With `DAGSTER_SCHEDULES_ENABLED=1` it activates the `producer` profile so `spotify-current-producer` boots.
+5. On VM: `set -a; source infrastructure/.env; set +a; CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh` (idempotent).
+6. Copy Google token rows from laptop to VM (the OAuth bootstrap script wants a browser on the host that ran it; copying rows is simpler):
+   ```bash
+   # On laptop:
    docker exec clickhouse clickhouse-client --user <REDACTED> --password <REDACTED> \
      --query "SELECT * FROM auth.google_tokens FINAL FORMAT JSONEachRow" > /tmp/google_tokens.jsonl
    scp /tmp/google_tokens.jsonl <VM_USER>@<VM_IP>:/tmp/
-   # On VM
+   # On VM:
    docker exec -i clickhouse clickhouse-client --user <REDACTED> --password <REDACTED> \
      --query "INSERT INTO auth.google_tokens FORMAT JSONEachRow" < /tmp/google_tokens.jsonl
    ```
-7. On VM: re-run the historical backfills (Calendar pull, YouTube DP, Maps activity ingest) using the same direct-Python scripts we used on the laptop. OR `rsync` the bronze data: easier but loses the dedup guarantees of re-running the ingest cleanly.
-8. On VM: kick off Maps Places API enrichment (will eat ~$45 of the $200 monthly free credit).
-9. On laptop: `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh` to ship the Pages Functions + secrets.
-10. From Dagster UI on the VM: trigger `calendar_channels_setup` to switch Calendar from polling → webhook-driven (the webhook URL `https://<PAGES_HOST>/api/_internal/calendar-webhook` is now live).
+7. On VM, bootstrap a VM-local Spotify cache (one-time browser auth on the VM; Spotify allows independent grants per host, so the laptop's cache stays valid too):
+   ```bash
+   cd ~/mylife-in-data && python ingestion/spotify/authenticate_local.py
+   ```
+8. On VM, re-run the historical backfills (Calendar pull, YouTube DP, Maps activity ingest) using the same direct-Python scripts you used on the laptop. **Don't** `rsync` bronze data — re-running gives clean dedup state.
+9. On VM, kick off Maps Places API enrichment (will eat ~$45 of the $200 monthly free credit).
+10. **On laptop**, `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh` to ship the Pages Functions + secrets.
+11. From the Dagster UI on the VM, trigger `calendar_channels_setup` to switch Calendar from polling → webhook-driven (the webhook URL `https://<PAGES_HOST>/api/_internal/calendar-webhook` is now live).
+
+From now on, day-to-day code changes ship via `make deploy-vm` on the laptop
+(see `OPERATIONS.md` → "Daily dev cycle").
 
 ### Path B — deploy Pages for auth-flows only
 
