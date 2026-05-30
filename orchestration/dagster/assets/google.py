@@ -185,15 +185,16 @@ def maps_place_enrichment(context) -> dict:
     # searches / directions / place views enrich at all. geo_key + best_text
     # are defined once in the silver.maps_activity_keyed view so the lookup key
     # here matches the join key in silver_maps_activity_enriched exactly.
-    # geo_key is the GROUP BY key, so select it raw — do NOT alias an aggregate
-    # to it, or the WHERE binds to the aggregate and ClickHouse raises
-    # ILLEGAL_AGGREGATION. Per-run cap for cost control (override for backfill).
+    # geo_key is the GROUP BY key, so select it raw. NB: alias the argMax to
+    # `lookup_text`, NOT `best_text` — WHERE filters the raw `best_text` column,
+    # and reusing that name for the aggregate makes ClickHouse bind the WHERE to
+    # the aggregate → ILLEGAL_AGGREGATION. Per-run cap (override for backfill).
     limit = int(os.environ.get("MAPS_ENRICH_LIMIT", "200"))
     rows = ch.query(
         """
         SELECT
             geo_key,
-            argMax(best_text, event_ts) AS best_text,
+            argMax(best_text, event_ts) AS lookup_text,
             avg(lat) AS lat,
             avg(lng) AS lng
         FROM silver.maps_activity_keyed
@@ -209,8 +210,8 @@ def maps_place_enrichment(context) -> dict:
     looked_up = 0
     unresolved = 0
     failed = 0
-    for geo_key, best_text, lat, lng in rows:
-        text = best_text or ""
+    for geo_key, lookup_text, lat, lng in rows:
+        text = lookup_text or ""
         try:
             result = get_or_lookup(
                 place_id=geo_key,
