@@ -1,17 +1,17 @@
-"""Trip segmentation: bronze.maps_visits + silver.maps_home_locations → silver.maps_trips.
+"""Trip segmentation from silver_geo_daily → silver.maps_trips.
 
-Algorithm (DATA_MODEL.md §Maps — home anchor + trip segmentation):
-  1. For each visit, compute haversine distance to the active home anchor.
-  2. Mark visits "away" when distance_km > home.radius_km.
-  3. Group consecutive away-visits into trip clusters; break on (a) a visit
-     inside the home radius, or (b) a >24h gap between consecutive aways.
-  4. Per cluster: trip_start = min(started_at), trip_end = max(ended_at),
-     destination = argmax(dwell_time, place_name), country parsed from
-     place_address tail, km = sum(maps_path.distance_m) overlapping the
-     window.
+Continuous GPS Timeline no longer exists, so trips are inferred from the daily
+location timeline (silver_geo_daily): runs of consecutive away-days, tolerant
+of short gaps (days with no Maps activity), bounded by a confirmed day back
+home. Each away-day already required a directions signal upstream, so segments
+reflect real movement, not searches.
 
-Re-runs are full rebuilds (TRUNCATE+INSERT) because late-arriving visits can
-retroactively shift trip boundaries — a stream MV would lock in stale values.
+Re-runs are full rebuilds (TRUNCATE+INSERT) — late-arriving activity can shift
+trip boundaries, and the table stays tiny at personal-history scale.
+
+This produces trip CANDIDATES (including short/uncertain ones). Phase 5 (LLM
+adjudication) decides which are genuine trips vs. layovers / mis-geocodes and
+names them.
 """
 
 from __future__ import annotations
@@ -19,146 +19,102 @@ from __future__ import annotations
 import logging
 import math
 from collections import Counter
-from datetime import date, datetime, timedelta
-from typing import Iterable
+from datetime import date
 
 from ..._shared.clickhouse import get_client, insert_rows
 
 
 log = logging.getLogger(__name__)
 
-
-GAP_BREAK_HOURS = 24
+# Tolerate up to this many no-data days inside a trip before splitting it.
+# (A trip you didn't open Maps on for a couple of days is still one trip.)
+GAP_DAYS = 3
 
 
 def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     R = 6371.0
-    lat1r, lat2r = math.radians(lat1), math.radians(lat2)
-    dlat = lat2r - lat1r
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dlat = p2 - p1
     dlng = math.radians(lng2 - lng1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1r) * math.cos(lat2r) * math.sin(dlng / 2) ** 2
+    a = math.sin(dlat / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlng / 2) ** 2
     return 2 * R * math.asin(math.sqrt(a))
 
 
-def _country_from_address(address: str) -> str:
-    if not address:
-        return ""
-    parts = [p.strip() for p in address.split(",") if p.strip()]
-    return parts[-1] if parts else ""
-
-
-def _km_in_window(paths: list[tuple[datetime, datetime, int]], start: datetime, end: datetime) -> int:
-    total = 0
-    for s, e, dist in paths:
-        if e <= start or s >= end:
-            continue
-        total += dist
-    return int(total / 1000)
-
-
 def segment_trips() -> int:
-    """Rebuild silver.maps_trips. Returns number of trips written."""
-
+    """Rebuild silver.maps_trips from silver_geo_daily. Returns trips written."""
     client = get_client()
 
-    homes = client.query(
-        "SELECT valid_from, lat, lng, radius_km FROM silver.maps_home_locations FINAL "
-        "ORDER BY valid_from"
+    rows = client.query(
+        "SELECT event_date, locality, country, lat, lng, km_from_home, away "
+        "FROM silver.silver_geo_daily ORDER BY event_date"
     ).result_rows
-    if not homes:
-        log.warning("No home anchor in silver.maps_home_locations — skipping segmentation.")
+
+    client.command("TRUNCATE TABLE silver.maps_trips")
+    if not rows:
+        log.info("silver_geo_daily empty — no trips.")
         return 0
 
-    # Find the home active at a given visit timestamp.
-    def home_at(ts: datetime) -> tuple[float, float, float] | None:
-        active = None
-        ts_date = ts.date() if hasattr(ts, "date") else ts
-        for valid_from, lat, lng, radius_km in homes:
-            if hasattr(valid_from, "date"):
-                vf = valid_from.date()
-            else:
-                vf = valid_from
-            if vf <= ts_date:
-                active = (lat, lng, radius_km)
-        return active
+    hb = client.query("SELECT home_lat, home_lng FROM silver.silver_home_base").result_rows
+    home_lat, home_lng = (float(hb[0][0]), float(hb[0][1])) if hb else (0.0, 0.0)
 
-    visits = client.query(
-        "SELECT started_at, ended_at, place_name, place_address, lat, lng "
-        "FROM bronze.maps_visits FINAL "
-        "WHERE place_id != '' OR place_name != '' "
-        "ORDER BY started_at"
-    ).result_rows
-
-    paths_rows = client.query(
-        "SELECT started_at, ended_at, distance_m "
-        "FROM bronze.maps_path FINAL "
-        "ORDER BY started_at"
-    ).result_rows
-    paths = [(s, e, int(d or 0)) for s, e, d in paths_rows]
-
-    # Flag away-status per visit.
-    flagged: list[tuple[datetime, datetime, str, str, float, float, bool]] = []
-    for started_at, ended_at, place_name, place_address, lat, lng in visits:
-        anchor = home_at(started_at)
-        if not anchor:
-            continue
-        home_lat, home_lng, radius_km = anchor
-        away = _haversine_km(lat, lng, home_lat, home_lng) > radius_km
-        flagged.append((started_at, ended_at, place_name, place_address, lat, lng, away))
-
-    # Group consecutive aways with a 24h gap break.
-    trips: list[dict] = []
+    # Walk the timeline; group consecutive away-days. A confirmed home day
+    # (away=0) or a gap longer than GAP_DAYS closes the current trip.
+    segments: list[list] = []
     current: list = []
-    for row in flagged:
-        started_at, ended_at, *_rest, away = row
-        if not away:
-            if current:
-                trips.append(_finalize(current, paths))
+    last_date: date | None = None
+    for event_date, locality, country, lat, lng, km_from_home, away in rows:
+        if away == 1:
+            if current and last_date is not None and (event_date - last_date).days > GAP_DAYS + 1:
+                segments.append(current)
                 current = []
-            continue
-        if current and (started_at - current[-1][1]) > timedelta(hours=GAP_BREAK_HOURS):
-            trips.append(_finalize(current, paths))
+            current.append((event_date, locality, country, float(lat), float(lng), float(km_from_home)))
+            last_date = event_date
+        elif current:
+            segments.append(current)
             current = []
-        current.append(row)
     if current:
-        trips.append(_finalize(current, paths))
+        segments.append(current)
 
-    if not trips:
-        log.info("No trips detected.")
+    trips = [_finalize(seg, home_lat, home_lng) for seg in segments]
+    trips = [t for t in trips if t["destination"]]
 
-    # TRUNCATE+INSERT — small table, full rebuild is safer than upsert.
-    client.command("TRUNCATE TABLE silver.maps_trips")
     if trips:
         insert_rows(
             "maps_trips",
             trips,
             database="silver",
-            column_names=["started_at", "ended_at", "days", "destination", "destination_country", "km"],
+            column_names=[
+                "started_at", "ended_at", "days", "destination", "destination_country",
+                "km", "localities", "countries", "max_km",
+            ],
         )
     log.info("silver.maps_trips rebuilt with %d trip(s)", len(trips))
     return len(trips)
 
 
-def _finalize(cluster: list, paths: list[tuple[datetime, datetime, int]]) -> dict:
-    """Reduce a list of (started_at, ended_at, place_name, place_address, lat, lng, away) → trip row."""
+def _finalize(seg: list, home_lat: float, home_lng: float) -> dict:
+    """Reduce a run of away-days → one trip row."""
+    dates = [s[0] for s in seg]
+    start_d, end_d = min(dates), max(dates)
+    days = (end_d - start_d).days + 1
 
-    starts = [c[0] for c in cluster]
-    ends = [c[1] for c in cluster]
-    dwell: Counter[str] = Counter()
-    addresses: dict[str, str] = {}
-    for started_at, ended_at, place_name, place_address, *_ in cluster:
-        if not place_name:
-            continue
-        dwell[place_name] += int((ended_at - started_at).total_seconds())
-        addresses[place_name] = place_address
+    # Destination = the locality with the most away-days in the window.
+    loc_counts = Counter(s[1] for s in seg if s[1])
+    destination = loc_counts.most_common(1)[0][0] if loc_counts else (seg[0][1] or "")
+    destination_country = next((s[2] for s in seg if s[1] == destination and s[2]), "")
 
-    destination = dwell.most_common(1)[0][0] if dwell else (cluster[0][2] or "Unknown")
-    destination_country = _country_from_address(addresses.get(destination, "") or "")
+    localities = len({s[1] for s in seg if s[1]})
+    countries = len({s[2] for s in seg if s[2]})
+    max_km = int(max((s[5] for s in seg), default=0))
 
-    start_d: date = min(starts).date()
-    end_d: date = max(ends).date()
-    days = max(1, (end_d - start_d).days + 1)
-    km = _km_in_window(paths, min(starts), max(ends))
+    # Distance estimate (great-circle): home → each daily centroid in order → home.
+    pts = [(s[3], s[4]) for s in seg if s[3] and s[4]]
+    km = 0.0
+    if pts:
+        km += _haversine_km(home_lat, home_lng, pts[0][0], pts[0][1])
+        for i in range(len(pts) - 1):
+            km += _haversine_km(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1])
+        km += _haversine_km(pts[-1][0], pts[-1][1], home_lat, home_lng)
 
     return {
         "started_at": start_d,
@@ -166,5 +122,8 @@ def _finalize(cluster: list, paths: list[tuple[datetime, datetime, int]]) -> dic
         "days": days,
         "destination": destination,
         "destination_country": destination_country,
-        "km": km,
+        "km": int(km),
+        "localities": localities,
+        "countries": countries,
+        "max_km": max_km,
     }

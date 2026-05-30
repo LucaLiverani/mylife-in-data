@@ -62,6 +62,14 @@ CREATE TABLE IF NOT EXISTS silver.maps_trips (
     days                 Int16,
     destination          String,
     destination_country  String,
-    km                   Int32
+    km                   Int32,
+    localities           Int16 DEFAULT 0,    -- distinct localities visited on the trip
+    countries            Int16 DEFAULT 0,    -- distinct countries on the trip
+    max_km               Int32 DEFAULT 0     -- farthest point from home (km)
 ) ENGINE = MergeTree
 ORDER BY started_at;
+
+-- Idempotent migration for the activity-derived segmentation (Phase 4).
+ALTER TABLE silver.maps_trips ADD COLUMN IF NOT EXISTS localities Int16 DEFAULT 0;
+ALTER TABLE silver.maps_trips ADD COLUMN IF NOT EXISTS countries  Int16 DEFAULT 0;
+ALTER TABLE silver.maps_trips ADD COLUMN IF NOT EXISTS max_km     Int32 DEFAULT 0;
