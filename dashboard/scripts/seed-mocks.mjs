@@ -546,19 +546,14 @@ write('system/health.json', {
   storage: {
     name: 'ClickHouse',
     status: 'healthy',
-    queryLatencyP50Ms: 84,
-    queryLatencyP99Ms: 312,
     rowCount: 1234567,
     diskUsedMb: 412,
-    diskTotalMb: 51200,
-  },
-  dbt: {
-    lastRunAgo: '47m ago',
-    status: 'healthy',
-    modelCount: 23,
-    testsPass: 41,
-    testsTotal: 41,
-    durationS: 272,
+    byDatabase: [
+      { database: 'bronze', rows: 980000, diskUsedMb: 300 },
+      { database: 'silver', rows: 180000, diskUsedMb:  70 },
+      { database: 'gold',   rows:  74000, diskUsedMb:  38 },
+      { database: 'auth',   rows:    120, diskUsedMb:   4 },
+    ],
   },
   errors24h: [],
 });

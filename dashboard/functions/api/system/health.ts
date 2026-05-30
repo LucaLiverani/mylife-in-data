@@ -95,44 +95,88 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         queryClickHouse<StorageRow>(env, storageSql),
       ]);
 
+      // Freshness threshold (seconds) before a channel is "stale".
       const FRESH_LIMIT_S: Record<string, number> = {
-        spotify: 300,
-        spotify_history: 86400,
+        spotify: 86400,        // recently-played history
         youtube: 86400 * 2,
-        maps: 86400 * 2,
+        maps: 86400 * 3,       // daily DP, allow slack
         calendar: 86400 * 2,
       };
 
-      const perSource = sources.map(s => ({
-        source: s.source,
-        lastEventAt: s.last_event_at,
-        secondsSinceLastEvent: Number(s.seconds_since) || 0,
-        rows24h: Number(s.rows_24h) || 0,
-        status:
-          Number(s.seconds_since) <= (FRESH_LIMIT_S[s.source] ?? 86400)
-            ? 'ok'
-            : 'stale',
-      }));
+      const bySource: Record<string, SourceFreshness> = {};
+      for (const s of sources) bySource[s.source] = s;
+
+      const humanizeAgo = (sec: number | null): string => {
+        if (sec === null || !Number.isFinite(sec) || sec < 0) return '—';
+        if (sec < 90) return `${Math.round(sec)}s ago`;
+        if (sec < 5400) return `${Math.round(sec / 60)}m ago`;
+        if (sec < 172800) return `${Math.round(sec / 3600)}h ago`;
+        return `${Math.round(sec / 86400)}d ago`;
+      };
+
+      const mkChannel = (channel: string, s: SourceFreshness | undefined, limit: number) => {
+        const sec = s ? Number(s.seconds_since) : null;
+        const has = s != null && s.last_event_at != null && s.last_event_at !== '';
+        return {
+          channel,
+          status: !has ? 'down' : (sec !== null && sec <= limit ? 'healthy' : 'stale'),
+          lastBatchAgo: has ? humanizeAgo(sec) : 'never',
+          eventsPerHour: s ? Math.round((Number(s.rows_24h) || 0) / 24) : 0,
+          errors24h: 0,
+        };
+      };
+
+      // Collapse spotify + spotify_history into the single "spotify" channel
+      // (the player-current table is empty between plays; history is the signal).
+      const channels = [
+        mkChannel('spotify', bySource['spotify_history'] ?? bySource['spotify'], FRESH_LIMIT_S.spotify),
+        mkChannel('youtube', bySource['youtube'], FRESH_LIMIT_S.youtube),
+        mkChannel('maps', bySource['maps'], FRESH_LIMIT_S.maps),
+        mkChannel('calendar', bySource['calendar'], FRESH_LIMIT_S.calendar),
+      ];
+
+      const rank: Record<string, number> = { healthy: 0, degraded: 1, stale: 2, down: 3 };
+      const worst = channels.reduce((acc, c) => (rank[c.status] > rank[acc] ? c.status : acc), 'healthy');
+      const staleN = channels.filter(c => c.status !== 'healthy').length;
+
+      const totalRows = storage.reduce((a, s) => a + (Number(s.rows) || 0), 0);
+      const totalDiskMb = Math.round(storage.reduce((a, s) => a + (Number(s.bytes_on_disk) || 0), 0) / (1024 * 1024));
 
       return {
-        timestamp: new Date().toISOString(),
-        perSource,
-        alerts: alerts.map(a => ({
-          raisedAt: a.raised_at,
-          kind: a.kind,
-          accountEmail: a.account_email,
-          message: a.message,
-        })),
-        storage: storage.map(s => ({
-          database: s.database,
-          rows: Number(s.rows) || 0,
-          diskUsedMb: Math.round((Number(s.bytes_on_disk) || 0) / (1024 * 1024)),
+        generatedAt: new Date().toISOString(),
+        overall: {
+          status: worst,
+          summary: staleN === 0 ? 'All channels healthy' : `${staleN} channel${staleN > 1 ? 's' : ''} need attention`,
+        },
+        channels,
+        storage: {
+          name: 'ClickHouse',
+          status: 'healthy',
+          rowCount: totalRows,
+          diskUsedMb: totalDiskMb,
+          byDatabase: storage.map(s => ({
+            database: s.database,
+            rows: Number(s.rows) || 0,
+            diskUsedMb: Math.round((Number(s.bytes_on_disk) || 0) / (1024 * 1024)),
+          })),
+        },
+        errors24h: alerts.map(a => ({
+          time: a.raised_at,
+          channel: 'platform',
+          severity: 'warn',
+          message: a.message || a.kind,
         })),
       };
     },
     'system/health',
     request,
-    { timestamp: new Date().toISOString(), perSource: [], alerts: [], storage: [] }
+    {
+      generatedAt: new Date().toISOString(),
+      overall: { status: 'stale', summary: 'Health data unavailable' },
+      channels: [],
+      storage: { name: 'ClickHouse', status: 'stale', rowCount: 0, diskUsedMb: 0, byDatabase: [] },
+      errors24h: [],
+    }
   );
 
   const { body, headers } = addCacheHeaders(data, isFromCache, error, 'public, max-age=30');
