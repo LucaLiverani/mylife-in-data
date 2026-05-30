@@ -57,21 +57,23 @@ def segment_trips() -> int:
     hb = client.query("SELECT home_lat, home_lng FROM silver.silver_home_base").result_rows
     home_lat, home_lng = (float(hb[0][0]), float(hb[0][1])) if hb else (0.0, 0.0)
 
-    # Walk the timeline; group consecutive away-days. A confirmed home day
-    # (away=0) or a gap longer than GAP_DAYS closes the current trip.
+    # Keep only away-days, then split into trips on gaps longer than GAP_DAYS.
+    # Splitting on away-day gaps (not on home-days) means an isolated home day
+    # mid-trip is smoothed over, while a genuine multi-day return home still
+    # splits (the gap to the next away-day exceeds the tolerance).
+    away_days = [
+        (r[0], r[1], r[2], float(r[3]), float(r[4]), float(r[5]))
+        for r in rows if r[6] == 1
+    ]
     segments: list[list] = []
     current: list = []
     last_date: date | None = None
-    for event_date, locality, country, lat, lng, km_from_home, away in rows:
-        if away == 1:
-            if current and last_date is not None and (event_date - last_date).days > GAP_DAYS + 1:
-                segments.append(current)
-                current = []
-            current.append((event_date, locality, country, float(lat), float(lng), float(km_from_home)))
-            last_date = event_date
-        elif current:
+    for tup in away_days:
+        if current and last_date is not None and (tup[0] - last_date).days > GAP_DAYS + 1:
             segments.append(current)
             current = []
+        current.append(tup)
+        last_date = tup[0]
     if current:
         segments.append(current)
 
