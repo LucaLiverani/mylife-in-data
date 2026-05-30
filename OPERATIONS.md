@@ -98,7 +98,7 @@ Every `/api/*` endpoint tries ClickHouse first; on failure (network, auth, missi
 
 `public/mocks/` is the single source of truth for both dev (`npm run dev` via the Vite plugin in `vite-plugins/mock-api.ts`) and production fallback. Regenerate the seeded sample data with `npm run seed`.
 
-One endpoint (`/api/now/timeline`) is the only remaining mock-only route — Phase 8 turned the rest (`/api/google/calendar`, `/api/system/health`) into real Pages Functions.
+Every `/api/*` route is now a real Pages Function backed by ClickHouse. The last mock-only route, `/api/now/timeline` (the Live Console feed), became a real handler querying `silver.silver_events_unified`; a `_redirects` rewrite to the mock remains only as a dormant fallback (Pages routes the Function ahead of it). Mocks now exist solely as the offline-fallback corpus + dev seed.
 
 ---
 
@@ -133,6 +133,12 @@ Runs `git push origin dev` then `ssh <VM> 'cd ~/mylife-in-data && ./infrastructu
 `deploy.sh` pulls, reapplies DDL (idempotent), and recreates only the compose
 services whose backing files actually changed. Pure docs/scripts/dashboard
 edits don't touch any container.
+
+> **dbt is NOT rebuilt by `deploy.sh`.** It applies DDL and reloads the Dagster
+> code, but the silver/gold *views* only refresh on the 09:00 UTC
+> `dbt_build_schedule` or a manual rebuild. After changing a dbt model, rebuild
+> on the VM right away — Dagster UI → Materialize `mylife_dbt_assets`, or
+> `ssh <VM> 'docker exec dagster-webserver bash -lc "cd /opt/dagster/repo/transformations && DBT_TARGET_PATH=/tmp/t dbt run --profiles-dir ."'` — **after** the pull lands, or the live views silently lag the deployed code. Run the rebuild only once the VM repo is at the new commit (a rebuild against a not-yet-pulled repo builds the old models).
 
 `VM_SSH` / `VM_REPO_PATH` come from `infrastructure/.env` (gitignored — see
 `PERSONAL.md` for real values). `VM_SSH` is anything `ssh` can resolve: a
@@ -262,7 +268,7 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 
 ## Pipelines
 
-All eight phases of the build are landed (see `IMPLEMENTATION_PLAN.md` for the spec, `git log` for the actual sequence). The Dagster code location loads ~30+ assets across Spotify, Google Maps, YouTube, Calendar, plus observability. dbt builds 40+ silver/gold views on top.
+The build is complete (see `git log` for the sequence). The Dagster code location loads ~30+ assets across Spotify, Google Maps, YouTube, Calendar, plus observability. dbt builds 40+ silver/gold views on top.
 
 ### Pivots from the original plan
 
@@ -298,7 +304,7 @@ Every schedule and sensor uses `default_status=DefaultScheduleStatus.RUNNING` / 
 - **Google Data Portability 24h cooldown is per OAuth client, not per resource.** Maps + YouTube history now share a **single** daily archive — `google_dp_daily_schedule` (04:00 UTC) initiates `[myactivity.maps, myactivity.youtube]` in one `initiate_archive` call, then runs Maps place enrichment + YouTube metadata enrichment off the result. This removed the old `maps_daily` (04:00) / `youtube_daily` (04:30) 429 collision. Remaining caveat: `maps_private_places_schedule` (Monday 05:00 UTC) uses full-snapshot resources (`maps.aliased_places`, `maps.starred_places`) that can't share the time-windowed daily archive, so on Mondays it still hits the per-client cooldown and may fail; it fails *safe* (the `TRUNCATE` only runs after a successful download, so the private-places filter is never wiped on a 429) and retries the following week.
 - **Spotify `/me/player/recently-played` returns at most 50 plays.** `spotify_recently_played_schedule` runs every minute to pull frequently, but if you skip listening for a week the oldest play in `bronze.spotify_plays_raw` won't reach back further than ~50 tracks. No fix — that's the API limit.
 - **Spotify saved-tracks pagination caps at 200.** The asset stops after the first page; real libraries can be much larger. Outstanding fix.
-- **Spotify producer emits only on transitions.** `bronze.spotify_player_current` is empty whenever nothing's playing → the "Now playing" tile falls back to mock until something starts. By design (avoids constant duplicate inserts), but the UX implication is intentional.
+- **Spotify "Now playing" shows an idle state when nothing's playing.** The producer emits on track change / play-pause flip (and the current track on startup), polling `current_playback()` with a fallback to `current_user_playing_track()` so it captures playback even when Spotify reports no "active device". When nothing's playing, `bronze.spotify_player_current` simply holds the last transition and the tile reads "the studio is quiet" — the `/api/spotify/current` mock is `no_track`, not a fake track. **Timestamp gotcha:** the producer must emit `captured_at` in ClickHouse's basic `YYYY-MM-DD HH:MM:SS.mmm` form — ISO `…T…Z` strings are silently dropped by the Kafka engine (`kafka_skip_broken_messages=1`), which once left the table permanently empty. Also: `tokens/` is bind-mounted read-only, so spotipy can't persist *refreshed* tokens (harmless repeating "Couldn't write token to cache" warnings) — fine until the refresh token rotates, at which point re-auth on the VM (`authenticate_local.py`).
 
 ### Google token lifecycle
 

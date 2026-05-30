@@ -203,7 +203,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # Dagster runs in containers with its own venv (baked into the image at build
 # time). uv is for host-side scripts: OAuth bootstraps (Spotify), one-shot
-# backfills, scripts/verify_phase_*.py, etc. uv reads .python-version and
+# backfills, connection probes, etc. uv reads .python-version and
 # pyproject.toml + uv.lock; first `uv sync` after `git clone` creates a .venv/
 # with the exact pinned deps.
 UV_BIN="$USER_HOME/.local/bin/uv"

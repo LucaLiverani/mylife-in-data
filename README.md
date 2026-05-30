@@ -2,13 +2,11 @@
 
 Personal data platform: collect signals from streaming services (Spotify, YouTube, Google Maps, Google Calendar), warehouse them in ClickHouse, and visualize on a Cloudflare-hosted dashboard.
 
-Canonical docs (in order of precedence):
+Canonical docs:
 
-1. **`IMPLEMENTATION_PLAN.md`** — phase-by-phase build spec; source of truth for *what was built*.
-2. **`DATA_MODEL.md`** — bronze/silver/gold schemas, MV cascades, gold contracts.
-3. **`PIPELINES.md`** — architectural narrative (why bronze→silver→gold, why Redpanda, why dbt).
-4. **`OPERATIONS.md`** — running, deploying, debugging the live system.
-5. **`SYNC_TO_VM.md`** — current state of the laptop ↔ VM split and the path to a public dashboard with real data.
+1. **`OPERATIONS.md`** — running, deploying, and debugging the live system. Start here.
+2. **`DATA_MODEL.md`** — bronze/silver/gold schemas and the gold→dashboard contract.
+3. **`SYNC_TO_VM.md`** — the laptop ↔ VM split and the original cutover (kept as a fresh-VM reference).
 
 ## Layout
 
@@ -26,7 +24,7 @@ transformations/         dbt project: silver + gold ClickHouse models
 warehouse/ddl/           Source-of-truth CREATE TABLEs, applied by apply.sh
 infrastructure/          Docker Compose stack + provisioning scripts
 dashboard/               React + Vite + Cloudflare Pages Functions
-scripts/                 Bootstrap + verify_phase_N + connection probes
+scripts/                 Google/Spotify auth bootstrap, Maps Timeline import, connection probes
 ```
 
 ## Stack
@@ -59,7 +57,7 @@ URLs printed at the end. The stack uses one identity across every service — us
 
 ## Pipelines status
 
-All eight phases (0 → 8) are implemented and committed; `scripts/verify_phase_N.py` confirms the wiring. Two pivots from the original `IMPLEMENTATION_PLAN.md` happened during integration, both forced by Google API constraints:
+The full ingest → transform → serve loop is live: Dagster loads ~30 assets across Spotify, YouTube, Maps, and Calendar, and dbt builds the silver + gold ClickHouse views the dashboard reads. Two pivots from the original design, both forced by Google API constraints:
 
 - **Two Google OAuth flows** (`standard` + `portability`). Google rejects mixed-scope consent requests for Data Portability scopes, so each scope group gets its own bootstrap + its own row in `auth.google_tokens`.
 - **Maps is activity-based, not Timeline-based**. Google's 2024 migration moved Timeline (continuous location tracking) on-device only for many accounts. The pipeline now consumes `myactivity.maps` (search + view + directions, ~5MB/day) and enriches via Places API (neighborhood + place type). Timeline data flows in only via monthly manual phone export → `scripts/import_maps_timeline_export.py`. Starred places are ingested as **coordinates only** and used as a spatial exclusion filter so friends' home addresses never reach the public dashboard.
@@ -81,7 +79,8 @@ Live at `https://<PAGES_DOMAIN>` (Cloudflare Pages) talking to an ARM64 VM throu
 
 Daily auto-loop:
 ```
-bronze ingest (Spotify every 1m, Maps 04:00, YouTube 04:30, Calendar webhook + 06:00 renew, freshness monitor 08:00)
+bronze ingest (Spotify recently-played every 1m, combined Maps+YouTube Data Portability 04:00,
+               Calendar webhook + daily channel renew, freshness monitor 08:00)
   → dbt build (silver + gold rebuild at 09:00 UTC)
   → public dashboard serves live ClickHouse data
 ```

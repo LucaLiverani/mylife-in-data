@@ -19,7 +19,7 @@ export interface Env {
   KAFKA_BOOTSTRAP_SERVERS?: string;
   KAFKA_TOPIC?: string;
 
-  // Google OAuth — Web Application client (see IMPLEMENTATION_PLAN.md §1.2).
+  // Google OAuth — Web Application client.
   // Used by /api/internal/google-auth-{redirect,callback}.
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;

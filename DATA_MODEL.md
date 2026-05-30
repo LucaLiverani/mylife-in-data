@@ -733,7 +733,11 @@ youtube→{title,activityType,...}, maps→{location,type,...}) — see
 
 ---
 
-## Mock-only endpoints — what they imply for the model
+## Cross-cutting / derived endpoints
+
+> All endpoints below are now live real Pages Functions — the "mock-only"
+> framing is historical. Kept because the gold-table breakdowns are still an
+> accurate reference for what each endpoint reads.
 
 ### `/api/now/timeline`
 
@@ -750,9 +754,10 @@ A unified, source-tagged event feed with rich state transitions
 - `Playlist queued`/`Album opened` → derived from `context_type` transitions
   in `bronze.spotify_player_current`.
 
-Gold table: `gold.gold_now_timeline` = `silver.events_unified` filtered to
-the last N events with friendly `label` derived from `kind`. Handler not
-written yet, so this is the chance to define it cleanly.
+Built as a Pages Function (`functions/api/now/timeline.ts`) that queries
+`silver.silver_events_unified` directly for the latest 60 events (`event_ts <=
+now()`), mapping `kind` → a friendly `label` and joining `title`/`subtitle`
+into `value`. No dedicated gold table — the unified silver view is enough.
 
 ### `/api/google/calendar`
 
@@ -784,28 +789,13 @@ Worker that aggregates from multiple sources at request time, not a
 
 ---
 
-## What this implies for the build order
+## Build status
 
-Working backwards from the gold list above:
-
-1. **Spotify current track** — needs `bronze.spotify_player_current` +
-   `gold.gold_spotify_current_track`. No silver layer required (single row
-   passthrough). The smallest end-to-end slice.
-2. **Spotify plays + KPIs** — bronze plays + tracks + artists catalogs + all
-   silver MVs + the 5 `gold_spotify_*` tables.
-3. **Cross-source overview** — needs at least two sources in `events_unified`;
-   gates the home page. Spotify alone is enough to ship the cross-source
-   plumbing — youtube/maps fill in later as Takeout arrives.
-4. **YouTube + Maps** — single Google OAuth app, Data Portability schedule
-   (daily). Same parsers fill `bronze.youtube_*` / `bronze.maps_*`; each
-   source's `gold_*_dashboard` set flips on as its bronze fills. Initial
-   backfill = one big archive job (request full history); incremental =
-   small daily jobs deduped by `ReplacingMergeTree`.
-5. **Calendar** — last, because it's the most schema-rich and the source
-   isn't decided yet (ICS vs OAuth).
-
-This sequence lets the dashboard's "ClickHouse offline" badge flip off
-one tile at a time rather than waiting for full coverage.
+The full model is built and live — every gold table above is a dbt view the
+dashboard reads, and every `/api/*` route is a real Pages Function. Maps + YouTube
+share one daily Data Portability job; Calendar lands via the Calendar API
+`events.watch` webhook. See `git log` for the build sequence and `OPERATIONS.md`
+for how it runs day to day.
 
 ## Conventions
 
