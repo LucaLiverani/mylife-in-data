@@ -18,6 +18,8 @@ interface OverviewStats {
     youtubeChannels: string;
     searchQueries: string;
     citiesVisited: string;
+    spotifyHours: number | string;
+    youtubeHours: number | string;
   };
   dataGeneration: {
     dates: string[];
@@ -56,7 +58,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
 
     // Execute queries in parallel
     const [summaryResult, dataGenResult] = await Promise.all([
-      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; youtubeChannels: string; searchQueries: string; citiesVisited: string }>(
+      queryClickHouse<{ songsStreamed: string; artistsListened: string; videosWatched: string; youtubeChannels: string; searchQueries: string; citiesVisited: string; spotifyHours: number; youtubeHours: number }>(
         env,
         summaryQuery
       ),
@@ -74,6 +76,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
       youtubeChannels: '0',
       searchQueries: '0',
       citiesVisited: '0',
+      spotifyHours: 0,
+      youtubeHours: 0,
     };
 
     const summary = {
@@ -83,6 +87,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
       youtubeChannels: rawSummary.youtubeChannels,
       searchQueries: rawSummary.searchQueries,
       citiesVisited: parseInt(String(rawSummary.citiesVisited), 10).toString(),
+      spotifyHours: Number(rawSummary.spotifyHours) || 0,
+      youtubeHours: Number(rawSummary.youtubeHours) || 0,
     };
 
     // Reverse to show oldest to newest
@@ -127,6 +133,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         youtubeChannels: '0',
         searchQueries: '0',
         citiesVisited: '0',
+        spotifyHours: 0,
+        youtubeHours: 0,
       },
       dataGeneration: {
         dates: [],

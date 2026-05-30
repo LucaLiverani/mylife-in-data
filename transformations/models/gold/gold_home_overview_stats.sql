@@ -18,4 +18,8 @@ SELECT
     -- "Cities" = distinct enriched localities from Maps activity. Populates as
     -- maps_place_enrichment fills bronze.maps_place_catalog (locality column).
     (SELECT uniqExactIf(locality, locality != '')
-     FROM {{ ref('silver_maps_activity_enriched') }} WHERE is_private = 0)          AS citiesVisited
+     FROM {{ ref('silver_maps_activity_enriched') }} WHERE is_private = 0)          AS citiesVisited,
+    -- Hours for the Home channel strips. YouTube is the count×duration proxy
+    -- (0 until the enricher fills durations).
+    round((SELECT sum(duration_ms) FROM {{ ref('silver_spotify_plays') }}) / 3600000.0, 1) AS spotifyHours,
+    round((SELECT sum(duration_seconds) FROM {{ ref('silver_youtube_watches') }}) / 3600.0, 1) AS youtubeHours

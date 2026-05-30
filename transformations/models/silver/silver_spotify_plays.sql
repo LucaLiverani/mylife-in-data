@@ -16,7 +16,10 @@ SELECT
     p.played_at                                                       AS played_at,
     p.track_id                                                        AS track_id,
     coalesce(t.track_name, '')                                        AS track_name,
-    coalesce(t.duration_ms, p.duration_ms)                            AS duration_ms,
+    -- LEFT JOIN miss gives t.duration_ms = 0 (not NULL), so coalesce() would
+    -- keep the 0 and drop the play's own duration → listening hours read 0
+    -- until the track is enriched. Prefer the enriched value only when present.
+    if(t.duration_ms > 0, t.duration_ms, p.duration_ms)               AS duration_ms,
     arrayElement(p.artists_ids, 1)                                    AS primary_artist_id,
     coalesce(a.artist_name, '')                                       AS primary_artist_name,
     a.genres                                                          AS genres,

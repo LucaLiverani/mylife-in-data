@@ -30,7 +30,10 @@ interface LiveSpotifyState {
   error: string | null;
 }
 
-const LAST_TRACK_KEY = 'spotify_last_track';
+// v2: invalidate any previously-cached track. Earlier builds could persist the
+// mock "now playing" track (served when the live query failed) to localStorage,
+// where it stuck as a fake current track. Bumping the key drops that stale cache.
+const LAST_TRACK_KEY = 'spotify_last_track_v2';
 const POLL_WHEN_PLAYING_MS = 5_000;
 const POLL_WHEN_IDLE_MS = 30_000;
 
