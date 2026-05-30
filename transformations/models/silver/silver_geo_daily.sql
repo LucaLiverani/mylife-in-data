@@ -47,11 +47,13 @@ SELECT
     h.home_locality                                                       AS home_locality,
     h.home_country                                                        AS home_country,
     round(greatCircleDistance(p.lng, p.lat, h.home_lng, h.home_lat) / 1000.0, 1) AS km_from_home,
-    -- Away = physically elsewhere that day (directions required, so searches
-    -- alone never fabricate a trip): a different country, or >50km within the
-    -- same country (a domestic trip).
+    -- Away = physically elsewhere that day: a different country, or >50km from
+    -- home in the same country. Presence-based (NOT directions-gated) so a
+    -- multi-day trip isn't pocked with false "home" days when you didn't open
+    -- Maps to navigate. Phantom search-only runs (a foreign place dominating a
+    -- day's searches from your couch) are filtered at the TRIP level — a real
+    -- trip must contain >=1 directions day (see trip_segmentation.py).
     multiIf(
-        p.directions_count = 0,                                              0,
         p.country != h.home_country,                                         1,
         p.locality != h.home_locality
             AND greatCircleDistance(p.lng, p.lat, h.home_lng, h.home_lat) > 50000, 1,

@@ -45,7 +45,8 @@ def segment_trips() -> int:
     client = get_client()
 
     rows = client.query(
-        "SELECT event_date, locality, country, lat, lng, km_from_home, away "
+        "SELECT event_date, locality, country, lat, lng, km_from_home, "
+        "directions_count, away "
         "FROM silver.silver_geo_daily ORDER BY event_date"
     ).result_rows
 
@@ -62,8 +63,8 @@ def segment_trips() -> int:
     # mid-trip is smoothed over, while a genuine multi-day return home still
     # splits (the gap to the next away-day exceeds the tolerance).
     away_days = [
-        (r[0], r[1], r[2], float(r[3]), float(r[4]), float(r[5]))
-        for r in rows if r[6] == 1
+        (r[0], r[1], r[2], float(r[3]), float(r[4]), float(r[5]), int(r[6]))
+        for r in rows if r[7] == 1
     ]
     segments: list[list] = []
     current: list = []
@@ -77,7 +78,13 @@ def segment_trips() -> int:
     if current:
         segments.append(current)
 
-    trips = [_finalize(seg, home_lat, home_lng) for seg in segments]
+    # A genuine trip must contain >=1 directions day — filters phantom runs
+    # where a foreign place merely dominated some days' searches from home.
+    trips = [
+        _finalize(seg, home_lat, home_lng)
+        for seg in segments
+        if sum(s[6] for s in seg) > 0
+    ]
     trips = [t for t in trips if t["destination"]]
 
     if trips:
