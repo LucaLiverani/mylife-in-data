@@ -149,6 +149,11 @@ def main() -> int:
     while _running:
         try:
             payload = sp.current_playback()
+            if not payload or not payload.get("item"):
+                # /me/player reports nothing when Spotify has no "active device",
+                # even while a track is playing. /me/player/currently-playing is
+                # more lenient — fall back to it (device fields stay empty).
+                payload = sp.current_user_playing_track()
             event = _normalize_event(payload) if payload else None
         except SpotifyException as exc:
             if exc.http_status == 429:
