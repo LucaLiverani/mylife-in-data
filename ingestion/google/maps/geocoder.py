@@ -218,19 +218,45 @@ _CATALOG_COLUMNS = [
 ]
 
 
-def get_or_lookup(*, place_id="", text="", lat=0.0, lng=0.0, geocoder=None):
+def _catalog_insert(ch, row: dict) -> None:
+    """Insert one catalog row using the SHARED client — never open a new
+    connection per call (a backfill of thousands would exhaust file
+    descriptors: clickhouse_connect.get_client() builds a fresh pool each time)."""
+    ch.insert(
+        "maps_place_catalog",
+        [[row.get(c) for c in _CATALOG_COLUMNS]],
+        column_names=_CATALOG_COLUMNS,
+        database="bronze",
+    )
+
+
+def _unresolved_row(place_id: str, lookup_key: str) -> dict:
+    """An 'unresolved' sentinel — negative cache so this key leaves the worklist."""
+    return {
+        "place_id": place_id, "lookup_key": lookup_key, "place_name": "",
+        "place_types": [], "primary_type": "", "lat": 0.0, "lng": 0.0,
+        "formatted_address": "", "neighborhood": "", "sublocality": "",
+        "locality": "", "admin_area_1": "", "country": "", "country_code": "",
+        "match_confidence": 0.0, "match_type": "unresolved",
+    }
+
+
+def get_or_lookup(*, place_id="", text="", lat=0.0, lng=0.0, geocoder=None, ch=None):
     """Resolve a place, hitting bronze.maps_place_catalog first.
 
-    Misses and non-geocodable junk are negative-cached (an 'unresolved'
-    sentinel row) so the enrichment worklist converges instead of retrying the
-    same dead keys every run. Returns the PlaceLookup on success, else None.
+    Pass a shared `ch` client when looping (the enrichment asset does): every
+    cache check + insert reuses it instead of opening a new ClickHouse
+    connection per call, which otherwise exhausts file descriptors over a
+    backfill. Misses and non-geocodable junk are negative-cached ('unresolved'
+    sentinel) so the worklist converges. Returns the PlaceLookup, else None.
     """
-    from ingestion._shared.clickhouse import get_client as _ch_client, insert_rows
+    from ingestion._shared.clickhouse import get_client as _ch_client
 
     if not place_id and not text and not (lat and lng):
         return None
 
-    ch = _ch_client()
+    if ch is None:
+        ch = _ch_client()
 
     # Cache check by place_id (the geo_key) — most specific.
     if place_id:
@@ -258,43 +284,22 @@ def get_or_lookup(*, place_id="", text="", lat=0.0, lng=0.0, geocoder=None):
 
     # Skip + negative-cache obvious non-places (unless we have real coords).
     if text and not (lat and lng) and not is_geocodable_text(text):
-        _negative_cache(insert_rows, canonical_id, lookup_key)
+        _catalog_insert(ch, _unresolved_row(canonical_id, lookup_key))
         return None
 
     result = geocoder.geocode(text) if text else geocoder.reverse(lat, lng)
     if result is None or (result.lat == 0 and result.lng == 0):
-        _negative_cache(insert_rows, canonical_id, lookup_key)
+        _catalog_insert(ch, _unresolved_row(canonical_id, lookup_key))
         return None
 
-    insert_rows(
-        "maps_place_catalog",
-        [{
-            "place_id": canonical_id, "lookup_key": lookup_key,
-            "place_name": result.place_name, "place_types": result.place_types,
-            "primary_type": result.primary_type, "lat": result.lat, "lng": result.lng,
-            "formatted_address": result.formatted_address, "neighborhood": result.neighborhood,
-            "sublocality": result.sublocality, "locality": result.locality,
-            "admin_area_1": result.admin_area_1, "country": result.country,
-            "country_code": result.country_code,
-            "match_confidence": result.match_confidence, "match_type": result.match_type,
-        }],
-        database="bronze",
-        column_names=_CATALOG_COLUMNS,
-    )
+    _catalog_insert(ch, {
+        "place_id": canonical_id, "lookup_key": lookup_key,
+        "place_name": result.place_name, "place_types": result.place_types,
+        "primary_type": result.primary_type, "lat": result.lat, "lng": result.lng,
+        "formatted_address": result.formatted_address, "neighborhood": result.neighborhood,
+        "sublocality": result.sublocality, "locality": result.locality,
+        "admin_area_1": result.admin_area_1, "country": result.country,
+        "country_code": result.country_code,
+        "match_confidence": result.match_confidence, "match_type": result.match_type,
+    })
     return result
-
-
-def _negative_cache(insert_rows, place_id: str, lookup_key: str) -> None:
-    """Write an 'unresolved' sentinel so this key leaves the enrichment worklist."""
-    insert_rows(
-        "maps_place_catalog",
-        [{
-            "place_id": place_id, "lookup_key": lookup_key, "place_name": "",
-            "place_types": [], "primary_type": "", "lat": 0.0, "lng": 0.0,
-            "formatted_address": "", "neighborhood": "", "sublocality": "",
-            "locality": "", "admin_area_1": "", "country": "", "country_code": "",
-            "match_confidence": 0.0, "match_type": "unresolved",
-        }],
-        database="bronze",
-        column_names=_CATALOG_COLUMNS,
-    )

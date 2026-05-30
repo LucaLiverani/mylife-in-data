@@ -219,6 +219,7 @@ def maps_place_enrichment(context) -> dict:
                 lat=float(lat or 0),
                 lng=float(lng or 0),
                 geocoder=geocoder,
+                ch=ch,
             )
         except Exception as exc:
             context.log.warning("lookup failed for %s (%s): %s", geo_key, text, exc)
