@@ -17,10 +17,17 @@ SELECT
     (SELECT countIf(activity_type = 'view_place') FROM a)                         AS total_likely_visits,
     (SELECT uniqExact(event_date) FROM a)                                         AS days_with_activity,
     (SELECT uniqExact(place_name) FROM a WHERE place_name != '')                  AS unique_destinations,
-    -- Cities/countries populate as maps_place_enrichment fills the catalog
-    -- (locality/country). 0 until enrichment runs, then climbs.
-    (SELECT uniqExactIf(locality, locality != '') FROM a)                         AS cities_visited,
-    (SELECT uniqExactIf(country, country != '') FROM a)                           AS countries_visited,
+    -- Cities/countries count only CORROBORATED places — navigated-to, or
+    -- engaged with >1x. Without this, junk geocodes of generic search terms
+    -- ("Pizza"/"Rosti" -> obscure villages) inflate the totals to 100+ countries.
+    (SELECT count() FROM (
+        SELECT locality FROM a WHERE locality != ''
+        GROUP BY locality HAVING count() >= 2 OR countIf(activity_type = 'directions') > 0
+    ))                                                                            AS cities_visited,
+    (SELECT count() FROM (
+        SELECT country FROM a WHERE country != ''
+        GROUP BY country HAVING count() >= 2 OR countIf(activity_type = 'directions') > 0
+    ))                                                                            AS countries_visited,
     toString(coalesce((SELECT min(event_date) FROM a), toDate('1970-01-01')))     AS first_activity,
     toString(coalesce((SELECT max(event_date) FROM a), toDate('1970-01-01')))     AS last_activity,
     toInt32(coalesce((SELECT max(event_date) - min(event_date) FROM a), 0))       AS days_tracked,

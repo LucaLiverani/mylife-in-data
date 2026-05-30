@@ -26,5 +26,9 @@ WHERE s.is_private = 0
   AND s.match_confidence >= 0.4                                 -- drop low-confidence / junk geocodes
   AND s.match_type NOT IN ('country', 'state', 'unresolved')   -- too coarse to pin as a point
 GROUP BY name
+-- Corroboration: a real place is either navigated-to (directions) or engaged
+-- with more than once. Drops lone mis-geocodes — a one-off generic search
+-- ("Pizza", "Rosti") that OSM resolves to an obscure hamlet at confidence 1.0.
+HAVING count() >= 2 OR countIf(s.activity_type = 'directions') > 0
 ORDER BY count() DESC
 LIMIT 500
