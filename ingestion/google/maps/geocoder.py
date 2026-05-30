@@ -41,7 +41,16 @@ class GeocoderConfigError(RuntimeError):
 _JUNK_EXACT = {
     "weather", "time", "news", "translate", "calculator",
     "maps", "google", "home", "work", "directions", "settings",
+    # bare category searches — not a specific place
+    "restaurant", "restaurants", "restaurantes", "bar", "bars",
+    "cafe", "cafes", "hotel", "hotels", "supermarket", "atm",
+    "pharmacy", "parking",
 }
+
+# Substrings that mark a non-place activity title (Maps UI artifacts, app
+# chrome). "Explored on Google Maps" is the single most common MyActivity title
+# — a pan/zoom, not a place.
+_JUNK_SUBSTR = ("near me", "explored on google maps", "notification")
 
 
 def is_geocodable_text(text: str) -> bool:
@@ -49,9 +58,9 @@ def is_geocodable_text(text: str) -> bool:
     t = (text or "").strip().lower()
     if len(t) < 2:
         return False
-    if "near me" in t:
-        return False
     if t in _JUNK_EXACT:
+        return False
+    if any(s in t for s in _JUNK_SUBSTR):
         return False
     if not any(c.isalpha() for c in t):  # pure numbers / symbols
         return False
