@@ -146,10 +146,10 @@ export default function MapsPage() {
               <FadeIn delay={0.15}>
                 <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Movement</h2>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <KPIMetric label="Kilometers"    value={travelData.stats.kilometersTraveled ?? '—'} kind="count" channel="maps" />
-                  <KPIMetric label="Days away"     value={travelData.stats.daysAwayFromHome ?? '—'}   kind="count" channel="maps" />
-                  <KPIMetric label="New places"    value={travelData.stats.newPlacesThisYear ?? '—'}  kind="count" channel="maps" />
-                  <KPIMetric label="Longest trip"  value={travelData.stats.longestTripDays ?? '—'}    kind="count" channel="maps" />
+                  <KPIMetric label="Kilometers"    value={travelData.stats.kilometersTraveled ?? '-'} kind="count" channel="maps" />
+                  <KPIMetric label="Days away"     value={travelData.stats.daysAwayFromHome ?? '-'}   kind="count" channel="maps" />
+                  <KPIMetric label="New places"    value={travelData.stats.newPlacesThisYear ?? '-'}  kind="count" channel="maps" />
+                  <KPIMetric label="Longest trip"  value={travelData.stats.longestTripDays ?? '-'}    kind="count" channel="maps" />
                 </div>
               </FadeIn>
             </section>

@@ -50,7 +50,7 @@ export function LiveConsole({ limit = 6, refreshMs = 15_000 }: LiveConsoleProps)
               ? 'No signal'
               : loading
                 ? 'Connecting…'
-                : `Last sync ${lastSyncAgo === null ? '—' : `${lastSyncAgo}s`} ago`}
+                : `Last sync ${lastSyncAgo === null ? '-' : `${lastSyncAgo}s`} ago`}
           </span>
         </div>
         <span className="hidden items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-signal-white/40 group-hover:text-signal-white/70 sm:flex">

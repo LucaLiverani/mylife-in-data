@@ -19,7 +19,7 @@ function toNumber(value: number | string | null | undefined): number | null {
 /** `4325` → `"4,325"`, `"1234"` → `"1,234"`. Falls back to the input string on parse failure. */
 export function formatCount(value: number | string | null | undefined): string {
   const n = toNumber(value);
-  if (n === null) return String(value ?? '—');
+  if (n === null) return String(value ?? '-');
   return Math.round(n).toLocaleString('en-US');
 }
 
@@ -32,7 +32,7 @@ export function formatCount(value: number | string | null | undefined): string {
  */
 export function formatHours(value: number | string | null | undefined): string {
   const n = toNumber(value);
-  if (n === null) return String(value ?? '—');
+  if (n === null) return String(value ?? '-');
   if (n >= 100) return `${Math.round(n)}h`;
   if (n >= 10)  return `${n.toFixed(1)}h`;
   return `${n.toFixed(1)}h`;
@@ -41,14 +41,14 @@ export function formatHours(value: number | string | null | undefined): string {
 /** `12.4` or `"12.4"` or `"12.4%"` → `"12.4%"`. */
 export function formatPercent(value: number | string | null | undefined, decimals = 1): string {
   const n = toNumber(value);
-  if (n === null) return String(value ?? '—');
+  if (n === null) return String(value ?? '-');
   return `${n.toFixed(decimals)}%`;
 }
 
 /** `2.8` → `"2.8"`, with consistent decimal precision. */
 export function formatDecimal(value: number | string | null | undefined, decimals = 1): string {
   const n = toNumber(value);
-  if (n === null) return String(value ?? '—');
+  if (n === null) return String(value ?? '-');
   return n.toFixed(decimals);
 }
 
@@ -60,7 +60,7 @@ export type KpiKind = 'count' | 'hours' | 'percent' | 'decimal' | 'text';
  * locale. Falls back to the input string if it cannot be parsed.
  */
 export function formatEventTime(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
 
@@ -79,6 +79,6 @@ export function formatKpi(value: number | string | null | undefined, kind: KpiKi
     case 'hours':   return formatHours(value);
     case 'percent': return formatPercent(value);
     case 'decimal': return formatDecimal(value);
-    case 'text':    return value === null || value === undefined ? '—' : String(value);
+    case 'text':    return value === null || value === undefined ? '-' : String(value);
   }
 }

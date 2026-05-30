@@ -80,7 +80,7 @@ export default function GooglePage() {
   for (const d of data.dailyEvents) heatmapData[d.date] = d.events;
 
   const freeTimeMins = toNum(data.kpis.freeTimePerDay);
-  const freeTimeHours = freeTimeMins !== null ? (freeTimeMins / 60).toFixed(1) : '—';
+  const freeTimeHours = freeTimeMins !== null ? (freeTimeMins / 60).toFixed(1) : '-';
 
   return (
     <main className="min-h-screen text-signal-white">
@@ -124,8 +124,8 @@ export default function GooglePage() {
             </h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <KPIMetric label="Free / day"        value={freeTimeHours}                       kind="text"    channel="calendar" />
-              <KPIMetric label="Longest gap"       value={data.kpis.longestUnscheduledHours ?? '—'} kind="hours"   channel="calendar" />
-              <KPIMetric label="Fragmentation"     value={data.kpis.fragmentation ?? '—'}      kind="decimal" channel="calendar" />
+              <KPIMetric label="Longest gap"       value={data.kpis.longestUnscheduledHours ?? '-'} kind="hours"   channel="calendar" />
+              <KPIMetric label="Fragmentation"     value={data.kpis.fragmentation ?? '-'}      kind="decimal" channel="calendar" />
               <KPIMetric label="Weekend leakage"   value={data.kpis.weekendLeakage ?? 0}       kind="count"   channel="calendar" />
             </div>
           </FadeIn>

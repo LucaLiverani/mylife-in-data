@@ -62,7 +62,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
 
       const events = rows
         .map(r => {
-          const value = [r.title, r.subtitle].filter(s => s && s.trim() !== '').join(' — ');
+          const value = [r.title, r.subtitle].filter(s => s && s.trim() !== '').join(' - ');
           return {
             time: r.time,
             channel: r.channel,

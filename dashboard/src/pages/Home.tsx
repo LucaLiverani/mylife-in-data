@@ -199,7 +199,7 @@ export default function Home() {
                 />
                 <ConsoleMeter
                   label="Top channel"
-                  value={dominant?.channel ?? '—'}
+                  value={dominant?.channel ?? '-'}
                   hint={dominant ? `${Math.round(dominant.share * 100)}% share` : ''}
                   channel={dominant?.channel}
                 />

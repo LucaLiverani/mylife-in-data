@@ -42,7 +42,7 @@ export default function NowPage() {
                   className={cn('block size-1.5 rounded-sm', fresh ? 'bg-trace-up animate-pulse' : 'bg-signal-white/30')}
                   aria-hidden="true"
                 />
-                Last sync {lastSyncAgo === null ? '—' : `${lastSyncAgo}s`} ago · refresh every {REFRESH_MS / 1000}s
+                Last sync {lastSyncAgo === null ? '-' : `${lastSyncAgo}s`} ago · refresh every {REFRESH_MS / 1000}s
               </span>
               <span>{events.length} signals · {grouped.length} day{grouped.length === 1 ? '' : 's'}</span>
             </div>
