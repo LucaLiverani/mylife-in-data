@@ -48,9 +48,16 @@ CREATE TABLE IF NOT EXISTS bronze.maps_place_catalog (
     admin_area_1      String,                       -- state/region
     country           String,
     country_code      LowCardinality(String),       -- ISO 3166-1 alpha-2
+    match_confidence  Float32 DEFAULT 0,             -- geocoder score 0..1 (gates the map)
+    match_type        LowCardinality(String) DEFAULT '',  -- result granularity, or 'unresolved' sentinel
     _fetched_at       DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree(_fetched_at)
 ORDER BY place_id;
+
+-- Backfill the enrichment-quality columns onto a pre-existing catalog (no-op on
+-- a fresh table — the CREATE above already includes them).
+ALTER TABLE bronze.maps_place_catalog ADD COLUMN IF NOT EXISTS match_confidence Float32 DEFAULT 0;
+ALTER TABLE bronze.maps_place_catalog ADD COLUMN IF NOT EXISTS match_type LowCardinality(String) DEFAULT '';
 
 -- Private filter — coordinates ONLY. NEVER stores place_name (it'd be a
 -- friend's address with their name attached). 100m radius is a city-block

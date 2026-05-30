@@ -155,7 +155,7 @@ def maps_private_places_sync(context) -> int:
 
 @asset(
     group_name="google",
-    description="Enrich unknown places in bronze.maps_activity via Places API → catalog.",
+    description="Enrich unknown places in bronze.maps_activity via the configured geocoder → catalog.",
     deps=["maps_youtube_dp_daily"],  # combined Maps+YouTube DP ingest (defined below)
 )
 def maps_place_enrichment(context) -> dict:
@@ -165,12 +165,18 @@ def maps_place_enrichment(context) -> dict:
     Catalog is monotonic — we never re-lookup."""
     import os
 
-    if not os.environ.get("GOOGLE_MAPS_API_KEY"):
-        context.log.warning("GOOGLE_MAPS_API_KEY not set — skipping place enrichment")
-        return {"looked_up": 0, "skipped": True}
-
     from ingestion._shared.clickhouse import get_client
-    from ingestion.google.maps.places_api import PlacesAPIClient, get_or_lookup
+    from ingestion.google.maps.geocoder import (
+        GeocoderConfigError,
+        get_geocoder,
+        get_or_lookup,
+    )
+
+    try:
+        geocoder = get_geocoder()
+    except GeocoderConfigError as exc:
+        context.log.warning("Geocoder not configured (%s) — skipping place enrichment", exc)
+        return {"looked_up": 0, "skipped": True}
 
     ch = get_client()
     # Build a worklist of unknown places keyed by `geo_key` — the URL ftid when
@@ -200,8 +206,8 @@ def maps_place_enrichment(context) -> dict:
         parameters={"lim": limit},
     ).result_rows
 
-    client = PlacesAPIClient()
     looked_up = 0
+    unresolved = 0
     failed = 0
     for geo_key, best_text, lat, lng in rows:
         text = best_text or ""
@@ -211,18 +217,23 @@ def maps_place_enrichment(context) -> dict:
                 text=text,
                 lat=float(lat or 0),
                 lng=float(lng or 0),
-                client=client,
+                geocoder=geocoder,
             )
         except Exception as exc:
             context.log.warning("lookup failed for %s (%s): %s", geo_key, text, exc)
             failed += 1
             continue
+        # get_or_lookup negative-caches junk/misses (an 'unresolved' sentinel
+        # row) so they leave the worklist — result is None for those.
         if result is None:
-            failed += 1
+            unresolved += 1
         else:
             looked_up += 1
-    context.log.info("Place enrichment: looked_up=%d, failed=%d (limit %d/run)", looked_up, failed, limit)
-    return {"looked_up": looked_up, "failed": failed}
+    context.log.info(
+        "Place enrichment via %s: resolved=%d, unresolved=%d, errors=%d (limit %d/run)",
+        geocoder.provider, looked_up, unresolved, failed, limit,
+    )
+    return {"looked_up": looked_up, "unresolved": unresolved, "failed": failed}
 
 
 @asset(

@@ -23,6 +23,8 @@ SELECT
 FROM {{ ref('silver_maps_activity_enriched') }} s
 WHERE s.is_private = 0
   AND s.lat != 0 AND s.lng != 0
+  AND s.match_confidence >= 0.4                                 -- drop low-confidence / junk geocodes
+  AND s.match_type NOT IN ('country', 'state', 'unresolved')   -- too coarse to pin as a point
 GROUP BY name
 ORDER BY count() DESC
 LIMIT 500

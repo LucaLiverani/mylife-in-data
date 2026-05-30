@@ -61,6 +61,10 @@ class PlaceLookup:
     admin_area_1: str
     country: str
     country_code: str
+    # Quality signals from the geocoder (e.g. Geoapify rank.confidence /
+    # result_type). Defaulted so existing constructors keep working unchanged.
+    match_confidence: float = 0.0
+    match_type: str = ""
 
 
 def _pick_primary_type(types: list[str]) -> str:
@@ -247,84 +251,5 @@ class PlacesAPIClient:
         )
 
 
-# ── Catalog-backed convenience layer ──────────────────────────────────────
-def get_or_lookup(
-    *,
-    place_id: str = "",
-    text: str = "",
-    lat: float = 0.0,
-    lng: float = 0.0,
-    client: PlacesAPIClient | None = None,
-) -> PlaceLookup | None:
-    """Look up a place, hitting `bronze.maps_place_catalog` first.
-
-    Args (mutually-some-of):
-      place_id — our internal id (ftid from MyActivity URL, or Places API id)
-      text     — fallback text search (place name + city)
-      lat/lng  — fallback reverse geocode
-      client   — optional pre-built PlacesAPIClient (avoids re-init)
-    """
-    from ingestion._shared.clickhouse import get_client as _ch_client, insert_rows
-
-    if not place_id and not text and not (lat and lng):
-        return None
-
-    ch = _ch_client()
-
-    # Cache check by place_id first (most specific).
-    if place_id:
-        rows = ch.query(
-            "SELECT place_id, place_name, place_types, primary_type, lat, lng, "
-            "formatted_address, neighborhood, sublocality, locality, admin_area_1, "
-            "country, country_code "
-            "FROM bronze.maps_place_catalog FINAL WHERE place_id = %(pid)s LIMIT 1",
-            parameters={"pid": place_id},
-        ).result_rows
-        if rows:
-            r = rows[0]
-            return PlaceLookup(
-                place_id=r[0], place_name=r[1], place_types=list(r[2] or []), primary_type=r[3],
-                lat=float(r[4]), lng=float(r[5]),
-                formatted_address=r[6], neighborhood=r[7], sublocality=r[8],
-                locality=r[9], admin_area_1=r[10], country=r[11], country_code=r[12],
-            )
-
-    # Miss → live lookup.
-    client = client or PlacesAPIClient()
-    result = client.find_place(text) if text else client.reverse_geocode(lat, lng)
-    if result is None:
-        return None
-
-    # Persist. If our caller passed place_id (e.g., ftid from MyActivity URL),
-    # keep that as the canonical key so future activity rows referencing the
-    # same ftid hit the cache. Otherwise fall back to the API-issued id.
-    canonical_id = place_id or result.place_id or text or f"{lat},{lng}"
-
-    insert_rows(
-        "maps_place_catalog",
-        [
-            {
-                "place_id": canonical_id,
-                "lookup_key": text or f"{lat},{lng}",
-                "place_name": result.place_name,
-                "place_types": result.place_types,
-                "primary_type": result.primary_type,
-                "lat": result.lat,
-                "lng": result.lng,
-                "formatted_address": result.formatted_address,
-                "neighborhood": result.neighborhood,
-                "sublocality": result.sublocality,
-                "locality": result.locality,
-                "admin_area_1": result.admin_area_1,
-                "country": result.country,
-                "country_code": result.country_code,
-            }
-        ],
-        database="bronze",
-        column_names=[
-            "place_id", "lookup_key", "place_name", "place_types", "primary_type",
-            "lat", "lng", "formatted_address", "neighborhood", "sublocality",
-            "locality", "admin_area_1", "country", "country_code",
-        ],
-    )
-    return result
+# The catalog-backed `get_or_lookup()` and the provider-neutral geocoder
+# abstraction now live in geocoder.py — this module stays a pure Google client.

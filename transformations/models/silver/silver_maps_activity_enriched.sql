@@ -48,6 +48,8 @@ enriched AS (
         coalesce(c.locality, '')                         AS locality,
         coalesce(c.country, '')                          AS country,
         coalesce(c.country_code, '')                     AS country_code,
+        coalesce(c.match_confidence, toFloat32(0))       AS match_confidence,
+        coalesce(c.match_type, '')                       AS match_type,
         a.origin                                         AS origin,
         a.destination                                    AS destination,
         toDate(a.event_ts)                               AS event_date,
