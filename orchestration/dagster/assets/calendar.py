@@ -339,3 +339,25 @@ def calendar_sync_sensor(context: SensorEvaluationContext):
     if n == 0:
         return SkipReason("no unprocessed notifications")
     return RunRequest(run_key=f"calendar-drain-{n}", tags={"unprocessed": str(n)})
+
+
+# ── Reliable webhook-independent sync ──────────────────────────────────────
+# The events.watch → webhook → notification → drain path has proven unreliable
+# in production: channels renew daily, but no notification has ever been
+# processed (calendar_sync_job: 0 runs), so calendar data froze at its setup
+# snapshot. Poll events.list?syncToken on a fixed cadence instead — the sensor
+# above stays as a low-latency bonus path if/when the webhook is fixed.
+# events_list() handles an expired (410) syncToken by falling back to a full pull.
+calendar_polling_job = define_asset_job(
+    "calendar_polling_job",
+    selection=AssetSelection.assets(calendar_polling_fallback),
+)
+
+
+calendar_polling_schedule = ScheduleDefinition(
+    job=calendar_polling_job,
+    cron_schedule="*/15 * * * *",
+    name="calendar_polling_schedule",
+    description="Every 15m — poll events.list?syncToken per calendar (webhook-independent calendar sync).",
+    default_status=DefaultScheduleStatus.RUNNING,
+)
