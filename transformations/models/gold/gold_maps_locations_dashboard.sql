@@ -25,6 +25,13 @@ WHERE s.is_private = 0
   AND s.lat != 0 AND s.lng != 0
   AND s.match_confidence >= 0.4                                 -- drop low-confidence / junk geocodes
   AND s.match_type NOT IN ('country', 'state', 'unresolved')   -- too coarse to pin as a point
+  -- Geographic gate: only countries with a directions activity (you navigated
+  -- there). Removes the junk-country scatter — generic terms OSM resolves to
+  -- villages in countries you've never been to (searches/views, zero directions).
+  AND s.country IN (
+      SELECT DISTINCT country FROM {{ ref('silver_maps_activity_enriched') }}
+      WHERE is_private = 0 AND activity_type = 'directions' AND country != ''
+  )
 GROUP BY name
 -- Corroboration: a real place is either navigated-to (directions) or engaged
 -- with more than once. Drops lone mis-geocodes — a one-off generic search
