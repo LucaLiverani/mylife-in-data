@@ -59,6 +59,7 @@ services:
       LLM_API_BASE: ${LLM_API_BASE:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
+      LLM_API_VERSION: ${LLM_API_VERSION:-}
       CALENDAR_WEBHOOK_TOKEN: ${CALENDAR_WEBHOOK_TOKEN}
       GOOGLE_REAUTH_STATE_SECRET: ${GOOGLE_REAUTH_STATE_SECRET}
       # Laptop ↔ VM split: VM sets both to 1, laptop leaves them unset/0.
