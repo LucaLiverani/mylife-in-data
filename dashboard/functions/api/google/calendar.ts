@@ -16,10 +16,6 @@ interface CalendarKPIs {
   meetingHours: number;
   avgDaily: number;
   busiestDay: string;
-  freeTimePerDay: number;
-  longestUnscheduledHours: number;
-  weekendLeakage: number;
-  fragmentation: number;
 }
 
 interface BusyHour { hour: string; events: number }

@@ -40,12 +40,4 @@ SELECT
         (SELECT count() FROM ev) / nullIf((SELECT count() FROM days), 0),
         1
     ), 0)                                                                       AS avgDaily,
-    coalesce((SELECT day FROM busiest), 'Mon')                                  AS busiestDay,
-    toUInt32(0)                                                                 AS freeTimePerDay,
-    toFloat32(0)                                                                AS longestUnscheduledHours,
-    (SELECT countIf(is_weekend) FROM ev)                                        AS weekendLeakage,
-    coalesce(round(
-        (SELECT countIf(duration_minutes < 30) FROM ev) /
-        nullIf((SELECT count() FROM ev), 0),
-        2
-    ), 0)                                                                       AS fragmentation
+    coalesce((SELECT day FROM busiest), 'Mon')                                  AS busiestDay

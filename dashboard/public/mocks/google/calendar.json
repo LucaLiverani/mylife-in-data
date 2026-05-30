@@ -5,11 +5,7 @@
     "totalEvents": 614,
     "meetingHours": 142,
     "avgDaily": 6.8,
-    "busiestDay": "Tue",
-    "freeTimePerDay": 187,
-    "longestUnscheduledHours": 2.4,
-    "weekendLeakage": 4,
-    "fragmentation": 0.42
+    "busiestDay": "Tue"
   },
   "busyHours": [
     {

@@ -20,10 +20,6 @@ interface CalendarData {
     meetingHours: number | string;
     avgDaily: number | string;
     busiestDay: string;
-    freeTimePerDay?: number | string;          // minutes
-    longestUnscheduledHours?: number | string; // hours
-    weekendLeakage?: number | string;
-    fragmentation?: number | string;
   };
   busyHours: Array<{ hour: string; events: number }>;
   categories: Array<{ name: string; value: number; percentage: number }>;
@@ -79,9 +75,6 @@ export default function GooglePage() {
   const heatmapData: Record<string, number> = {};
   for (const d of data.dailyEvents) heatmapData[d.date] = d.events;
 
-  const freeTimeMins = toNum(data.kpis.freeTimePerDay);
-  const freeTimeHours = freeTimeMins !== null ? (freeTimeMins / 60).toFixed(1) : '-';
-
   return (
     <main className="min-h-screen text-signal-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
@@ -112,21 +105,6 @@ export default function GooglePage() {
               <KPIMetric label="Free days" value={data.kpis.freeDays}     kind="count"   channel="calendar" />
               <KPIMetric label="Hours"     value={data.kpis.meetingHours} kind="hours"   channel="calendar" />
               <KPIMetric label="Avg / day" value={data.kpis.avgDaily}     kind="decimal" channel="calendar" />
-            </div>
-          </FadeIn>
-        </section>
-
-        {/* Producer-console signature row — free time, gaps, fragmentation */}
-        <section className="mb-12" aria-labelledby="calendar-signature">
-          <FadeIn delay={0.15}>
-            <h2 id="calendar-signature" className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-              Negative space
-            </h2>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <KPIMetric label="Free / day"        value={freeTimeHours}                       kind="text"    channel="calendar" />
-              <KPIMetric label="Longest gap"       value={data.kpis.longestUnscheduledHours ?? '-'} kind="hours"   channel="calendar" />
-              <KPIMetric label="Fragmentation"     value={data.kpis.fragmentation ?? '-'}      kind="decimal" channel="calendar" />
-              <KPIMetric label="Weekend leakage"   value={data.kpis.weekendLeakage ?? 0}       kind="count"   channel="calendar" />
             </div>
           </FadeIn>
         </section>
@@ -188,7 +166,7 @@ export default function GooglePage() {
                 channel="calendar"
                 bins={data.weekdayBreakdown.map((d) => ({ label: d.day, value: d.events }))}
                 unitLabel="Events"
-                highlightLabel={data.kpis.busiestDay}
+                highlightLabel={new Date().toLocaleDateString('en-US', { weekday: 'short' })}
               />
             </Surface>
           </section>
@@ -241,11 +219,4 @@ export default function GooglePage() {
       </div>
     </main>
   );
-}
-
-function toNum(v: number | string | undefined | null): number | null {
-  if (v === null || v === undefined) return null;
-  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
-  const n = parseFloat(String(v));
-  return Number.isFinite(n) ? n : null;
 }

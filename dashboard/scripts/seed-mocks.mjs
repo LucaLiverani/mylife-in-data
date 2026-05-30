@@ -473,12 +473,6 @@ write('google/calendar.json', {
     meetingHours: calendarMeetingHours,
     avgDaily:     round1(calendarTotalEvents / DAYS),
     busiestDay:   'Tue',
-
-    // Producer-console signatures: free time, gaps, fragmentation.
-    freeTimePerDay:          187,   // minutes — avg free time inside 09:00-19:00
-    longestUnscheduledHours: 2.4,   // hours — avg longest contiguous gap per workday
-    weekendLeakage:          4,     // count of weekend events in window
-    fragmentation:           0.42,  // 0=one big block, 1=many tiny pieces
   },
   weekGrid: weekGridCells,
   busyHours: Array.from({ length: 24 }, (_, h) => ({
