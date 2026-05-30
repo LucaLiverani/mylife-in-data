@@ -1,8 +1,9 @@
 #!/bin/bash
 # start-all.sh — Boot the data platform.
 #
-# Stack (4 services): Redpanda (streaming) → ClickHouse (warehouse)
-#                     → Dagster (orchestration) → monitoring (Prometheus + Grafana).
+# Stack (5 services): Redpanda (streaming) → ClickHouse (warehouse)
+#                     → Dagster (orchestration) → monitoring (Prometheus + Grafana)
+#                     → Umami (web analytics).
 # Object storage uses Cloudflare R2 (out of compose). MinIO was dropped May 2026.
 
 set -e
@@ -19,12 +20,12 @@ fi
 
 # Ensure each service's .env is a symlink to the consolidated infrastructure/.env.
 # Idempotent: ln -sf overwrites any existing link/file at the destination.
-for svc in clickhouse dagster monitoring redpanda; do
+for svc in clickhouse dagster monitoring redpanda umami; do
     ln -sf ../../.env "$COMPOSE_DIR/$svc/.env"
 done
 
 echo
-echo "[1/4] Streaming (Redpanda)..."
+echo "[1/5] Streaming (Redpanda)..."
 (cd "$COMPOSE_DIR/redpanda" && docker compose up -d)
 sleep 15
 echo "      Ensuring topics exist..."
@@ -34,7 +35,7 @@ docker exec redpanda rpk topic create \
     -p 3 -r 1 -c retention.ms=604800000 2>/dev/null || true
 
 echo
-echo "[2/4] Warehouse (ClickHouse)..."
+echo "[2/5] Warehouse (ClickHouse)..."
 (cd "$COMPOSE_DIR/clickhouse" && docker compose up -d)
 sleep 10
 
@@ -45,7 +46,7 @@ CLICKHOUSE_DDL_HOST=localhost bash "$SCRIPT_DIR/../warehouse/ddl/apply.sh" || \
     echo "      (DDL apply failed — check ClickHouse logs)"
 
 echo
-echo "[3/4] Orchestration (Dagster)..."
+echo "[3/5] Orchestration (Dagster)..."
 # Dagster image is built from a local Dockerfile (not on Docker Hub).
 # --build is a no-op when the image is fresh, builds on first run / Dockerfile changes.
 # spotify-current-producer is gated behind the `producer` compose profile —
@@ -63,12 +64,18 @@ fi
 sleep 10
 
 echo
-echo "[4/4] Monitoring (Prometheus + Grafana)..."
+echo "[4/5] Monitoring (Prometheus + Grafana)..."
 (cd "$COMPOSE_DIR/monitoring" && docker compose up -d)
+sleep 5
+
+echo
+echo "[5/5] Web analytics (Umami)..."
+(cd "$COMPOSE_DIR/umami" && docker compose up -d)
 sleep 5
 
 DAGSTER_PORT="${DAGSTER_PORT:-$(grep -E '^DAGSTER_PORT=' "$COMPOSE_DIR/dagster/.env" 2>/dev/null | cut -d= -f2)}"
 DAGSTER_PORT="${DAGSTER_PORT:-3000}"
+UMAMI_PORT="${UMAMI_PORT:-3002}"
 
 echo
 echo "Data Platform Started."
@@ -79,5 +86,6 @@ echo "   Redpanda Console:  http://localhost:8090"
 echo "   ClickHouse HTTP:   http://localhost:8123"
 echo "   ClickHouse Native: http://localhost:9200"
 echo "   Grafana:           http://localhost:3001"
+echo "   Umami:             http://localhost:${UMAMI_PORT}"
 echo "   Prometheus:        http://localhost:9090"
 echo

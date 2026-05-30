@@ -1,0 +1,52 @@
+# Umami — cookieless web analytics for the dashboard.
+# One Node app + a dedicated Postgres. Credentials come from .env (gitignored).
+# Only the app is published to the host (UMAMI_PORT, default 3002 — 3000 is
+# Dagster, 3001 is Grafana); Postgres stays internal on the shared network.
+# cloudflared (host systemd) reaches the UI via localhost:${UMAMI_PORT}.
+
+services:
+  umami-postgres:
+    image: postgres:16-alpine
+    container_name: umami-postgres
+    environment:
+      POSTGRES_USER: ${UMAMI_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${UMAMI_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${UMAMI_POSTGRES_DB}
+    volumes:
+      - umami-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+
+  umami:
+    # Postgres build of Umami v2 (multi-arch — runs on the ARM64 VM).
+    # The image runs DB migrations automatically on first boot.
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: umami
+    environment:
+      DATABASE_TYPE: postgresql
+      DATABASE_URL: postgresql://${UMAMI_POSTGRES_USER}:${UMAMI_POSTGRES_PASSWORD}@umami-postgres:5432/${UMAMI_POSTGRES_DB}
+      # Salts the rotating visitor hash + signs sessions. Keep stable.
+      APP_SECRET: ${UMAMI_APP_SECRET}
+      # Don't phone home.
+      DISABLE_TELEMETRY: "1"
+    ports:
+      - "${UMAMI_PORT:-3002}:3000"
+    depends_on:
+      umami-postgres:
+        condition: service_healthy
+    networks:
+      - data-platform-network
+    restart: unless-stopped
+
+volumes:
+  umami-postgres-data:
+
+networks:
+  data-platform-network:
+    external: true

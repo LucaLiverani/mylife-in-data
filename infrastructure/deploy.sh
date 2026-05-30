@@ -67,12 +67,14 @@ RESTART_REDPANDA=0
 RESTART_CLICKHOUSE=0
 RESTART_DAGSTER=0
 RESTART_MONITORING=0
+RESTART_UMAMI=0
 DAGSTER_FORCE_BUILD=0
 
 if changed_in 'infrastructure/compose/redpanda/'; then RESTART_REDPANDA=1; fi
 if changed_in 'infrastructure/compose/clickhouse/'; then RESTART_CLICKHOUSE=1; fi
 if changed_in 'infrastructure/compose/dagster/'; then RESTART_DAGSTER=1; DAGSTER_FORCE_BUILD=1; fi
 if changed_in 'infrastructure/compose/monitoring/'; then RESTART_MONITORING=1; fi
+if changed_in 'infrastructure/compose/umami/'; then RESTART_UMAMI=1; fi
 
 # Dagster image bakes in Python deps + dbt project. Anything in those trees
 # means rebuild.
@@ -114,11 +116,20 @@ if [ "$RESTART_MONITORING" = "1" ]; then
     echo "→ Recreating monitoring (Prometheus + Grafana)..."
     (cd "$COMPOSE_DIR/monitoring" && docker compose up -d --force-recreate)
 fi
+if [ "$RESTART_UMAMI" = "1" ]; then
+    # Isolated compose project — plain `up -d` only creates/updates the umami +
+    # umami-postgres containers; it never touches the other stacks. No
+    # --force-recreate, so an unchanged umami is a no-op.
+    echo "→ Bringing up Umami..."
+    ln -sf ../../.env "$COMPOSE_DIR/umami/.env"
+    (cd "$COMPOSE_DIR/umami" && docker compose up -d)
+fi
 
 if [ "$RESTART_REDPANDA" = "0" ] \
    && [ "$RESTART_CLICKHOUSE" = "0" ] \
    && [ "$RESTART_DAGSTER" = "0" ] \
-   && [ "$RESTART_MONITORING" = "0" ]; then
+   && [ "$RESTART_MONITORING" = "0" ] \
+   && [ "$RESTART_UMAMI" = "0" ]; then
     echo "→ No container restarts needed (only docs/scripts/dashboard changed)."
 fi
 
