@@ -16,7 +16,7 @@ interface ChannelHealth {
   channel: Channel;
   status: Status;
   lastBatchAgo: string;
-  eventsPerHour: number;
+  eventsPerMonth: number;
   errors24h: number;
 }
 
@@ -198,7 +198,7 @@ function ChannelHealthTile({ health }: { health: ChannelHealth }) {
         <dt className="uppercase tracking-wider text-signal-white/40">Last batch</dt>
         <dd className="text-right text-signal-white/80">{health.lastBatchAgo}</dd>
         <dt className="uppercase tracking-wider text-signal-white/40">Ingest rate</dt>
-        <dd className="text-right tabular-nums text-signal-white/80">{formatCount(health.eventsPerHour)}/hr</dd>
+        <dd className="text-right tabular-nums text-signal-white/80">{formatCount(health.eventsPerMonth)}/mo</dd>
       </dl>
     </article>
   );

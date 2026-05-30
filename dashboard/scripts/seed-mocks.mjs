@@ -538,10 +538,10 @@ write('system/health.json', {
   generatedAt: TODAY.toISOString(),
   overall: { status: 'healthy', summary: 'All channels online · last sync 2m ago' },
   channels: [
-    { channel: 'spotify',  status: 'healthy', lastBatchAgo: '2m ago',  eventsPerHour: 247, errors24h: 0 },
-    { channel: 'youtube',  status: 'healthy', lastBatchAgo: '47m ago', eventsPerHour:  31, errors24h: 0 },
-    { channel: 'maps',     status: 'stale',   lastBatchAgo: '6h ago',  eventsPerHour:  12, errors24h: 0 },
-    { channel: 'calendar', status: 'healthy', lastBatchAgo: '11m ago', eventsPerHour:   4, errors24h: 0 },
+    { channel: 'spotify',  status: 'healthy', lastBatchAgo: '2m ago',  eventsPerMonth: 4800, errors24h: 0 },
+    { channel: 'youtube',  status: 'healthy', lastBatchAgo: '47m ago', eventsPerMonth:  320, errors24h: 0 },
+    { channel: 'maps',     status: 'stale',   lastBatchAgo: '6h ago',  eventsPerMonth:  210, errors24h: 0 },
+    { channel: 'calendar', status: 'healthy', lastBatchAgo: '11m ago', eventsPerMonth:   90, errors24h: 0 },
   ],
   storage: {
     name: 'ClickHouse',

@@ -15,7 +15,7 @@ interface SourceFreshness {
   source: string;
   last_event_at: string | null;
   seconds_since: number;
-  rows_24h: number;
+  rows_30d: number;
 }
 
 interface AlertRow {
@@ -39,7 +39,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
       // Every timestamp expression is wrapped in toDateTime64(col, 3)/toString()
       // so the query is robust to a column being stored as String on one
       // environment and DateTime on another (schema drift). The bare comparison
-      // `col >= now() - INTERVAL 24 HOUR` threw NO_COMMON_TYPE on prod (a String
+      // `col >= now() - INTERVAL 30 DAY` threw NO_COMMON_TYPE on prod (a String
       // column vs DateTime literal); toDateTime64(col, 3) normalises it AND
       // parses millisecond-precision strings that plain toDateTime() rejects.
       // maps reads the activity table (Timeline-era maps_visits is empty);
@@ -48,23 +48,23 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         WITH sources AS (
           SELECT 'spotify'  AS source, toString(max(captured_at)) AS last_event_at,
                  dateDiff('second', toDateTime64(max(captured_at), 3), now()) AS seconds_since,
-                 countIf(toDateTime64(captured_at, 3) >= now() - INTERVAL 24 HOUR) AS rows_24h
+                 countIf(toDateTime64(captured_at, 3) >= now() - INTERVAL 30 DAY) AS rows_30d
           FROM bronze.spotify_player_current
           UNION ALL
           SELECT 'spotify_history', toString(max(played_at)), dateDiff('second', toDateTime64(max(played_at), 3), now()),
-                 countIf(toDateTime64(played_at, 3) >= now() - INTERVAL 24 HOUR)
+                 countIf(toDateTime64(played_at, 3) >= now() - INTERVAL 30 DAY)
           FROM bronze.spotify_plays_raw
           UNION ALL
           SELECT 'youtube',  toString(max(watched_at)), dateDiff('second', toDateTime64(max(watched_at), 3), now()),
-                 countIf(toDateTime64(watched_at, 3) >= now() - INTERVAL 24 HOUR)
+                 countIf(toDateTime64(watched_at, 3) >= now() - INTERVAL 30 DAY)
           FROM bronze.youtube_watch_history
           UNION ALL
           SELECT 'maps',     toString(max(event_ts)), dateDiff('second', toDateTime64(max(event_ts), 3), now()),
-                 countIf(toDateTime64(event_ts, 3) >= now() - INTERVAL 24 HOUR)
+                 countIf(toDateTime64(event_ts, 3) >= now() - INTERVAL 30 DAY)
           FROM bronze.maps_activity
           UNION ALL
           SELECT 'calendar', toString(max(_ingested_at)), dateDiff('second', toDateTime64(max(_ingested_at), 3), now()),
-                 countIf(toDateTime64(_ingested_at, 3) >= now() - INTERVAL 24 HOUR)
+                 countIf(toDateTime64(_ingested_at, 3) >= now() - INTERVAL 30 DAY)
           FROM bronze.calendar_events
         )
         SELECT * FROM sources ORDER BY source
@@ -121,7 +121,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           channel,
           status: !has ? 'down' : (sec !== null && sec <= limit ? 'healthy' : 'stale'),
           lastBatchAgo: has ? humanizeAgo(sec) : 'never',
-          eventsPerHour: s ? Math.round((Number(s.rows_24h) || 0) / 24) : 0,
+          eventsPerMonth: s ? (Number(s.rows_30d) || 0) : 0,
           errors24h: 0,
         };
       };
