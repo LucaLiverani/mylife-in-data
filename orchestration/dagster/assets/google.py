@@ -173,49 +173,55 @@ def maps_place_enrichment(context) -> dict:
     from ingestion.google.maps.places_api import PlacesAPIClient, get_or_lookup
 
     ch = get_client()
-    # Build a worklist of unknown places: distinct (place_id, place_name, lat, lng)
-    # tuples where place_id isn't cached. Limit per-run for cost control.
-    # place_id is the GROUP BY key, so select it raw — do NOT alias an
-    # aggregate to `place_id`, or the WHERE clause binds to that aggregate and
-    # ClickHouse raises ILLEGAL_AGGREGATION ("argMax(...) AS place_id found in
-    # WHERE"). place_name still needs an aggregate since it varies per row.
+    # Build a worklist of unknown places keyed by `geo_key` — the URL ftid when
+    # present, else a normalized-text key (`q:<text>`). Most activity rows have
+    # NO ftid, so keying on geo_key (not `place_id != ''`) is what lets
+    # searches / directions / place views enrich at all. geo_key + best_text
+    # are defined once in the silver.maps_activity_keyed view so the lookup key
+    # here matches the join key in silver_maps_activity_enriched exactly.
+    # geo_key is the GROUP BY key, so select it raw — do NOT alias an aggregate
+    # to it, or the WHERE binds to the aggregate and ClickHouse raises
+    # ILLEGAL_AGGREGATION. Per-run cap for cost control (override for backfill).
+    limit = int(os.environ.get("MAPS_ENRICH_LIMIT", "200"))
     rows = ch.query(
         """
         SELECT
-            place_id,
-            argMax(place_name, event_ts) AS place_name,
+            geo_key,
+            argMax(best_text, event_ts) AS best_text,
             avg(lat) AS lat,
             avg(lng) AS lng
-        FROM bronze.maps_activity
-        WHERE place_id != ''
-          AND place_id NOT IN (SELECT place_id FROM bronze.maps_place_catalog)
-        GROUP BY place_id
-        LIMIT 200
-        """
+        FROM silver.maps_activity_keyed
+        WHERE geo_key != ''
+          AND best_text != ''
+          AND geo_key NOT IN (SELECT place_id FROM bronze.maps_place_catalog)
+        GROUP BY geo_key
+        LIMIT %(lim)s
+        """,
+        parameters={"lim": limit},
     ).result_rows
 
     client = PlacesAPIClient()
     looked_up = 0
     failed = 0
-    for place_id, place_name, lat, lng in rows:
-        text = place_name or ""
+    for geo_key, best_text, lat, lng in rows:
+        text = best_text or ""
         try:
             result = get_or_lookup(
-                place_id=place_id,
+                place_id=geo_key,
                 text=text,
                 lat=float(lat or 0),
                 lng=float(lng or 0),
                 client=client,
             )
         except Exception as exc:
-            context.log.warning("lookup failed for %s (%s): %s", place_id, text, exc)
+            context.log.warning("lookup failed for %s (%s): %s", geo_key, text, exc)
             failed += 1
             continue
         if result is None:
             failed += 1
         else:
             looked_up += 1
-    context.log.info("Place enrichment: looked_up=%d, failed=%d (limit 200/run)", looked_up, failed)
+    context.log.info("Place enrichment: looked_up=%d, failed=%d (limit %d/run)", looked_up, failed, limit)
     return {"looked_up": looked_up, "failed": failed}
 
 

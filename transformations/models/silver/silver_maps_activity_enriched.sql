@@ -7,7 +7,11 @@
 {{ config(materialized='view', schema='silver') }}
 
 WITH activity AS (
-    SELECT * FROM {{ source('bronze', 'maps_activity') }} FINAL
+    -- silver.maps_activity_keyed (DDL view, warehouse/ddl/51_maps_activity.sql)
+    -- adds best_text + geo_key. geo_key is the catalog join key: the URL ftid
+    -- when present, else a normalized-text key — so the ~all text-only
+    -- activities (which have no ftid) still resolve to a catalog row.
+    SELECT * FROM silver.maps_activity_keyed
 ),
 catalog AS (
     SELECT * FROM {{ source('bronze', 'maps_place_catalog') }} FINAL
@@ -49,7 +53,7 @@ enriched AS (
         toDate(a.event_ts)                               AS event_date,
         toHour(a.event_ts)                               AS hour_of_day
     FROM activity a
-    LEFT JOIN catalog c ON c.place_id = a.place_id
+    LEFT JOIN catalog c ON c.place_id = a.geo_key
 )
 SELECT
     e.*,

@@ -3,8 +3,12 @@ import { FadeIn } from '@/components/animations/FadeIn';
 import { Surface } from '@/components/Surface';
 import { systemAPI } from '@/lib/api';
 import { CHANNEL_CLASS, type Channel } from '@/lib/channels';
-import { formatCount, formatDecimal } from '@/lib/format';
+import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
+
+// Disk size in MB, switching to GB once it's large enough that MB reads noisy.
+const formatSize = (mb: number): string =>
+  mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
 
 type Status = 'healthy' | 'degraded' | 'stale' | 'down';
 
@@ -216,7 +220,7 @@ function StorageBlock({ storage }: { storage: SystemHealth['storage'] }) {
         <dt className="uppercase tracking-wider text-signal-white/40">Total rows</dt>
         <dd className="text-right tabular-nums text-signal-white/90">{formatCount(storage?.rowCount ?? 0)}</dd>
         <dt className="uppercase tracking-wider text-signal-white/40">Disk used</dt>
-        <dd className="text-right tabular-nums text-signal-white/90">{formatDecimal((storage?.diskUsedMb ?? 0) / 1024)} GB</dd>
+        <dd className="text-right tabular-nums text-signal-white/90">{formatSize(storage?.diskUsedMb ?? 0)}</dd>
       </dl>
       {byDatabase.length > 0 && (
         <div className="mt-6">
@@ -226,7 +230,7 @@ function StorageBlock({ storage }: { storage: SystemHealth['storage'] }) {
               <li key={db.database} className="flex items-center justify-between border-t border-signal-white/5 py-2">
                 <span className="text-signal-white/70">{db.database}</span>
                 <span className="tabular-nums text-signal-white/90">
-                  {formatCount(db.rows)} rows · {formatDecimal(db.diskUsedMb / 1024)} GB
+                  {formatCount(db.rows)} rows · {formatSize(db.diskUsedMb)}
                 </span>
               </li>
             ))}

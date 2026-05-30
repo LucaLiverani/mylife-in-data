@@ -84,7 +84,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           sum(rows)          AS rows,
           sum(bytes_on_disk) AS bytes_on_disk
         FROM system.parts
-        WHERE database IN ('bronze','silver','gold','auth') AND active
+        WHERE database IN ('bronze','silver','gold') AND active
         GROUP BY database
         ORDER BY database
       `;

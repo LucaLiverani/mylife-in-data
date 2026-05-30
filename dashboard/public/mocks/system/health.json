@@ -18,8 +18,7 @@
     "byDatabase": [
       { "database": "bronze", "rows": 980000, "diskUsedMb": 300 },
       { "database": "silver", "rows": 180000, "diskUsedMb": 70 },
-      { "database": "gold",   "rows": 74000,  "diskUsedMb": 38 },
-      { "database": "auth",   "rows": 120,    "diskUsedMb": 4 }
+      { "database": "gold",   "rows": 74000,  "diskUsedMb": 38 }
     ]
   },
   "errors24h": []

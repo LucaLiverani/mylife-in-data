@@ -62,3 +62,42 @@ CREATE TABLE IF NOT EXISTS silver.maps_private_places (
     _set_at           DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree(_set_at)
 ORDER BY (lat, lng);
+
+-- ── Enrichment join key ─────────────────────────────────────────────────────
+-- Single source of truth for how an activity row maps to a catalog entry.
+--   best_text — the most specific free text on the row (place name / search
+--                query / directions destination); the input handed to the
+--                Places / Geocoding lookup.
+--   geo_key   — the catalog key: the URL ftid when present, otherwise a
+--                normalized-text key `q:<lowercased, whitespace-collapsed>`.
+--                Most MyActivity URLs carry NO ftid, so the text key is what
+--                lets searches / directions / place views enrich at all.
+-- The enrichment worklist (orchestration/.../google.py) and the silver join
+-- (silver_maps_activity_enriched) both read these columns from HERE, so the
+-- lookup key and the join key can never drift apart.
+CREATE OR REPLACE VIEW silver.maps_activity_keyed AS
+WITH base AS (
+    SELECT
+        *,
+        multiIf(
+            place_name != '',                                    place_name,
+            activity_type = 'search'     AND query != '',        query,
+            activity_type = 'directions' AND destination != '',  destination,
+            query != '',                                         query,
+            destination != '',                                   destination,
+            ''
+        ) AS best_text
+    FROM bronze.maps_activity FINAL
+)
+SELECT
+    *,
+    if(
+        place_id != '',
+        place_id,
+        if(
+            best_text != '',
+            concat('q:', trimBoth(replaceRegexpAll(lowerUTF8(best_text), '[[:space:]]+', ' '))),
+            ''
+        )
+    ) AS geo_key
+FROM base;
