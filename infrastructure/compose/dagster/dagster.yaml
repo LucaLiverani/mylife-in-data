@@ -18,6 +18,22 @@ run_coordinator:
   config:
     max_concurrent_runs: 4
 
+# Reap stuck/zombie runs so they can't pile up and saturate the
+# max_concurrent_runs slots (which silently wedges the whole queue — see the
+# 2026-05-30 incident where 5 orphaned runs blocked 40+ queued ones).
+# Both checks below are purely time-based, so they work with DefaultRunLauncher
+# even though it reports supports_check_run_worker_health = False.
+run_monitoring:
+  enabled: true
+  # A run stuck in STARTING this long (e.g. worker never came up after a
+  # container restart) is force-failed.
+  start_timeout_seconds: 300
+  # Backstop for hung runs: any run still in progress after 60 min is
+  # force-failed and its slot freed. Jobs here normally finish in seconds;
+  # tag a genuinely long job with `dagster/max_runtime_seconds` to override.
+  max_runtime_seconds: 3600
+  poll_interval_seconds: 120
+
 # Local in-process runs (no separate executor needed for personal scale)
 run_launcher:
   module: dagster._core.launcher

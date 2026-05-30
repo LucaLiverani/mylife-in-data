@@ -29,6 +29,10 @@ def get_client(database: str | None = None) -> Client:
         password=password,
         database=db,
         compress=False,
+        # Bound every call so a stalled ClickHouse can't hang a Dagster step
+        # indefinitely (driver defaults are 10s connect / 300s send-receive).
+        connect_timeout=10,
+        send_receive_timeout=120,
     )
 
 

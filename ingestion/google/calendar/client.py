@@ -14,11 +14,18 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+import httplib2
+from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 
 log = logging.getLogger(__name__)
+
+# Hard socket timeout for every Calendar API call. Without it a stalled
+# events.list() hangs the Dagster step forever — the root cause of the
+# 2026-05-30 run-queue wedge. 30s is generous for a single 250-item page.
+_HTTP_TIMEOUT_SECONDS = 30
 
 
 @dataclass
@@ -31,7 +38,10 @@ class WatchSubscription:
 
 class CalendarClient:
     def __init__(self, creds):
-        self._svc = build("calendar", "v3", credentials=creds, cache_discovery=False)
+        # build() rejects http= and credentials= together, so carry the creds
+        # on an AuthorizedHttp whose underlying transport enforces the timeout.
+        authed_http = AuthorizedHttp(creds, http=httplib2.Http(timeout=_HTTP_TIMEOUT_SECONDS))
+        self._svc = build("calendar", "v3", http=authed_http, cache_discovery=False)
 
     def list_calendars(self) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
