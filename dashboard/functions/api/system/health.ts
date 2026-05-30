@@ -36,33 +36,35 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
 
   const { data, isFromCache, error } = await queryWithFallback<any>(
     async () => {
-      // toString(max(ts)) keeps every UNION branch's timestamp column the same
-      // type (a String/DateTime mix across branches threw NO_COMMON_TYPE on
-      // prod). toDateTime(max(ts)) normalises for the dateDiff regardless of the
-      // column's underlying Date/DateTime/DateTime64/String type.
+      // Every timestamp expression is wrapped in toDateTime64(col, 3)/toString()
+      // so the query is robust to a column being stored as String on one
+      // environment and DateTime on another (schema drift). The bare comparison
+      // `col >= now() - INTERVAL 24 HOUR` threw NO_COMMON_TYPE on prod (a String
+      // column vs DateTime literal); toDateTime64(col, 3) normalises it AND
+      // parses millisecond-precision strings that plain toDateTime() rejects.
       // maps reads the activity table (Timeline-era maps_visits is empty);
       // calendar uses _ingested_at so future-dated events don't skew freshness.
       const freshnessSql = `
         WITH sources AS (
           SELECT 'spotify'  AS source, toString(max(captured_at)) AS last_event_at,
-                 dateDiff('second', toDateTime(max(captured_at)), now()) AS seconds_since,
-                 countIf(captured_at >= now() - INTERVAL 24 HOUR) AS rows_24h
+                 dateDiff('second', toDateTime64(max(captured_at), 3), now()) AS seconds_since,
+                 countIf(toDateTime64(captured_at, 3) >= now() - INTERVAL 24 HOUR) AS rows_24h
           FROM bronze.spotify_player_current
           UNION ALL
-          SELECT 'spotify_history', toString(max(played_at)), dateDiff('second', toDateTime(max(played_at)), now()),
-                 countIf(played_at >= now() - INTERVAL 24 HOUR)
+          SELECT 'spotify_history', toString(max(played_at)), dateDiff('second', toDateTime64(max(played_at), 3), now()),
+                 countIf(toDateTime64(played_at, 3) >= now() - INTERVAL 24 HOUR)
           FROM bronze.spotify_plays_raw
           UNION ALL
-          SELECT 'youtube',  toString(max(watched_at)), dateDiff('second', toDateTime(max(watched_at)), now()),
-                 countIf(watched_at >= now() - INTERVAL 24 HOUR)
+          SELECT 'youtube',  toString(max(watched_at)), dateDiff('second', toDateTime64(max(watched_at), 3), now()),
+                 countIf(toDateTime64(watched_at, 3) >= now() - INTERVAL 24 HOUR)
           FROM bronze.youtube_watch_history
           UNION ALL
-          SELECT 'maps',     toString(max(event_ts)), dateDiff('second', toDateTime(max(event_ts)), now()),
-                 countIf(event_ts >= now() - INTERVAL 24 HOUR)
+          SELECT 'maps',     toString(max(event_ts)), dateDiff('second', toDateTime64(max(event_ts), 3), now()),
+                 countIf(toDateTime64(event_ts, 3) >= now() - INTERVAL 24 HOUR)
           FROM bronze.maps_activity
           UNION ALL
-          SELECT 'calendar', toString(max(_ingested_at)), dateDiff('second', toDateTime(max(_ingested_at)), now()),
-                 countIf(_ingested_at >= now() - INTERVAL 24 HOUR)
+          SELECT 'calendar', toString(max(_ingested_at)), dateDiff('second', toDateTime64(max(_ingested_at), 3), now()),
+                 countIf(toDateTime64(_ingested_at, 3) >= now() - INTERVAL 24 HOUR)
           FROM bronze.calendar_events
         )
         SELECT * FROM sources ORDER BY source
