@@ -30,9 +30,11 @@ SELECT
     r.watch_count                                                                   AS watch_count,
     r.total_watch_time_seconds                                                      AS total_watch_time_seconds,
     formatReadableTimeDelta(r.total_watch_time_seconds)                             AS total_watch_time_formatted,
-    coalesce(c.top_category_id, '')                                                 AS primary_category,
+    {{ youtube_category_name("coalesce(c.top_category_id, '')") }}                   AS primary_category,
     r.unique_videos_watched                                                         AS unique_videos_watched
 FROM ranked r
 LEFT JOIN cats c USING (channel_id)
-ORDER BY total_watch_time_seconds DESC
+-- watch_count is the tiebreaker so "top channels" is meaningful even before
+-- the enricher fills durations (until then total_watch_time_seconds is all 0).
+ORDER BY total_watch_time_seconds DESC, watch_count DESC
 LIMIT 10

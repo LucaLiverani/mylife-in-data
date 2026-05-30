@@ -15,6 +15,8 @@ interface TravelKPIs {
   total_likely_visits: number;
   days_with_activity: number;
   unique_destinations: number;
+  cities_visited: number;
+  countries_visited: number;
   first_activity: string;
   last_activity: string;
   days_tracked: number;
@@ -77,6 +79,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         total_likely_visits: 0,
         days_with_activity: 0,
         unique_destinations: 0,
+        cities_visited: 0,
+        countries_visited: 0,
         first_activity: '',
         last_activity: '',
         days_tracked: 0,
@@ -86,20 +90,25 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         explore_pct: 0,
       };
 
+      // Null-safe coercion: ClickHouse can return NULL for ratio columns
+      // (divide-by-zero) — calling .toFixed()/.toLocaleString() on null throws.
+      const num = (v: unknown): number => Number(v) || 0;
       return {
         stats: {
-          totalActivities: kpis.total_activities.toLocaleString(),
-          totalDirections: kpis.total_directions.toLocaleString(),
-          totalSearches: kpis.total_searches.toLocaleString(),
-          totalExplorations: kpis.total_explorations.toLocaleString(),
-          likelyVisits: kpis.total_likely_visits.toLocaleString(),
-          uniqueDestinations: kpis.unique_destinations.toLocaleString(),
-          daysWithActivity: kpis.days_with_activity.toString(),
-          daysTracked: kpis.days_tracked.toString(),
-          avgActivitiesPerDay: kpis.avg_activities_per_day.toFixed(1),
-          directionsPct: kpis.directions_pct.toFixed(1),
-          searchPct: kpis.search_pct.toFixed(1),
-          explorePct: kpis.explore_pct.toFixed(1),
+          totalActivities: num(kpis.total_activities).toLocaleString(),
+          totalDirections: num(kpis.total_directions).toLocaleString(),
+          totalSearches: num(kpis.total_searches).toLocaleString(),
+          totalExplorations: num(kpis.total_explorations).toLocaleString(),
+          likelyVisits: num(kpis.total_likely_visits).toLocaleString(),
+          uniqueDestinations: num(kpis.unique_destinations).toLocaleString(),
+          citiesVisited: num(kpis.cities_visited).toLocaleString(),
+          countriesVisited: num(kpis.countries_visited).toLocaleString(),
+          daysWithActivity: num(kpis.days_with_activity).toString(),
+          daysTracked: num(kpis.days_tracked).toString(),
+          avgActivitiesPerDay: num(kpis.avg_activities_per_day).toFixed(1),
+          directionsPct: num(kpis.directions_pct).toFixed(1),
+          searchPct: num(kpis.search_pct).toFixed(1),
+          explorePct: num(kpis.explore_pct).toFixed(1),
           firstActivity: kpis.first_activity,
           lastActivity: kpis.last_activity,
         },

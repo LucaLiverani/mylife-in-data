@@ -17,11 +17,13 @@ watch_per_day AS (
         sumIf(duration_seconds, NOT is_from_ads) AS watched_seconds,
         sumIf(duration_seconds, is_from_ads)     AS ads_seconds
     FROM watches
+    WHERE watched_date >= today() - 29 AND watched_date <= today()
     GROUP BY watched_date
 ),
 search_per_day AS (
     SELECT searched_date AS date, count() AS searches_count
     FROM searches
+    WHERE searched_date >= today() - 29 AND searched_date <= today()
     GROUP BY searched_date
 ),
 all_dates AS (

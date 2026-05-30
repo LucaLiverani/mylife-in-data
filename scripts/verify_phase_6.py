@@ -118,13 +118,15 @@ def check_dagster() -> bool:
     keys = next((l[2:] for l in out.splitlines() if l.startswith("K:")), "")
     scheds = next((l[2:] for l in out.splitlines() if l.startswith("S:")), "")
     sens = next((l[4:] for l in out.splitlines() if l.startswith("SEN:")), "")
-    needed_keys = ["youtube_history_daily", "youtube_metadata_enricher", "youtube_schema"]
+    # YouTube daily ingest is now the combined Maps+YouTube DP asset
+    # (maps_youtube_dp_daily) on the unified google_dp_daily_schedule.
+    needed_keys = ["maps_youtube_dp_daily", "youtube_metadata_enricher", "youtube_schema"]
     for k in needed_keys:
         if k not in keys:
             _fail(f"missing Dagster asset: {k}")
             return False
-    if "youtube_daily_schedule" not in scheds:
-        _fail("missing youtube_daily_schedule")
+    if "google_dp_daily_schedule" not in scheds:
+        _fail("missing google_dp_daily_schedule")
         return False
     if "youtube_metadata_enricher_sensor" not in sens:
         _fail("missing youtube_metadata_enricher_sensor")

@@ -20,12 +20,18 @@ SELECT
     )                                                                            AS ads_percentage,
     (SELECT sum(duration_seconds) FROM watches)                                  AS total_watch_time_seconds,
     formatReadableTimeDelta((SELECT sum(duration_seconds) FROM watches))         AS total_watch_time_formatted,
-    round(
-        (SELECT avg(duration_seconds) FROM watches WHERE duration_seconds > 0),
+    -- avg() over an empty set (e.g. no enriched durations yet) returns NaN;
+    -- NaN breaks both toUInt32() (CANNOT_CONVERT_TYPE) and JSON parsing.
+    -- ifNotFinite collapses NaN/Inf to 0 so the row is always serialisable.
+    ifNotFinite(
+        round((SELECT avg(duration_seconds) FROM watches WHERE duration_seconds > 0), 0),
         0
     )                                                                            AS avg_watch_time_seconds,
     formatReadableTimeDelta(
-        toUInt32(round((SELECT avg(duration_seconds) FROM watches WHERE duration_seconds > 0), 0))
+        toUInt32(ifNotFinite(
+            round((SELECT avg(duration_seconds) FROM watches WHERE duration_seconds > 0), 0),
+            0
+        ))
     )                                                                            AS avg_watch_time_formatted,
     (SELECT uniqExact(channel_id) FROM watches WHERE channel_id != '')           AS unique_channels,
     (SELECT uniqExact(video_id) FROM watches)                                    AS unique_videos,

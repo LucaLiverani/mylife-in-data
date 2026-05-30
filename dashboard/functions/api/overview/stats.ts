@@ -23,7 +23,7 @@ interface OverviewStats {
     dates: string[];
     spotify: number[];
     youtube: number[];
-    google: number[];
+    calendar: number[];
     maps: number[];
     totalEvents: string;
     avgPerDay: string;
@@ -92,12 +92,14 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
     // Explicitly convert to numbers to avoid string concatenation issues
     const spotify = reversedData.map(r => Number(r.spotify) || 0);
     const youtube = reversedData.map(r => Number(r.youtube) || 0);
-    const google = reversedData.map(r => Number(r.google) || 0);
+    // Gold exposes the calendar series under the legacy column name `google`;
+    // surface it as `calendar` to match the mock/chart/Home contract.
+    const calendar = reversedData.map(r => Number(r.google) || 0);
     const maps = reversedData.map(r => Number(r.maps) || 0);
 
     const totalEvents = spotify.reduce((a, b) => a + b, 0) +
                         youtube.reduce((a, b) => a + b, 0) +
-                        google.reduce((a, b) => a + b, 0) +
+                        calendar.reduce((a, b) => a + b, 0) +
                         maps.reduce((a, b) => a + b, 0);
 
     const avgPerDay = dates.length > 0 ? Math.round(totalEvents / dates.length) : 0;
@@ -108,7 +110,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           dates,
           spotify,
           youtube,
-          google,
+          calendar,
           maps,
           totalEvents: totalEvents.toString(),
           avgPerDay: avgPerDay.toString(),
@@ -130,7 +132,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         dates: [],
         spotify: [],
         youtube: [],
-        google: [],
+        calendar: [],
         maps: [],
         totalEvents: '0',
         avgPerDay: '0',

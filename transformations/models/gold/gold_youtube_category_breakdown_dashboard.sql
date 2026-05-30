@@ -1,20 +1,27 @@
 -- Category split (% of count + % of time + unique channels).
--- category_id is resolved to a name via a static mapping in the enricher;
--- here we just expose it. The frontend can resolve the name if needed.
+-- category_id (YouTube Data API v3 videoCategories) is resolved to a display
+-- name here via transform() so the dashboard pie shows "Education" not "27".
+-- Mapping mirrors YOUTUBE_CATEGORY_NAMES in ingestion/google/youtube/enricher.py.
+-- Empty until the enricher fills category_id (was: showed raw numeric ids).
 
 {{ config(materialized='view', schema='gold') }}
 
 WITH watches AS (
     SELECT * FROM {{ ref('silver_youtube_watches') }}
 ),
-totals AS (
+mapped AS (
     SELECT
-        count()                                                  AS total_count,
-        sum(duration_seconds)                                    AS total_time
+        {{ youtube_category_name('category_id') }}               AS category_name,
+        duration_seconds,
+        channel_id
     FROM watches
+    WHERE category_id != ''
+),
+totals AS (
+    SELECT count() AS total_count, sum(duration_seconds) AS total_time FROM mapped
 )
 SELECT
-    category_id                                                  AS category_name,
+    category_name                                                AS category_name,
     count()                                                      AS watch_count,
     sum(duration_seconds)                                        AS total_watch_time_seconds,
     formatReadableTimeDelta(sum(duration_seconds))               AS total_watch_time_formatted,
@@ -24,7 +31,6 @@ SELECT
         1
     )                                                            AS time_percentage,
     uniqExact(channel_id)                                        AS unique_channels
-FROM watches
-WHERE category_id != ''
-GROUP BY category_id
+FROM mapped
+GROUP BY category_name
 ORDER BY watch_count DESC

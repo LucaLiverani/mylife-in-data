@@ -10,6 +10,7 @@ WITH days AS (
 counts AS (
     SELECT day_of_week AS dow, count() AS events
     FROM {{ ref('silver_calendar_events') }}
+    WHERE is_all_day = 0 AND started_at <= now() AND event_date >= today() - 365
     GROUP BY day_of_week
 )
 SELECT

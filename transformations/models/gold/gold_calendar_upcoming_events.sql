@@ -9,6 +9,8 @@ SELECT
     formatReadableTimeDelta(toUnixTimestamp(started_at) - toUnixTimestamp(now())) AS relativeTime,
     duration_minutes                                                     AS durationMinutes
 FROM {{ ref('silver_calendar_events') }}
-WHERE started_at >= now()
+-- Real upcoming plans only: exclude all-day holiday/birthday subscriptions,
+-- which would otherwise fill "what's next" with the next public holiday.
+WHERE started_at >= now() AND is_all_day = 0
 ORDER BY started_at
 LIMIT 8

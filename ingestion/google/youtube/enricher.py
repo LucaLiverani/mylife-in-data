@@ -139,21 +139,63 @@ def _channel_row(ch: dict) -> dict:
     }
 
 
+def _video_tombstone(video_id: str) -> dict:
+    """Placeholder row for a video the Data API can't return (deleted, private,
+    or region-locked). Recording the attempt is what makes enrichment converge:
+    without it the id stays in the "missing" set forever and the sensor re-fires
+    every interval. silver_youtube_watches falls back to the watch-history
+    title/channel for tombstoned ids, so nothing is lost on screen."""
+    return {
+        "video_id": video_id,
+        "video_title": "",
+        "channel_id": "",
+        "category_id": "",
+        "duration_seconds": 0,
+        "published_at": datetime(1970, 1, 1),
+        "default_language": "",
+    }
+
+
+def _channel_tombstone(channel_id: str) -> dict:
+    """Placeholder for a channel the Data API can't return — same convergence
+    rationale as _video_tombstone."""
+    return {
+        "channel_id": channel_id,
+        "channel_title": "",
+        "primary_category_name": "",
+        "subscriber_count": 0,
+        "thumbnail_url": "",
+    }
+
+
 def enrich(creds) -> dict[str, int]:
-    """Run one enrichment pass. Returns inserted counts."""
+    """Run one enrichment pass. Returns inserted counts.
+
+    Every requested id is written back — real metadata when the API returns it,
+    a tombstone when it doesn't — so the worklist drains and the enricher sensor
+    stops firing once all known ids have been attempted."""
 
     svc = build("youtube", "v3", credentials=creds, cache_discovery=False)
     client = get_client()
 
-    counts = {"videos": 0, "channels": 0}
+    counts = {"videos": 0, "channels": 0, "video_tombstones": 0, "channel_tombstones": 0}
 
     for batch in _chunked(_missing_video_ids(client), BATCH_SIZE):
-        resp = svc.videos().list(id=",".join(batch), part="snippet,contentDetails").execute()
+        try:
+            resp = svc.videos().list(id=",".join(batch), part="snippet,contentDetails").execute()
+        except Exception as exc:
+            # Transient (quota/network/auth) — skip without tombstoning so the
+            # ids are retried next run rather than permanently marked missing.
+            log.warning("videos.list batch of %d failed, retrying next run: %s", len(batch), exc)
+            continue
         rows = [_video_row(v) for v in (resp.get("items") or [])]
-        if rows:
+        returned = {r["video_id"] for r in rows}
+        tombstones = [_video_tombstone(vid) for vid in batch if vid not in returned]
+        all_rows = rows + tombstones
+        if all_rows:
             insert_rows(
                 "youtube_videos",
-                rows,
+                all_rows,
                 database="bronze",
                 column_names=[
                     "video_id", "video_title", "channel_id", "category_id",
@@ -161,14 +203,22 @@ def enrich(creds) -> dict[str, int]:
                 ],
             )
             counts["videos"] += len(rows)
+            counts["video_tombstones"] += len(tombstones)
 
     for batch in _chunked(_missing_channel_ids(client), BATCH_SIZE):
-        resp = svc.channels().list(id=",".join(batch), part="snippet,statistics").execute()
+        try:
+            resp = svc.channels().list(id=",".join(batch), part="snippet,statistics").execute()
+        except Exception as exc:
+            log.warning("channels.list batch of %d failed, retrying next run: %s", len(batch), exc)
+            continue
         rows = [_channel_row(ch) for ch in (resp.get("items") or [])]
-        if rows:
+        returned = {r["channel_id"] for r in rows}
+        tombstones = [_channel_tombstone(cid) for cid in batch if cid not in returned]
+        all_rows = rows + tombstones
+        if all_rows:
             insert_rows(
                 "youtube_channels",
-                rows,
+                all_rows,
                 database="bronze",
                 column_names=[
                     "channel_id", "channel_title", "primary_category_name",
@@ -176,6 +226,11 @@ def enrich(creds) -> dict[str, int]:
                 ],
             )
             counts["channels"] += len(rows)
+            counts["channel_tombstones"] += len(tombstones)
 
-    log.info("Enrichment: +%d videos, +%d channels", counts["videos"], counts["channels"])
+    log.info(
+        "Enrichment: +%d videos (+%d tombstones), +%d channels (+%d tombstones)",
+        counts["videos"], counts["video_tombstones"],
+        counts["channels"], counts["channel_tombstones"],
+    )
     return counts

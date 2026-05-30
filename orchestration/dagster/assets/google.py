@@ -101,14 +101,10 @@ def maps_activity_initial_backfill(context) -> dict:
     return _run_maps_activity_ingest(context, years_back=1.0, days_back=0)
 
 
-@asset(
-    group_name="google",
-    description="Daily incremental Maps activity for the last 24h.",
-    deps=[maps_schema],
-    required_resource_keys={"google_auth_portability"},
-)
-def maps_activity_daily(context) -> dict:
-    return _run_maps_activity_ingest(context, years_back=0, days_back=1)
+# NOTE: the daily incremental Maps ingest is no longer a standalone asset —
+# it's folded into `maps_youtube_dp_daily` (defined below) so Maps + YouTube
+# share a single Data Portability archive and don't collide on the per-client
+# 24h cooldown. `_run_maps_activity_ingest` is still used by the backfill above.
 
 
 @asset(
@@ -160,7 +156,7 @@ def maps_private_places_sync(context) -> int:
 @asset(
     group_name="google",
     description="Enrich unknown places in bronze.maps_activity via Places API → catalog.",
-    deps=[maps_activity_daily],
+    deps=["maps_youtube_dp_daily"],  # combined Maps+YouTube DP ingest (defined below)
 )
 def maps_place_enrichment(context) -> dict:
     """Walk distinct place_ids / queries in bronze.maps_activity that aren't
@@ -179,10 +175,14 @@ def maps_place_enrichment(context) -> dict:
     ch = get_client()
     # Build a worklist of unknown places: distinct (place_id, place_name, lat, lng)
     # tuples where place_id isn't cached. Limit per-run for cost control.
+    # place_id is the GROUP BY key, so select it raw — do NOT alias an
+    # aggregate to `place_id`, or the WHERE clause binds to that aggregate and
+    # ClickHouse raises ILLEGAL_AGGREGATION ("argMax(...) AS place_id found in
+    # WHERE"). place_name still needs an aggregate since it varies per row.
     rows = ch.query(
         """
         SELECT
-            argMax(place_id, event_ts) AS place_id,
+            place_id,
             argMax(place_name, event_ts) AS place_name,
             avg(lat) AS lat,
             avg(lng) AS lng
@@ -233,21 +233,8 @@ def maps_trip_segmentation(context) -> int:
 
 
 # ── Jobs + schedules ───────────────────────────────────────────────────────
-maps_daily_job = define_asset_job(
-    "maps_daily_job",
-    selection=AssetSelection.assets(maps_activity_daily, maps_place_enrichment),
-)
-
-
-maps_daily_schedule = ScheduleDefinition(
-    job=maps_daily_job,
-    cron_schedule="0 4 * * *",
-    name="maps_daily_schedule",
-    description="Daily 04:00 Maps activity DP + place enrichment.",
-    default_status=DefaultScheduleStatus.RUNNING,
-)
-
-
+# The unified daily Maps+YouTube DP job is defined at the end of this module
+# (after both schemas + enrichment assets exist).
 maps_private_places_job = define_asset_job(
     "maps_private_places_job",
     selection=AssetSelection.assets(maps_private_places_sync),
@@ -315,20 +302,15 @@ def youtube_history_initial_backfill(context) -> dict:
     return _youtube_ingest(context, years_back=1.0, days_back=0)
 
 
-@asset(
-    group_name="google",
-    description="Daily incremental YouTube history (last 24h).",
-    deps=[youtube_schema],
-    required_resource_keys={"google_auth_portability"},
-)
-def youtube_history_daily(context) -> dict:
-    return _youtube_ingest(context, years_back=0, days_back=1)
+# NOTE: the daily incremental YouTube ingest is folded into
+# `maps_youtube_dp_daily` (below). `_youtube_ingest` is still used by the
+# one-shot backfill above.
 
 
 @asset(
     group_name="google",
     description="Enrich unknown YouTube videos + channels via Data API v3.",
-    deps=[youtube_history_daily],
+    deps=["maps_youtube_dp_daily"],  # combined Maps+YouTube DP ingest (defined below)
     # Data API v3 uses youtube.readonly (a standard scope), NOT Data Portability.
     required_resource_keys={"google_auth_standard"},
 )
@@ -341,17 +323,73 @@ def youtube_metadata_enricher(context) -> dict:
     return counts
 
 
-youtube_daily_job = define_asset_job(
-    "youtube_daily_job",
-    selection=AssetSelection.assets(youtube_history_daily, youtube_metadata_enricher),
+# ── Unified daily Data Portability ingest (Maps + YouTube) ──────────────────
+def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> dict:
+    """One Data Portability archive covering BOTH myactivity.maps and
+    myactivity.youtube. Google's DP cooldown is per OAuth client (~24h), so a
+    single combined initiation is the only way to refresh both sources daily
+    without the second hitting 429. The unpacked archive matches Takeout's
+    layout, so the maps + youtube parsers each select their own files."""
+    from ingestion.google.portability import DataPortabilityClient
+    from ingestion.google.maps.activity_parser import parse_archive_for_activity
+    from ingestion.google.maps.insert import insert_activity
+    from ingestion.google.youtube.parser import parse_archive
+    from ingestion.google.youtube.insert import insert_watch_history, insert_search_history
+
+    creds = context.resources.google_auth_portability.get_credentials()
+    client = DataPortabilityClient(creds)
+
+    start_time, end_time = _maps_ingest_window(years_back=years_back, days_back=days_back)
+    resources = MAPS_ACTIVITY_RESOURCES + YOUTUBE_RESOURCES
+    context.log.info(
+        "Combined DP window %s → %s for %s",
+        start_time.isoformat(), end_time.isoformat(), resources,
+    )
+
+    job_id = client.initiate_archive(resources, start_time=start_time, end_time=end_time)
+    job = client.wait_for_archive(job_id)
+
+    with tempfile.TemporaryDirectory(prefix="dp-combined-") as tmp:
+        root = Path(tmp)
+        client.download_archive(job, root)
+        activity_rows = parse_archive_for_activity(root)
+        watch, search = parse_archive(root)
+
+    n_activity = insert_activity(activity_rows)
+    n_watch = insert_watch_history(watch)
+    n_search = insert_search_history(search)
+    context.log.info(
+        "Combined DP ingest: maps=%d, yt_watch=%d, yt_search=%d", n_activity, n_watch, n_search
+    )
+    return {"activity_rows": n_activity, "watch": n_watch, "search": n_search}
+
+
+@asset(
+    group_name="google",
+    description="Daily combined Maps + YouTube Data Portability ingest — one archive, avoids the per-client 24h-cooldown collision.",
+    deps=[maps_schema, youtube_schema],
+    required_resource_keys={"google_auth_portability"},
+)
+def maps_youtube_dp_daily(context) -> dict:
+    return _run_combined_dp_ingest(context, years_back=0, days_back=1)
+
+
+# Single daily job: combined DP ingest → Maps place enrichment + YouTube
+# metadata enrichment. Replaces the old colliding maps_daily (04:00) and
+# youtube_daily (04:30) schedules.
+google_dp_daily_job = define_asset_job(
+    "google_dp_daily_job",
+    selection=AssetSelection.assets(
+        maps_youtube_dp_daily, maps_place_enrichment, youtube_metadata_enricher
+    ),
 )
 
 
-youtube_daily_schedule = ScheduleDefinition(
-    job=youtube_daily_job,
-    cron_schedule="30 4 * * *",
-    name="youtube_daily_schedule",
-    description="Daily 04:30 YouTube DP incremental + enrichment.",
+google_dp_daily_schedule = ScheduleDefinition(
+    job=google_dp_daily_job,
+    cron_schedule="0 4 * * *",
+    name="google_dp_daily_schedule",
+    description="Daily 04:00 combined Maps + YouTube DP ingest + enrichment.",
     default_status=DefaultScheduleStatus.RUNNING,
 )
 

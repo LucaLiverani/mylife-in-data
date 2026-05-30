@@ -119,14 +119,16 @@ def check_dagster_assets() -> bool:
     keys_line = next((l for l in out.splitlines() if l.startswith("K:")), "K:")
     sched_line = next((l for l in out.splitlines() if l.startswith("S:")), "S:")
     keys = keys_line[2:]
-    if "maps_daily_incremental" not in keys or "maps_trip_segmentation" not in keys:
+    # Daily Maps ingest is now the combined Maps+YouTube DP asset
+    # (maps_youtube_dp_daily) on the unified google_dp_daily_schedule.
+    if "maps_youtube_dp_daily" not in keys or "maps_trip_segmentation" not in keys:
         _fail("Maps assets missing from definitions")
         return False
-    if "maps_daily_schedule" not in sched_line:
-        _fail("maps_daily_schedule missing")
+    if "google_dp_daily_schedule" not in sched_line:
+        _fail("google_dp_daily_schedule missing")
         return False
-    _ok("maps_initial_backfill / maps_daily_incremental / maps_trip_segmentation discovered")
-    _ok("maps_daily_schedule discovered")
+    _ok("maps_activity_initial_backfill / maps_youtube_dp_daily / maps_trip_segmentation discovered")
+    _ok("google_dp_daily_schedule discovered")
     return True
 
 

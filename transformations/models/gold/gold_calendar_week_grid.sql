@@ -17,12 +17,18 @@ counts AS (
         toInt16(toHour(started_at))                AS hour,
         count()                                    AS c
     FROM {{ ref('silver_calendar_events') }}
+    WHERE is_all_day = 0 AND started_at <= now() AND event_date >= today() - 365
     GROUP BY dow, hour
+),
+-- Normalise intensity against the busiest slot so the heatmap spans 0..1
+-- regardless of window length (the old /5.0 saturated over a full year).
+maxc AS (
+    SELECT max(c) AS m FROM counts
 )
 SELECT
     slots.dow                                                       AS day,
     slots.hour                                                      AS hour,
-    least(round(coalesce(counts.c, 0) / 5.0, 2), toFloat64(1.0))    AS intensity
+    coalesce(round(counts.c / nullIf((SELECT m FROM maxc), 0), 2), 0) AS intensity
 FROM slots
 LEFT JOIN counts USING (dow, hour)
 ORDER BY slots.dow, slots.hour

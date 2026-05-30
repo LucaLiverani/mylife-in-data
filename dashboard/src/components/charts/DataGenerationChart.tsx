@@ -28,12 +28,15 @@ export function DataGenerationChart({ data }: DataGenerationChartProps) {
     Calendar: true,
   });
 
-  const chartData = data.dates.map((date, i) => ({
+  // Defensive indexing: any series may be missing/short depending on the API
+  // shape. Optional chaining keeps a missing array (e.g. a renamed key) from
+  // throwing "Cannot read properties of undefined (reading '0')".
+  const chartData = (data.dates ?? []).map((date, i) => ({
     date: formatChartDate(date),
-    Spotify:  Number(data.spotify[i])  || 0,
-    YouTube:  Number(data.youtube[i])  || 0,
-    Maps:     Number(data.maps[i])     || 0,
-    Calendar: Number(data.calendar[i]) || 0,
+    Spotify:  Number(data.spotify?.[i])  || 0,
+    YouTube:  Number(data.youtube?.[i])  || 0,
+    Maps:     Number(data.maps?.[i])     || 0,
+    Calendar: Number(data.calendar?.[i]) || 0,
   }));
 
   const toggleSeries = (series: SeriesName) => {

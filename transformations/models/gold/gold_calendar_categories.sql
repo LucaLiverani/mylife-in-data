@@ -2,16 +2,24 @@
 
 {{ config(materialized='view', schema='gold') }}
 
-WITH totals AS (
-    SELECT count() AS total FROM {{ ref('silver_calendar_events') }}
+-- Trailing 365 days, no future rows (subscribed holidays run to 2031).
+-- Includes all-day events so "Holidays" shows as a category; category labels
+-- are already privacy-safe (email → "Personal") in the silver model.
+WITH base AS (
+    SELECT category
+    FROM {{ ref('silver_calendar_events') }}
+    WHERE started_at <= now() AND event_date >= today() - 365
+),
+totals AS (
+    SELECT count() AS total FROM base
 )
 SELECT
     category                                                AS name,
     count()                                                 AS value,
-    round(
+    coalesce(round(
         count() / nullIf((SELECT total FROM totals), 0) * 100.0,
         0
-    )                                                       AS percentage
-FROM {{ ref('silver_calendar_events') }}
+    ), 0)                                                   AS percentage
+FROM base
 GROUP BY category
 ORDER BY value DESC

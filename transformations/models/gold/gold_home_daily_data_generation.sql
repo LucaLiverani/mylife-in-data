@@ -10,6 +10,8 @@ SELECT
     countIf(source = 'calendar')                                AS google,
     countIf(source = 'maps')                                    AS maps
 FROM {{ ref('silver_events_unified') }}
-WHERE event_ts >= today() - 90
+-- Upper bound excludes future-dated rows (e.g. subscribed-holiday calendar
+-- events run years ahead) that otherwise appear as phantom points on the chart.
+WHERE event_ts >= today() - 90 AND event_ts <= now()
 GROUP BY date
 ORDER BY date
