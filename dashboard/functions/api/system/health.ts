@@ -70,10 +70,12 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         SELECT * FROM sources ORDER BY source
       `;
 
+      // toDateTime64(raised_at, 3) in the WHERE: same String-vs-DateTime
+      // robustness as the freshness query (auth.alerts.raised_at may be String).
       const alertsSql =
-        `SELECT raised_at::String AS raised_at, kind, account_email, message ` +
+        `SELECT toString(raised_at) AS raised_at, kind, account_email, message ` +
         `FROM auth.alerts ` +
-        `WHERE raised_at >= now() - INTERVAL 7 DAY ` +
+        `WHERE toDateTime64(raised_at, 3) >= now() - INTERVAL 7 DAY ` +
         `ORDER BY raised_at DESC LIMIT 50`;
 
       const storageSql = `
