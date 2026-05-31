@@ -51,6 +51,9 @@ transformations/logs/
 # Personal notes (real VM IP, user, tunnel UUID, etc. live here — gitignored)
 PERSONAL.md
 
+# Private content workspace
+private/
+
 # Legacy data dumps (Google Takeout extracts etc.) — never commit
 .legacy-data/
 
