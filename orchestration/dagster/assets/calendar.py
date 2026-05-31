@@ -297,10 +297,102 @@ def calendar_polling_fallback(context) -> dict:
     return {"events_inserted": inserted}
 
 
+@asset(
+    group_name="google",
+    description="Geocode distinct Calendar event locations into the shared place catalog (travel corroboration for trips).",
+    deps=[calendar_schema],
+)
+def calendar_place_enrichment(context) -> dict:
+    """Walk distinct, non-empty `location` strings in bronze.calendar_events
+    that aren't yet in bronze.maps_place_catalog and geocode each one into the
+    SAME catalog the Maps pipeline uses (keyed `q:<normalized text>`), so a
+    calendar "Zürich" and a Maps "Zürich" share one row. silver_calendar_geo
+    joins on that key to flag foreign / far-from-home events; Phase 5's trip
+    LLM reads them as corroborating evidence.
+
+    Catalog is monotonic and the lookup is shared with Maps, so this never
+    re-fetches a place either pipeline already resolved. Misses + junk
+    (virtual-meeting "locations", URLs) are negative-cached and leave the
+    worklist. Per-run cap via CALENDAR_ENRICH_LIMIT."""
+    import os
+
+    from ingestion._shared.clickhouse import get_client
+    from ingestion.google.maps.geocoder import (
+        GeocoderConfigError,
+        get_geocoder,
+        get_or_lookup,
+    )
+
+    try:
+        geocoder = get_geocoder()
+    except GeocoderConfigError as exc:
+        context.log.warning("Geocoder not configured (%s) — skipping calendar enrichment", exc)
+        return {"looked_up": 0, "skipped": True}
+
+    ch = get_client()
+    limit = int(os.environ.get("CALENDAR_ENRICH_LIMIT", "200"))
+    # Build the worklist with the EXACT q:<text> key silver_calendar_geo joins
+    # on (lowercased, whitespace-collapsed) so the lookup key == the join key.
+    rows = ch.query(
+        """
+        SELECT loc_key, argMax(location, started_at) AS lookup_text
+        FROM (
+            SELECT
+                concat('q:', trimBoth(replaceRegexpAll(lowerUTF8(location), '[[:space:]]+', ' '))) AS loc_key,
+                location,
+                started_at
+            FROM bronze.calendar_events FINAL
+            WHERE status != 'cancelled' AND location != ''
+        )
+        WHERE loc_key NOT IN (SELECT place_id FROM bronze.maps_place_catalog)
+        GROUP BY loc_key
+        LIMIT %(lim)s
+        """,
+        parameters={"lim": limit},
+    ).result_rows
+
+    looked_up = unresolved = failed = 0
+    for loc_key, lookup_text in rows:
+        try:
+            result = get_or_lookup(
+                place_id=loc_key, text=lookup_text or "", geocoder=geocoder, ch=ch
+            )
+        except Exception as exc:
+            context.log.warning("calendar lookup failed for %s (%s): %s", loc_key, lookup_text, exc)
+            failed += 1
+            continue
+        if result is None:
+            unresolved += 1
+        else:
+            looked_up += 1
+    context.log.info(
+        "Calendar location enrichment via %s: resolved=%d, unresolved=%d, errors=%d (limit %d/run)",
+        geocoder.provider, looked_up, unresolved, failed, limit,
+    )
+    return {"looked_up": looked_up, "unresolved": unresolved, "failed": failed}
+
+
 # ── Jobs + schedules + sensors ─────────────────────────────────────────────
 calendar_renew_job = define_asset_job(
     "calendar_renew_job",
     selection=AssetSelection.assets(calendar_channels_renew),
+)
+
+
+calendar_enrich_job = define_asset_job(
+    "calendar_enrich_job",
+    selection=AssetSelection.assets(calendar_place_enrichment),
+)
+
+
+calendar_enrich_schedule = ScheduleDefinition(
+    job=calendar_enrich_job,
+    # 08:30 UTC — after the day's calendar polling has landed events and before
+    # the 09:00 dbt build, so silver_calendar_geo sees a warm catalog.
+    cron_schedule="30 8 * * *",
+    name="calendar_enrich_schedule",
+    description="Daily 08:30 UTC — geocode new Calendar event locations into the place catalog.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 

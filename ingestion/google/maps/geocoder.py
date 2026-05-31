@@ -45,18 +45,26 @@ _JUNK_EXACT = {
     "restaurant", "restaurants", "restaurantes", "bar", "bars",
     "cafe", "cafes", "hotel", "hotels", "supermarket", "atm",
     "pharmacy", "parking",
+    # virtual-meeting "locations" common on calendar events — not a place
+    "zoom", "google meet", "meet", "teams", "microsoft teams", "webex",
+    "skype", "phone", "call", "online", "tbd", "n/a",
 }
 
 # Substrings that mark a non-place activity title (Maps UI artifacts, app
-# chrome). "Explored on Google Maps" is the single most common MyActivity title
-# — a pan/zoom, not a place.
-_JUNK_SUBSTR = ("near me", "explored on google maps", "notification")
+# chrome) or a virtual-meeting calendar location. "Explored on Google Maps" is
+# the single most common MyActivity title — a pan/zoom, not a place.
+_JUNK_SUBSTR = (
+    "near me", "explored on google maps", "notification",
+    "zoom.us", "meet.google", "teams.microsoft", "webex.com", "zoom meeting",
+)
 
 
 def is_geocodable_text(text: str) -> bool:
     """Cheap pre-filter: is this worth a geocoding call at all?"""
     t = (text or "").strip().lower()
     if len(t) < 2:
+        return False
+    if t.startswith(("http://", "https://", "www.")):  # a URL, not a place
         return False
     if t in _JUNK_EXACT:
         return False
