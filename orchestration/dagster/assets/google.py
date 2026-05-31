@@ -251,12 +251,54 @@ def maps_trip_segmentation(context) -> int:
     return n
 
 
+@asset(
+    group_name="google",
+    description="LLM adjudication of inferred trips → silver.maps_trips_enriched (verdict, type, de-noised destination, title, summary).",
+    deps=[maps_trip_segmentation],
+)
+def maps_trip_llm(context) -> dict:
+    """Name + classify + de-noise each trip candidate via the configured LLM.
+
+    Reads silver.maps_trips (candidates) plus the window's Maps activity
+    (silver_maps_activity_enriched) and Calendar corroboration
+    (silver_calendar_geo), and writes one verdict row per trip to
+    silver.maps_trips_enriched. Monotonic — only un-enriched trips are
+    adjudicated, so a re-run is cheap. Skips gracefully when LLM_* is unset.
+
+    Depends on dbt views (silver_maps_activity_enriched, silver_calendar_geo)
+    being current, so in the daily flow this runs AFTER the dbt build."""
+    import os
+
+    from ingestion._shared.llm import LLMConfigError
+    from ingestion.google.maps.trip_llm import adjudicate_trips
+
+    raw_limit = os.environ.get("MAPS_TRIP_LLM_LIMIT")
+    limit = int(raw_limit) if raw_limit else None
+    try:
+        n = adjudicate_trips(limit=limit)
+    except LLMConfigError as exc:
+        context.log.warning("LLM not configured (%s) — skipping trip adjudication", exc)
+        return {"enriched": 0, "skipped": True}
+    context.log.info("Enriched %d trip(s) via LLM", n)
+    return {"enriched": n}
+
+
 # ── Jobs + schedules ───────────────────────────────────────────────────────
 # The unified daily Maps+YouTube DP job is defined at the end of this module
 # (after both schemas + enrichment assets exist).
 maps_private_places_job = define_asset_job(
     "maps_private_places_job",
     selection=AssetSelection.assets(maps_private_places_sync),
+)
+
+
+# Trip pipeline (segment → LLM-adjudicate), runnable on demand. Full wiring
+# into the daily flow happens AFTER the dbt build (Phase 6) — the LLM step
+# reads dbt-built silver views, so it must run post-build, not on this job's
+# own schedule. No schedule attached here on purpose.
+maps_trips_job = define_asset_job(
+    "maps_trips_job",
+    selection=AssetSelection.assets(maps_trip_segmentation, maps_trip_llm),
 )
 
 
