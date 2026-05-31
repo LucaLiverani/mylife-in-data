@@ -1,5 +1,7 @@
--- Top neighborhoods (was: per-place list). Aggregated to keep individual
--- visits out of the public dashboard.
+-- Map points = neighbourhoods you NAVIGATED to (a directions signal = real
+-- physical presence). Searches/views are excluded — they're interest, not
+-- where you've been, and they mis-geocode generic terms to far places.
+-- Aggregated to keep individual visits out of the public dashboard.
 
 {{ config(materialized='view', schema='gold') }}
 
@@ -25,17 +27,12 @@ WHERE s.is_private = 0
   AND s.lat != 0 AND s.lng != 0
   AND s.match_confidence >= 0.4                                 -- drop low-confidence / junk geocodes
   AND s.match_type NOT IN ('country', 'state', 'unresolved')   -- too coarse to pin as a point
-  -- Geographic gate: only countries with a directions activity (you navigated
-  -- there). Removes the junk-country scatter — generic terms OSM resolves to
-  -- villages in countries you've never been to (searches/views, zero directions).
-  AND s.country IN (
-      SELECT DISTINCT country FROM {{ ref('silver_maps_activity_enriched') }}
-      WHERE is_private = 0 AND activity_type = 'directions' AND country != ''
-  )
 GROUP BY name
--- Corroboration: a real place is either navigated-to (directions) or engaged
--- with more than once. Drops lone mis-geocodes — a one-off generic search
--- ("Pizza", "Rosti") that OSM resolves to an obscure hamlet at confidence 1.0.
-HAVING count() >= 2 OR countIf(s.activity_type = 'directions') > 0
-ORDER BY count() DESC
+-- Presence-based: only places with a directions hit (you navigated there) make
+-- the map. This is what "where I've been" means in activity data — and it
+-- subsumes the old country-level geo-gate (a navigated place is in a navigated
+-- country by definition) and drops every search/view-only point, which is the
+-- noise that made the map mostly places you looked up rather than visited.
+HAVING countIf(s.activity_type = 'directions') > 0
+ORDER BY countIf(s.activity_type = 'directions') DESC, count() DESC
 LIMIT 500
