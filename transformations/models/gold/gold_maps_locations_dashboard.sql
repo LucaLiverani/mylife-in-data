@@ -27,12 +27,20 @@ WHERE s.is_private = 0
   AND s.lat != 0 AND s.lng != 0
   AND s.match_confidence >= 0.4                                 -- drop low-confidence / junk geocodes
   AND s.match_type NOT IN ('country', 'state', 'unresolved')   -- too coarse to pin as a point
+  -- Country geo-gate: only countries with a CORROBORATED trip (gold_maps_trips
+  -- is LLM-validated + de-noised) or home. A handful of directions still
+  -- mis-geocode their destination to far countries you've never been (London,
+  -- India, the Philippines, the US, …); gating to real trip countries drops
+  -- those, while KEEPING low-directions-but-real trips (Tunisia, Ecuador,
+  -- Brazil) that a raw directions-count threshold would wrongly cut.
+  AND s.country IN (
+      SELECT home_country FROM {{ ref('silver_home_base') }}
+      UNION DISTINCT
+      SELECT country FROM {{ ref('gold_maps_trips') }} WHERE country != ''
+  )
 GROUP BY name
--- Presence-based: only places with a directions hit (you navigated there) make
--- the map. This is what "where I've been" means in activity data — and it
--- subsumes the old country-level geo-gate (a navigated place is in a navigated
--- country by definition) and drops every search/view-only point, which is the
--- noise that made the map mostly places you looked up rather than visited.
+-- Presence-based: only places you NAVIGATED to (a directions hit) reach the
+-- map — searches/views are interest, not where you've been.
 HAVING countIf(s.activity_type = 'directions') > 0
 ORDER BY countIf(s.activity_type = 'directions') DESC, count() DESC
 LIMIT 500
