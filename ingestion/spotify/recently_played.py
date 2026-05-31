@@ -27,12 +27,21 @@ def _parse_played_at(value: str) -> datetime:
 def _row_from_play(play: dict[str, Any]) -> dict[str, Any]:
     track = play.get("track") or {}
     artists = track.get("artists") or []
+    album = track.get("album") or {}
     context = play.get("context") or {}
+    # The recently-played payload embeds the full track object, so we capture
+    # name/album/art/artist-names here rather than waiting for the enricher's
+    # second round-trip to /tracks?ids. The enricher still backfills the catalog
+    # tables (genres, popularity, saved tracks); silver prefers those when present.
     return {
         "played_at": _parse_played_at(play["played_at"]),
         "track_id": track.get("id") or "",
         "track_uri": track.get("uri") or "",
+        "track_name": track.get("name") or "",
         "artists_ids": [a.get("id", "") for a in artists],
+        "artists_names": [a.get("name", "") for a in artists],
+        "album_name": album.get("name") or "",
+        "album_images": [img.get("url", "") for img in (album.get("images") or [])],
         "duration_ms": int(track.get("duration_ms") or 0),
         "context_type": (context.get("type") or "") or "",
         "context_uri": (context.get("uri") or "") or "",

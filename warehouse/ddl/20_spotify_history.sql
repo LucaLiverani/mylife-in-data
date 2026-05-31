@@ -6,13 +6,27 @@ CREATE TABLE IF NOT EXISTS bronze.spotify_plays_raw (
     played_at          DateTime64(3),
     track_id           String,
     track_uri          String,
+    track_name         String,
     artists_ids        Array(String),
+    artists_names      Array(String),
+    album_name         String,
+    album_images       Array(String),
     duration_ms        Int32,
     context_type       LowCardinality(String),
     context_uri        String,
     _ingested_at       DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree(_ingested_at)
 ORDER BY (track_id, played_at);
+
+-- The /me/player/recently-played response already carries the track/album/
+-- artist names and album art, so we capture them at ingest — the Recently
+-- Played list then renders titles + art with zero wait for the enricher.
+-- These ADDs are idempotent: no-ops on fresh tables, and patch the columns
+-- onto a pre-existing spotify_plays_raw on redeploy.
+ALTER TABLE bronze.spotify_plays_raw ADD COLUMN IF NOT EXISTS track_name    String        AFTER track_uri;
+ALTER TABLE bronze.spotify_plays_raw ADD COLUMN IF NOT EXISTS artists_names Array(String) AFTER artists_ids;
+ALTER TABLE bronze.spotify_plays_raw ADD COLUMN IF NOT EXISTS album_name    String        AFTER artists_names;
+ALTER TABLE bronze.spotify_plays_raw ADD COLUMN IF NOT EXISTS album_images  Array(String) AFTER album_name;
 
 CREATE TABLE IF NOT EXISTS bronze.spotify_tracks (
     track_id           String,
