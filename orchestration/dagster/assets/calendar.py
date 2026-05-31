@@ -21,8 +21,11 @@ from pathlib import Path
 
 from dagster import (
     AssetSelection,
+    Backoff,
     DefaultScheduleStatus,
     DefaultSensorStatus,
+    Jitter,
+    RetryPolicy,
     RunRequest,
     ScheduleDefinition,
     SensorEvaluationContext,
@@ -34,6 +37,15 @@ from dagster import (
 
 
 REPO_ROOT_IN_CONTAINER = Path("/opt/dagster/repo")
+
+# The CalendarClient already retries each API call on transient 5xx/429 with
+# backoff (num_retries). This op-level policy is the outer net: if a Google
+# backend hiccup outlasts all in-call retries, re-run the whole op rather than
+# leave a red scheduled run. Safe to retry — events_list resumes from the
+# syncToken persisted in auth.calendar_channels, so no events are double-pulled.
+_TRANSIENT_API_RETRY = RetryPolicy(
+    max_retries=2, delay=20, backoff=Backoff.EXPONENTIAL, jitter=Jitter.PLUS_MINUS
+)
 
 
 def _ddl_path(filename: str) -> Path:
@@ -172,6 +184,7 @@ def calendar_channels_renew(context) -> int:
     description="Drain unprocessed sync notifications: fetch delta + INSERT bronze.",
     deps=[calendar_schema],
     required_resource_keys={"google_auth_standard"},
+    retry_policy=_TRANSIENT_API_RETRY,
 )
 def calendar_sync_drain(context) -> dict:
     from ingestion._shared.clickhouse import get_client, insert_rows
@@ -251,6 +264,7 @@ def calendar_sync_drain(context) -> dict:
     description="60s polling fallback for Calendar (off by default; enable when webhook breaks).",
     deps=[calendar_schema],
     required_resource_keys={"google_auth_standard"},
+    retry_policy=_TRANSIENT_API_RETRY,
 )
 def calendar_polling_fallback(context) -> dict:
     """Identical to calendar_sync_drain minus the notification check.

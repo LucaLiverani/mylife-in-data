@@ -27,6 +27,12 @@ log = logging.getLogger(__name__)
 # 2026-05-30 run-queue wedge. 30s is generous for a single 250-item page.
 _HTTP_TIMEOUT_SECONDS = 30
 
+# googleapiclient retries 5xx / 429 and transient socket errors with
+# exponential backoff + jitter when num_retries > 0. Calendar's backend throws
+# sporadic 503 "Backend Error"s mid-pagination that clear on the next attempt;
+# without this a single blip crashes the Dagster op (2026-05-31, calendar_polling_job).
+_API_NUM_RETRIES = 5
+
 
 @dataclass
 class WatchSubscription:
@@ -50,7 +56,7 @@ class CalendarClient:
             kwargs: dict[str, Any] = {}
             if page_token:
                 kwargs["pageToken"] = page_token
-            resp = self._svc.calendarList().list(**kwargs).execute()
+            resp = self._svc.calendarList().list(**kwargs).execute(num_retries=_API_NUM_RETRIES)
             items.extend(resp.get("items") or [])
             page_token = resp.get("nextPageToken")
             if not page_token:
@@ -83,7 +89,7 @@ class CalendarClient:
             if page_token:
                 kwargs["pageToken"] = page_token
             try:
-                resp = self._svc.events().list(**kwargs).execute()
+                resp = self._svc.events().list(**kwargs).execute(num_retries=_API_NUM_RETRIES)
             except HttpError as exc:
                 if exc.resp.status == 410:
                     log.warning("Sync token expired for %s — falling back to full pull", calendar_id)
@@ -107,7 +113,7 @@ class CalendarClient:
             "address": webhook_url,
             "token": token,
         }
-        resp = self._svc.events().watch(calendarId=calendar_id, body=body).execute()
+        resp = self._svc.events().watch(calendarId=calendar_id, body=body).execute(num_retries=_API_NUM_RETRIES)
         expiration_ms = int(resp.get("expiration") or 0)
         return WatchSubscription(
             channel_id=channel_id,
@@ -118,6 +124,6 @@ class CalendarClient:
 
     def channels_stop(self, channel_id: str, resource_id: str) -> None:
         try:
-            self._svc.channels().stop(body={"id": channel_id, "resourceId": resource_id}).execute()
+            self._svc.channels().stop(body={"id": channel_id, "resourceId": resource_id}).execute(num_retries=_API_NUM_RETRIES)
         except HttpError as exc:
             log.warning("channels.stop %s/%s failed (%s) — leaving to expire naturally", channel_id, resource_id, exc)
