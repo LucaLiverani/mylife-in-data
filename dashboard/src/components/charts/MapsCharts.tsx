@@ -34,6 +34,11 @@ interface MapsData {
   dailyActivity: Array<{ date: string; directions: number; searches: number; explorations: number; other: number }>;
 }
 
+// Top destinations carry a place primary_type ('tourist_attraction', 'city', …)
+// from the catalog — prettify it for display (snake_case → Title Case).
+const formatPlaceType = (type: string): string =>
+  type ? type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Place';
+
 const formatActivityType = (type: string): string => {
   const typeMap: Record<string, string> = {
     directions: 'Directions',
@@ -124,7 +129,7 @@ export function MapsCharts({ data }: { data: MapsData }) {
     Other:        Number(d.other)        || 0,
   }));
 
-  // Activity-type distribution — totals across the 30-day window. Channels
+  // Activity-type distribution — totals across the 90-day window. Channels
   // the same color scheme as the daily-activity series so legend pairs read.
   const totals = data.dailyActivity.reduce(
     (acc, d) => ({
@@ -154,7 +159,7 @@ export function MapsCharts({ data }: { data: MapsData }) {
       <section className="mb-12">
         <Surface>
           <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-            Daily activity · last 30 days
+            Daily activity · last 90 days
           </h2>
 
           <div className="mb-4 flex flex-wrap gap-3">
@@ -235,7 +240,7 @@ export function MapsCharts({ data }: { data: MapsData }) {
               kind="count"
               items={data.topDestinations.map((d) => ({
                 primary: d.destination,
-                secondary: d.type === 'search' ? 'Search' : d.type === 'explore' ? 'Exploration' : 'Directions',
+                secondary: formatPlaceType(d.type),
                 value: d.count,
                 trend: d.trend,
               }))}

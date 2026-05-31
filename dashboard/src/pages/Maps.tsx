@@ -42,7 +42,21 @@ interface TravelData {
     longestTripDays?: number | string;
   };
   locations: Array<{ name: string; lat: number; lng: number; duration: string }>;
-  trips?: Array<{ start: string; end: string; destination: string; days: number; km: number }>;
+  trips?: Array<{
+    start: string;
+    end: string;
+    destination: string;
+    days: number;
+    km: number;
+    title?: string;
+    type?: string;
+    country?: string;
+    summary?: string;
+    confidence?: number;
+    weather?: string;
+    tempMean?: number;
+    precipMm?: number;
+  }>;
   charts: {
     hourlyActivity: Array<{ hour: string; activities: number }>;
     lastActivities: Array<{ time: string; location: string; type: string; timeOfDay: string }>;

@@ -4,7 +4,9 @@
 {{ config(materialized='view', schema='gold') }}
 
 SELECT
-    event_ts                                                                  AS time,
+    -- Emit ISO-8601 UTC ('…Z') so the browser's `new Date()` parses it as UTC,
+    -- not local — otherwise "time ago" is off by the viewer's TZ offset.
+    formatDateTime(event_ts, '%Y-%m-%dT%H:%M:%SZ', 'UTC')                     AS time,
     multiIf(
         neighborhood != '' AND locality != '', concat(neighborhood, ', ', locality),
         locality != '',                        locality,

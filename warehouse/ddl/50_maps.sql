@@ -113,3 +113,21 @@ CREATE TABLE IF NOT EXISTS silver.maps_trip_labels (
     _set_at              DateTime64(3) DEFAULT now64()
 ) ENGINE = ReplacingMergeTree(_set_at)
 ORDER BY trip_key;
+
+-- Phase 6 — historical weather per trip from Open-Meteo (free archive API, no
+-- key). Filled by the `maps_trip_weather` asset for the trip's destination
+-- (dominant-locality coords) over its date window. Monotonic per trip_key
+-- (only un-weathered trips are fetched); recent trips inside the archive's
+-- ~5-day lag get filled on a later run. gold_maps_trips LEFT JOINs this.
+CREATE TABLE IF NOT EXISTS silver.maps_trip_weather (
+    trip_key             String,
+    lat                  Float64,
+    lng                  Float64,
+    temp_mean            Float32,    -- °C, mean of daily means over the window
+    temp_max             Float32,    -- °C, mean of daily highs
+    temp_min             Float32,    -- °C, mean of daily lows
+    precip_mm            Float32,    -- total precipitation over the window
+    summary              String,     -- short human label ("18°C avg · 12mm rain")
+    _fetched_at          DateTime DEFAULT now()
+) ENGINE = ReplacingMergeTree(_fetched_at)
+ORDER BY trip_key;

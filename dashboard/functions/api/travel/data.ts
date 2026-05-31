@@ -24,6 +24,10 @@ interface TravelKPIs {
   directions_pct: number;
   search_pct: number;
   explore_pct: number;
+  kilometers_traveled: number;
+  days_away_from_home: number;
+  longest_trip_days: number;
+  new_places_this_year: number;
 }
 
 interface Location {
@@ -53,12 +57,28 @@ interface TopDestination {
   type: string;
 }
 
+interface Trip {
+  start: string;
+  end: string;
+  destination: string;
+  days: number;
+  km: number;
+  title: string;
+  trip_type: string;
+  country: string;
+  summary: string;
+  confidence: number;
+  temp_mean: number;
+  precip_mm: number;
+  weather: string;
+}
+
 export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
   const { env, request } = context;
 
   const { data, isFromCache, error } = await queryWithFallback<any>(
     async () => {
-      const [kpisResult, locations, hourlyActivity, lastActivities, dailyActivity, topDestinations] =
+      const [kpisResult, locations, hourlyActivity, lastActivities, dailyActivity, topDestinations, tripsResult] =
         await Promise.all([
           queryClickHouse<TravelKPIs>(env, `SELECT * FROM gold.gold_maps_kpis_dashboard LIMIT 1`),
           queryClickHouse<Location>(env, `SELECT * FROM gold.gold_maps_locations_dashboard LIMIT 500`),
@@ -69,6 +89,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
             `SELECT * FROM gold.gold_maps_daily_activity_dashboard`
           ),
           queryClickHouse<TopDestination>(env, `SELECT * FROM gold.gold_maps_destinations_dashboard LIMIT 10`),
+          queryClickHouse<Trip>(env, `SELECT * FROM gold.gold_maps_trips LIMIT 100`),
         ]);
 
       const kpis = kpisResult[0] || {
@@ -88,6 +109,10 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         directions_pct: 0,
         search_pct: 0,
         explore_pct: 0,
+        kilometers_traveled: 0,
+        days_away_from_home: 0,
+        longest_trip_days: 0,
+        new_places_this_year: 0,
       };
 
       // Null-safe coercion: ClickHouse can return NULL for ratio columns
@@ -109,6 +134,10 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           directionsPct: num(kpis.directions_pct).toFixed(1),
           searchPct: num(kpis.search_pct).toFixed(1),
           explorePct: num(kpis.explore_pct).toFixed(1),
+          kilometersTraveled: num(kpis.kilometers_traveled).toLocaleString(),
+          daysAwayFromHome: num(kpis.days_away_from_home).toString(),
+          longestTripDays: num(kpis.longest_trip_days).toString(),
+          newPlacesThisYear: num(kpis.new_places_this_year).toString(),
           firstActivity: kpis.first_activity,
           lastActivity: kpis.last_activity,
         },
@@ -120,6 +149,21 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
             lng: Number(l.lng),
             duration: l.duration || 'Unknown',
           })),
+        trips: tripsResult.map(t => ({
+          start: t.start,
+          end: t.end,
+          destination: t.destination,
+          days: Number(t.days),
+          km: Number(t.km),
+          title: t.title,
+          type: t.trip_type,
+          country: t.country,
+          summary: t.summary,
+          confidence: Number(t.confidence),
+          weather: t.weather || '',
+          tempMean: Number(t.temp_mean),
+          precipMm: Number(t.precip_mm),
+        })),
         charts: {
           hourlyActivity: hourlyActivity.map(h => ({ hour: h.hour, activities: Number(h.activities) })),
           lastActivities: lastActivities.map(a => ({
@@ -159,10 +203,15 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         directionsPct: '0',
         searchPct: '0',
         explorePct: '0',
+        kilometersTraveled: '0',
+        daysAwayFromHome: '0',
+        longestTripDays: '0',
+        newPlacesThisYear: '0',
         firstActivity: '',
         lastActivity: '',
       },
       locations: [],
+      trips: [],
       charts: {
         hourlyActivity: [],
         lastActivities: [],

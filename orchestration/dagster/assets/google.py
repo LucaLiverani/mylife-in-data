@@ -9,6 +9,7 @@ scripts/import_maps_timeline_export.py.
 from __future__ import annotations
 
 import tempfile
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -283,6 +284,22 @@ def maps_trip_llm(context) -> dict:
     return {"enriched": n}
 
 
+@asset(
+    group_name="google",
+    description="Fetch historical weather per trip (Open-Meteo, no key) → silver.maps_trip_weather.",
+    deps=[maps_trip_segmentation],
+)
+def maps_trip_weather(context) -> dict:
+    """Weather for each trip's destination over its window. Monotonic — only
+    un-weathered trips are fetched. Independent of the LLM step (keys on the
+    geometric trip), so it can run alongside maps_trip_llm after segmentation."""
+    from ingestion.google.maps.trip_weather import fetch_trip_weather
+
+    n = fetch_trip_weather()
+    context.log.info("Fetched weather for %d trip(s)", n)
+    return {"weathered": n}
+
+
 # ── Jobs + schedules ───────────────────────────────────────────────────────
 # The unified daily Maps+YouTube DP job is defined at the end of this module
 # (after both schemas + enrichment assets exist).
@@ -292,13 +309,23 @@ maps_private_places_job = define_asset_job(
 )
 
 
-# Trip pipeline (segment → LLM-adjudicate), runnable on demand. Full wiring
-# into the daily flow happens AFTER the dbt build (Phase 6) — the LLM step
-# reads dbt-built silver views, so it must run post-build, not on this job's
-# own schedule. No schedule attached here on purpose.
+# Trip pipeline: segment → {LLM-adjudicate, fetch weather}. Runs AFTER the
+# 09:00 dbt build, since segmentation/LLM read dbt-built silver views and gold
+# (gold_maps_trips) is a live view over the silver tables these assets write —
+# no second dbt build needed. maps_trip_llm + maps_trip_weather both depend on
+# segmentation and run once it completes.
 maps_trips_job = define_asset_job(
     "maps_trips_job",
-    selection=AssetSelection.assets(maps_trip_segmentation, maps_trip_llm),
+    selection=AssetSelection.assets(maps_trip_segmentation, maps_trip_llm, maps_trip_weather),
+)
+
+
+maps_trips_schedule = ScheduleDefinition(
+    job=maps_trips_job,
+    cron_schedule="30 9 * * *",  # 09:30 UTC — after the 09:00 dbt build
+    name="maps_trips_schedule",
+    description="Daily 09:30 UTC — re-segment trips, then LLM-adjudicate + fetch weather.",
+    default_status=DefaultScheduleStatus.RUNNING,
 )
 
 
@@ -385,11 +412,66 @@ def youtube_metadata_enricher(context) -> dict:
 
 
 # ── Unified daily Data Portability ingest (Maps + YouTube) ──────────────────
+# Google's DP cooldown is per OAuth client (~24h), anchored to the *last*
+# initiate. A fixed daily cron therefore races that rolling window: anything
+# that lands a DP export after the cron tick — a manual re-run, scheduler/
+# container lag, or the Monday maps_private_places_sync (same client) — pushes
+# the anchor past the cron time and makes the *next* day's run 429. Two guards:
+#
+#   1. DP_DAILY_LOOKBACK_DAYS > 1 — myactivity.* exports are time-windowed, so a
+#      fully skipped day would be a permanent gap (the next run only fetches its
+#      own window). The bronze tables are ReplacingMergeTree on natural keys, so
+#      overlapping windows dedup for free; over-fetching a few days lets any
+#      single missed/late run self-heal on the next success.
+#   2. DP_COOLDOWN_MAX_WAIT_S — on a time-based 429 the scheduled run sleeps out
+#      the cooldown and retries (same-day recovery) instead of hard-failing,
+#      capped so a far-off cooldown (e.g. a midday backfill) surfaces loudly and
+#      defers to guard #1 rather than blocking a worker for hours.
+DP_DAILY_LOOKBACK_DAYS = 3
+DP_COOLDOWN_MAX_WAIT_S = 75 * 60
+
+
+def _initiate_dp_with_cooldown_wait(context, client, resources, start_time, end_time) -> str:
+    """initiate_archive, tolerating Google's per-client 24h cooldown.
+
+    On a time-based 429 we sleep until the cooldown clears (+skew buffer) and
+    retry, so the *scheduled* run recovers the same day. Bounded by
+    DP_COOLDOWN_MAX_WAIT_S — past that (or if the retry time is unparseable) we
+    re-raise so the failure alerts and the next run's overlapping window
+    backfills the gap."""
+    from ingestion.google.portability import DataPortabilityRateLimited
+
+    waited = 0.0
+    while True:
+        try:
+            return client.initiate_archive(resources, start_time=start_time, end_time=end_time)
+        except DataPortabilityRateLimited as exc:
+            if exc.retry_after is None:
+                context.log.error("DP cooldown 429 with no parseable retry time — giving up: %s", exc)
+                raise
+            sleep_s = max(exc.seconds_until_ready(buffer_s=60), 30.0)
+            if waited + sleep_s > DP_COOLDOWN_MAX_WAIT_S:
+                context.log.error(
+                    "DP per-client cooldown until %s (prev jobs: %s) exceeds the %ds wait cap — "
+                    "giving up; the next run's %dd window will backfill this gap.",
+                    exc.retry_after.isoformat(), ",".join(exc.previous_job_ids) or "?",
+                    DP_COOLDOWN_MAX_WAIT_S, DP_DAILY_LOOKBACK_DAYS,
+                )
+                raise
+            context.log.warning(
+                "DP per-client cooldown until %s — sleeping %.0fs then retrying initiate.",
+                exc.retry_after.isoformat(), sleep_s,
+            )
+            time.sleep(sleep_s)
+            waited += sleep_s
+
+
 def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> dict:
     """One Data Portability archive covering BOTH myactivity.maps and
     myactivity.youtube. Google's DP cooldown is per OAuth client (~24h), so a
     single combined initiation is the only way to refresh both sources daily
-    without the second hitting 429. The unpacked archive matches Takeout's
+    without the second hitting 429 (the cron can still race the cooldown — see
+    _initiate_dp_with_cooldown_wait). The unpacked archive matches Takeout's
     layout, so the maps + youtube parsers each select their own files."""
     from ingestion.google.portability import DataPortabilityClient
     from ingestion.google.maps.activity_parser import parse_archive_for_activity
@@ -407,7 +489,7 @@ def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> di
         start_time.isoformat(), end_time.isoformat(), resources,
     )
 
-    job_id = client.initiate_archive(resources, start_time=start_time, end_time=end_time)
+    job_id = _initiate_dp_with_cooldown_wait(context, client, resources, start_time, end_time)
     job = client.wait_for_archive(job_id)
 
     with tempfile.TemporaryDirectory(prefix="dp-combined-") as tmp:
@@ -432,7 +514,7 @@ def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> di
     required_resource_keys={"google_auth_portability"},
 )
 def maps_youtube_dp_daily(context) -> dict:
-    return _run_combined_dp_ingest(context, years_back=0, days_back=1)
+    return _run_combined_dp_ingest(context, years_back=0, days_back=DP_DAILY_LOOKBACK_DAYS)
 
 
 # Single daily job: combined DP ingest → Maps place enrichment + YouTube

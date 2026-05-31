@@ -54,8 +54,15 @@ SELECT
         nullIf((SELECT count() FROM a), 0) * 100.0,
         1
     ), 0)                                                                         AS explore_pct,
-    -- Timeline-derived KPIs stay backed by silver.maps_trips (filled by
-    -- monthly manual export). 0 until a Timeline import runs.
-    (SELECT coalesce(sum(days), 0) FROM silver.maps_trips)                        AS days_away_from_home,
-    (SELECT coalesce(max(days), 0) FROM silver.maps_trips)                        AS longest_trip_days,
-    toInt32(0)                                                                    AS kilometers_traveled
+    -- Movement KPIs over GENUINE trips (gold_maps_trips already applies the
+    -- LLM verdict + human overrides + genuine-trip gate), so the 2 rejected
+    -- candidates don't inflate them. 0 until trips exist.
+    (SELECT coalesce(sum(days), 0) FROM {{ ref('gold_maps_trips') }})             AS days_away_from_home,
+    (SELECT coalesce(max(days), 0) FROM {{ ref('gold_maps_trips') }})             AS longest_trip_days,
+    (SELECT coalesce(toInt32(sum(km)), 0) FROM {{ ref('gold_maps_trips') }})      AS kilometers_traveled,
+    -- Distinct destinations whose FIRST trip is in the current year.
+    (SELECT count() FROM (
+        SELECT destination, min(toYear(toDate(start))) AS first_year
+        FROM {{ ref('gold_maps_trips') }} GROUP BY destination
+        HAVING first_year = toYear(today())
+    ))                                                                            AS new_places_this_year
