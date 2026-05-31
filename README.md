@@ -1,88 +1,160 @@
+<div align="center">
+
+🟢 🔴 🟣 🔵
+
 # My Life in Data
 
-Personal data platform: collect signals from streaming services (Spotify, YouTube, Google Maps, Google Calendar), warehouse them in ClickHouse, and visualize on a Cloudflare-hosted dashboard.
+### _Pretty charts, brutal honesty, optional self-improvement._
 
-Canonical docs:
+A personal data platform that pulls my own activity back out of the services I use most (Spotify, YouTube, Google Maps, Google Calendar, etc..). It streams everything into **ClickHouse**, models it with **dbt**, orchestrates the pipeline with **Dagster**, and serves it through a **Cloudflare-hosted dashboard**, so the data these apps quietly collect about me finally answers to *me*.
 
-1. **`OPERATIONS.md`** — running, deploying, and debugging the live system. Start here.
-2. **`DATA_MODEL.md`** — bronze/silver/gold schemas and the gold→dashboard contract.
-3. **`SYNC_TO_VM.md`** — the laptop ↔ VM split and the original cutover (kept as a fresh-VM reference).
+[**▶ Live demo: mylife-in-data.com**](https://mylife-in-data.com) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Run it yourself](#run-it-yourself) &nbsp;·&nbsp; [Deeper docs](#deeper-docs)
 
-## Layout
+<br>
 
+![Live](https://img.shields.io/website?url=https%3A%2F%2Fmylife-in-data.com&label=live&up_message=online&down_message=offline&logo=cloudflare&logoColor=white&style=flat-square)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white&style=flat-square)
+![React](https://img.shields.io/badge/React-149ECA?logo=react&logoColor=white&style=flat-square)
+![ClickHouse](https://img.shields.io/badge/ClickHouse-FFCC01?logo=clickhouse&logoColor=black&style=flat-square)
+![dbt](https://img.shields.io/badge/dbt-FF694B?logo=dbt&logoColor=white&style=flat-square)
+![Dagster](https://img.shields.io/badge/Dagster-4F43DD?logo=dagster&logoColor=white&style=flat-square)
+![Redpanda](https://img.shields.io/badge/Redpanda%E2%80%89(Kafka)-E2401B?logo=apachekafka&logoColor=white&style=flat-square)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?logo=cloudflare&logoColor=white&style=flat-square)
+
+</div>
+
+![The producer's console, the dashboard home page](docs/screenshots/home.png)
+
+---
+
+## Why
+
+Three honest reasons:
+
+1. **Ownership.** Spotify, Google, and the rest know my life in forensic detail. I wanted my own copy: in my own warehouse, queryable with plain SQL, instead of an "export" button that emails me a ZIP file in 30 days.
+2. **Learning.** I wanted a real, end-to-end data platform that was entirely mine to push on: streaming ingestion, a columnar warehouse, dbt models, orchestration, and a product-grade frontend. Owning every layer is where the interesting trade-offs actually live.
+3. **Fun, and sharing what I learn.** Turning my own bad habits into pretty charts is genuinely entertaining. Everything is documented and the source is right here, so anyone curious can see exactly how the pieces fit.
+
+The dashboard is the surface. The pipeline underneath it is the actual project.
+
+## The tour
+
+Every source becomes its own channel, with one signature color and its own page. The home page mixes all of them into a single console.
+
+|  |  |
+|---|---|
+| [![Spotify](docs/screenshots/spotify.png)](https://mylife-in-data.com/spotify)<br>**Spotify** · _A deep dive into my musical obsessions and sonic rabbit holes._ | [![YouTube](docs/screenshots/youtube.png)](https://mylife-in-data.com/youtube)<br>**YouTube** · _Where productivity goes to die, one autoplay at a time._ |
+| [![Maps](docs/screenshots/maps.png)](https://mylife-in-data.com/maps)<br>**Maps** · _Collecting passport stamps and existential crises since 2024._ | [![Calendar](docs/screenshots/calendar.png)](https://mylife-in-data.com/google)<br>**Calendar** · _Meetings I'll show up to, plans I might honor, white space I should defend._ |
+
+## How it works
+
+Four sources, one pipeline, four stops on the way to a chart:
+
+```mermaid
+flowchart LR
+    S[Spotify] & Y[YouTube] & M[Maps] & C[Calendar] --> ING[Ingestion<br/>producers + batch pulls]
+    ING --> RP[(Redpanda)]
+    RP --> BR[(ClickHouse<br/>bronze)]
+    BR -->|dbt| GOLD[(silver → gold)]
+    GOLD --> FN[Pages Functions<br/>/api]
+    FN --> UI[React dashboard]
+    DAG{{Dagster}} -. orchestrates .-> ING
+    DAG -.-> BR
+    DAG -.-> GOLD
 ```
-ingestion/
-  _shared/               clickhouse, redpanda, r2, json_utils, google_oauth
-  spotify/               currently-playing producer + history pulls + enrichment
-  google/
-    portability.py       Data Portability API client (shared by YouTube + Maps)
-    maps/                Activity parser + Places API client + Timeline import
-    youtube/             History parser + Data API v3 enricher
-    calendar/            Calendar API client + event parser
-orchestration/dagster/   Asset/schedule/sensor definitions + resources
-transformations/         dbt project: silver + gold ClickHouse models
-warehouse/ddl/           Source-of-truth CREATE TABLEs, applied by apply.sh
-infrastructure/          Docker Compose stack + provisioning scripts
-dashboard/               React + Vite + Cloudflare Pages Functions
-scripts/                 Google/Spotify auth bootstrap, Maps Timeline import, connection probes
+
+- **Ingest.** A Spotify producer polls "now playing" every few seconds. Google data (YouTube, Maps, Calendar) arrives as daily batch pulls through the Data Portability and Calendar APIs. Events land in Redpanda, then ClickHouse bronze.
+- **Model.** dbt builds the silver (cleaned, conformed) and gold (dashboard-ready) layers as ClickHouse views and tables.
+- **Orchestrate.** Dagster runs ~30 assets across every source: schedules, sensors, a Calendar webhook, and a daily freshness monitor.
+- **Serve.** Cloudflare Pages hosts the static React app. Pages Functions (`/api/*`) query gold over a Cloudflare Tunnel. The VM owns OAuth-token refresh and every scheduled ingest; the laptop stays dev-only.
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| **Ingestion** | Python · Spotify Web API · Google Data Portability API · Google Calendar API |
+| **Streaming** | Redpanda (Kafka-compatible) |
+| **Warehouse** | ClickHouse (bronze → silver → gold) |
+| **Modeling** | dbt |
+| **Orchestration** | Dagster (assets, schedules, sensors) |
+| **Dashboard** | React 19 · Vite · TypeScript · Tailwind · Recharts · Leaflet |
+| **Serving** | Cloudflare Pages + Pages Functions · R2 · Tunnel + Access |
+| **Monitoring** | Prometheus + Grafana |
+| **Tooling** | `uv` (Python) · Docker Compose (local stack) |
+
+## A few problems worth solving
+
+The parts that made this an engineering project and not just a dashboard:
+
+- **Google killed Timeline mid-build.** Partway through, Google moved Maps Timeline on-device for many accounts. The location pipeline pivoted from Timeline to `myactivity.maps` (search, view, directions), enriched via the Places API, with monthly phone exports as a backfill path.
+- **Two OAuth flows, because Google requires it.** Data Portability scopes can't share a consent screen with standard scopes, so there are two separate OAuth flows writing two token rows.
+- **Privacy by exclusion.** Starred places are ingested as coordinates only and used as a spatial exclusion filter, so friends' home addresses never reach the public map even though the map itself is public.
+- **Graceful degradation.** Every `/api/*` endpoint falls back to bundled mock JSON when the warehouse is unreachable. That keeps the live site up through a backend hiccup, and it's why you can run the whole dashboard locally with no backend at all (see below).
+
+More depth in [`DATA_MODEL.md`](docs/DATA_MODEL.md) and [`OPERATIONS.md`](docs/OPERATIONS.md).
+
+## Run it yourself
+
+### Just the dashboard (no backend, mock data)
+
+The fastest way to poke around. The UI runs entirely on bundled mock data, so there's no warehouse, no credentials, and nothing to configure.
+
+```bash
+git clone https://github.com/LucaLiverani/mylife-in-data.git
+cd mylife-in-data/dashboard
+npm install
+npm run build && npm run pages:dev   # serves the app with bundled mocks
 ```
 
-## Stack
+Every `/api/*` route falls back to `public/mocks/*.json`, so the full interface (charts, maps, live console) works offline.
 
-| Service | Purpose | Port |
-|---|---|---|
-| Redpanda | Kafka-compatible event streaming | 9093 (host) / 9092 (network) |
-| ClickHouse | Columnar OLAP warehouse | 8123 (HTTP) / 9200 (native) |
-| Dagster | Asset-based orchestration | 3000 |
-| Prometheus + Grafana | Monitoring | 9090 / 3001 |
-| spotify-current-producer | 5s-poll Spotify producer container | — |
-
-Object storage: Cloudflare R2 (provisioned outside the compose stack). Every credential — ClickHouse, Grafana, Dagster Postgres, Google OAuth, R2 keys, Maps API — flows from `infrastructure/.env` (gitignored), referenced via `${VAR}` in compose YAML. Nothing personal is hardcoded in any committed file.
-
-Python deps: managed with **uv** (`pyproject.toml` + `uv.lock`). `uv sync` recreates the venv.
-
-## Quick start (local)
+### The whole platform
 
 ```bash
 cd infrastructure
-cp .env.example .env       # then chmod 600 .env and fill in real values
+cp .env.example .env     # then: chmod 600 .env and fill in real values
 ./start-all.sh
 ```
 
-URLs printed at the end. The stack uses one identity across every service — username + password come from `infrastructure/.env`.
+Spins up Redpanda, ClickHouse, Dagster, Prometheus, and Grafana via Docker Compose. Full setup, OAuth bootstrap, secret rotation, and the deploy story live in [`OPERATIONS.md`](docs/OPERATIONS.md).
 
-```bash
-./stop-all.sh
+## Repo layout
+
+```
+ingestion/        Python collectors: Spotify producer, Google batch pulls, enrichment
+transformations/  dbt project: silver + gold ClickHouse models
+orchestration/    Dagster assets, schedules, sensors
+warehouse/        Source-of-truth ClickHouse DDL
+infrastructure/   Docker Compose stack + provisioning scripts
+dashboard/        React + Vite dashboard + Cloudflare Pages Functions (/api)
+scripts/          Auth bootstrap, full-history imports, connection probes
+docs/             Operations, data-model, and sync docs + dashboard screenshots
 ```
 
-## Pipelines status
+## Deeper docs
 
-The full ingest → transform → serve loop is live: Dagster loads ~30 assets across Spotify, YouTube, Maps, and Calendar, and dbt builds the silver + gold ClickHouse views the dashboard reads. Two pivots from the original design, both forced by Google API constraints:
+| Doc | What's in it |
+|---|---|
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Running, deploying, and debugging the live system. **Start here.** |
+| [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Bronze / silver / gold schemas, and the gold→dashboard contract. |
+| [`dashboard/DESIGN.md`](dashboard/DESIGN.md) | The "Producer's Console" design system. |
+| [`dashboard/PRODUCT.md`](dashboard/PRODUCT.md) | Product brief, audiences, and brand voice. |
+| [`docs/SYNC_TO_VM.md`](docs/SYNC_TO_VM.md) | The laptop ↔ VM split and the original cutover. |
 
-- **Two Google OAuth flows** (`standard` + `portability`). Google rejects mixed-scope consent requests for Data Portability scopes, so each scope group gets its own bootstrap + its own row in `auth.google_tokens`.
-- **Maps is activity-based, not Timeline-based**. Google's 2024 migration moved Timeline (continuous location tracking) on-device only for many accounts. The pipeline now consumes `myactivity.maps` (search + view + directions, ~5MB/day) and enriches via Places API (neighborhood + place type). Timeline data flows in only via monthly manual phone export → `scripts/import_maps_timeline_export.py`. Starred places are ingested as **coordinates only** and used as a spatial exclusion filter so friends' home addresses never reach the public dashboard.
+## Roadmap
 
-Setup gates that require user action before data flows:
+- 🤖 **Chat with my data.** Ask questions in plain English over the same gold tables.
+- 📖 **Per-source explainer pages.** What each KPI means, and the infrastructure that produces it.
 
-- **Spotify** — run `.venv/bin/python ingestion/spotify/authenticate_local.py` once per host to seed `tokens/.spotify_cache`. The `spotify-current-producer` container starts automatically via `start-all.sh` when `DAGSTER_SCHEDULES_ENABLED=1` (VM-only by default).
-- **Google** — fill `GOOGLE_CLIENT_*` + `GOOGLE_MAPS_API_KEY` in `infrastructure/.env`. For the first-time bootstrap, either run `scripts/bootstrap_google_auth.py` locally or use the Pages re-auth flow (`https://<PAGES_DOMAIN>/api/internal/google-auth-redirect?group={standard,portability}`) which writes tokens directly into VM ClickHouse over the Cloudflare Tunnel.
-- **R2** — fill the 5 `R2_*` keys in `infrastructure/.env`; smoke-test with `scripts/test_r2_connection.py`.
-- **Maps home anchor** (optional, for trip segmentation) — `scripts/set_home_location.py`.
+---
 
-Connection probes for fast diagnostics during setup: `scripts/test_r2_connection.py`, `scripts/test_google_connection.py`, `scripts/probe_maps_data_portability.py`.
+<div align="center">
 
-Until each gate is done, the dashboard transparently serves `public/mocks/*.json` — every `/api/*` response is tagged `_meta.cached: true`.
+Built by **Luca Liverani**.
 
-## Production deploy
+If you got this far, the [**live dashboard**](https://mylife-in-data.com) is more fun than this README.
 
-Live at `https://<PAGES_DOMAIN>` (Cloudflare Pages) talking to an ARM64 VM through a Cloudflare Tunnel + Access. The VM owns OAuth-token refresh and runs every scheduled ingest; the laptop is dev-only (`DAGSTER_SCHEDULES_ENABLED=0`, `MYLIFE_TOKEN_WRITER=0` — see `OPERATIONS.md` → "Daily dev cycle").
+<sub>No formal license yet, so treat it as all rights reserved, but read freely and borrow ideas. The code is for learning; the data is mine. 🟢🔴🟣🔵</sub>
 
-Daily auto-loop:
-```
-bronze ingest (Spotify recently-played every 1m, combined Maps+YouTube Data Portability 04:00,
-               Calendar webhook + daily channel renew, freshness monitor 08:00)
-  → dbt build (silver + gold rebuild at 09:00 UTC)
-  → public dashboard serves live ClickHouse data
-```
-
-See **`OPERATIONS.md`** for setup, secret rotation, and common failure modes. **`SYNC_TO_VM.md`** documents the original laptop→VM cutover (already executed; kept as a reference for future fresh-VM builds).
+</div>

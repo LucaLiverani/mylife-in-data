@@ -76,8 +76,8 @@ export function ChannelStrip({
       aria-label={`${title} channel — ${primary}`}
       className={cn(
         'group flex h-full flex-col gap-4 rounded-md border border-signal-white/10 bg-rack-black/60 p-5',
-        'transition-shadow duration-200 ease-snap',
-        'hover:shadow-lift',
+        'transition duration-200 ease-snap',
+        'hover:-translate-y-0.5 hover:shadow-lift',
         CHANNEL_CLASS.hoverGlow[channel],
         CHANNEL_CLASS.hoverBorder[channel],
         CHANNEL_CLASS.focusRing[channel],
@@ -93,10 +93,17 @@ export function ChannelStrip({
             {STATUS_LABEL[status]}
           </span>
         </div>
-        <ChevronRight
-          className="size-4 shrink-0 text-signal-white/30 transition-colors group-hover:text-signal-white/70"
+        <span
+          className={cn(
+            'flex items-center gap-1 font-mono text-[10px] font-medium uppercase tracking-widest',
+            'text-signal-white/35 transition-colors',
+            CHANNEL_CLASS.groupHoverText[channel],
+          )}
           aria-hidden="true"
-        />
+        >
+          View
+          <ChevronRight className="size-3.5 transition-transform duration-200 ease-snap group-hover:translate-x-0.5" />
+        </span>
       </div>
 
       {/* Channel name */}

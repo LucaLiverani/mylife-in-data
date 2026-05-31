@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Github } from 'lucide-react';
 import { CHANNEL_CLASS, type Channel } from '@/lib/channels';
+import { REPO_URL } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -72,6 +73,7 @@ export function Nav() {
           {UTILS.map((item) => (
             <UtilLink key={item.to} item={item} />
           ))}
+          <RepoLink />
         </div>
 
         {/* Mobile menu trigger */}
@@ -104,6 +106,7 @@ export function Nav() {
           {UTILS.map((item) => (
             <UtilLink key={item.to} item={item} stacked />
           ))}
+          <RepoLink stacked />
         </nav>
       </div>
     </header>
@@ -167,5 +170,30 @@ function UtilLink({ item, stacked = false }: { item: NavItem; stacked?: boolean 
     >
       {item.label}
     </NavLink>
+  );
+}
+
+/**
+ * External link to the public source repo. Styled like a utility link so it
+ * sits quietly on the right of the bar — icon-only on desktop, labeled in the
+ * mobile slide-over to match the stacked utility rows.
+ */
+function RepoLink({ stacked = false }: { stacked?: boolean }) {
+  return (
+    <a
+      href={REPO_URL}
+      target="_blank"
+      rel="noreferrer noopener"
+      aria-label="View source on GitHub"
+      title="View source on GitHub"
+      className={cn(
+        'rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-widest text-signal-white/40 transition-colors hover:text-signal-white/80',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white',
+        stacked ? 'flex items-center justify-between' : 'inline-flex items-center',
+      )}
+    >
+      {stacked && <span>GitHub</span>}
+      <Github className="size-4" aria-hidden="true" />
+    </a>
   );
 }

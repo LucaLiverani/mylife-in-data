@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import { Nav } from '@/components/Nav';
+import { Footer } from '@/components/Footer';
 
 const Home    = lazy(() => import('./pages/Home'));
 const Spotify = lazy(() => import('./pages/Spotify'));
@@ -41,8 +42,13 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <Nav />
-      <AppRoutes />
+      <div className="flex min-h-screen flex-col">
+        <Nav />
+        <div className="flex-1">
+          <AppRoutes />
+        </div>
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }

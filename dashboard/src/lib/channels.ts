@@ -67,6 +67,12 @@ export const CHANNEL_CLASS = {
     maps:     'focus-visible:outline-channel-violet',
     calendar: 'focus-visible:outline-channel-blue',
   },
+  groupHoverText: {
+    spotify:  'group-hover:text-channel-green',
+    youtube:  'group-hover:text-channel-red',
+    maps:     'group-hover:text-channel-violet',
+    calendar: 'group-hover:text-channel-blue',
+  },
   scrollbar: {
     spotify:  'scrollbar-thin scrollbar-thumb-channel-green/50 scrollbar-track-transparent',
     youtube:  'scrollbar-thin scrollbar-thumb-channel-red/50 scrollbar-track-transparent',

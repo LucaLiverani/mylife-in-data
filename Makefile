@@ -1,5 +1,5 @@
 # Convenience targets for the laptop ↔ VM workflow.
-# See OPERATIONS.md "Daily dev cycle" for the full picture.
+# See docs/OPERATIONS.md "Daily dev cycle" for the full picture.
 
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
