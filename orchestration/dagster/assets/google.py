@@ -129,17 +129,13 @@ def maps_private_places_sync(context) -> int:
     creds = context.resources.google_auth_portability.get_credentials()
     client = DataPortabilityClient(creds)
 
-    job_id = client.initiate_archive(MAPS_SAVED_PLACES_RESOURCES)
-    try:
-        job = client.wait_for_archive(job_id)
-    except Exception as exc:
-        # 24h rate-limit can hit; parse the existing job_id from the error.
-        import re
-
-        m = re.search(r"job ([a-f0-9-]{36})", str(exc))
-        if not m:
-            raise
-        job = client.get_state(m.group(1))
+    # Shares the per-client 24h cooldown with the daily ingest. The week is
+    # partitioned so this owns Mondays (see schedules below), but it can still
+    # race the rolling boundary against Sunday's run — wait it out rather than
+    # fail. Both initiate and wait happen before the TRUNCATE, so any failure
+    # here leaves the existing private-places filter intact (fail-safe).
+    job_id = _initiate_dp_with_cooldown_wait(context, client, MAPS_SAVED_PLACES_RESOURCES)
+    job = client.wait_for_archive(job_id)
 
     with tempfile.TemporaryDirectory(prefix="maps-saved-") as tmp:
         root = Path(tmp)
@@ -331,9 +327,12 @@ maps_trips_schedule = ScheduleDefinition(
 
 maps_private_places_schedule = ScheduleDefinition(
     job=maps_private_places_job,
-    cron_schedule="0 5 * * 1",  # Monday 05:00 — saved places change slowly
+    # Monday 04:00 — owns the shared per-client DP cooldown on Mondays (the
+    # combined activity ingest skips Monday for this). Same 04:00 slot as the
+    # other days, so the cooldown boundary stays at a single time of day.
+    cron_schedule="0 4 * * 1",
     name="maps_private_places_schedule",
-    description="Weekly refresh of the private-places spatial filter from starred places.",
+    description="Weekly (Monday 04:00 UTC) refresh of the private-places spatial filter from starred places.",
     default_status=DefaultScheduleStatus.RUNNING,
 )
 
@@ -413,32 +412,47 @@ def youtube_metadata_enricher(context) -> dict:
 
 # ── Unified daily Data Portability ingest (Maps + YouTube) ──────────────────
 # Google's DP cooldown is per OAuth client (~24h), anchored to the *last*
-# initiate. A fixed daily cron therefore races that rolling window: anything
-# that lands a DP export after the cron tick — a manual re-run, scheduler/
-# container lag, or the Monday maps_private_places_sync (same client) — pushes
-# the anchor past the cron time and makes the *next* day's run 429. Two guards:
+# initiate, and allows only one initiate per ~24h. That shapes both the
+# schedule and this helper:
 #
-#   1. DP_DAILY_LOOKBACK_DAYS > 1 — myactivity.* exports are time-windowed, so a
-#      fully skipped day would be a permanent gap (the next run only fetches its
-#      own window). The bronze tables are ReplacingMergeTree on natural keys, so
-#      overlapping windows dedup for free; over-fetching a few days lets any
-#      single missed/late run self-heal on the next success.
-#   2. DP_COOLDOWN_MAX_WAIT_S — on a time-based 429 the scheduled run sleeps out
-#      the cooldown and retries (same-day recovery) instead of hard-failing,
-#      capped so a far-off cooldown (e.g. a midday backfill) surfaces loudly and
-#      defers to guard #1 rather than blocking a worker for hours.
+#   - The week is PARTITIONED so exactly one DP initiate happens per day, all at
+#     04:00 UTC: maps_private_places_sync owns Mondays (full-snapshot saved
+#     places), the combined activity ingest owns the other six days (see the
+#     crons below). This is why the daily cron excludes Monday — two initiates
+#     in one 24h window would 429 the second, which used to silently starve the
+#     weekly saved-places refresh.
+#   - A daily job vs a 24h cooldown still lands on its own rolling boundary, so
+#     anything that perturbs the anchor (a manual re-run, scheduler/container
+#     lag) makes the next run briefly race it. Two guards absorb that:
+#       1. DP_DAILY_LOOKBACK_DAYS > 1 — myactivity.* exports are time-windowed,
+#          so a fully skipped day would be a permanent gap (the next run only
+#          fetches its own window). bronze tables are ReplacingMergeTree on
+#          natural keys, so overlapping windows dedup for free; over-fetching a
+#          few days lets any single missed/late run (incl. the Monday skip)
+#          self-heal on the next success.
+#       2. _initiate_dp_with_cooldown_wait — on a time-based 429 the run sleeps
+#          out the cooldown and retries (same-day recovery), capped at
+#          DP_COOLDOWN_MAX_WAIT_S so a far-off cooldown (e.g. a midday backfill)
+#          surfaces loudly and defers to guard #1 instead of blocking a worker.
 DP_DAILY_LOOKBACK_DAYS = 3
 DP_COOLDOWN_MAX_WAIT_S = 75 * 60
+# Skew margin added when sleeping to the cooldown's clear time. Kept small: it's
+# also the per-day "creep" the anchor gains each time we re-initiate just after
+# the boundary, so a large buffer would slowly inflate the daily wait.
+DP_COOLDOWN_BUFFER_S = 15
 
 
-def _initiate_dp_with_cooldown_wait(context, client, resources, start_time, end_time) -> str:
+def _initiate_dp_with_cooldown_wait(
+    context, client, resources, start_time=None, end_time=None
+) -> str:
     """initiate_archive, tolerating Google's per-client 24h cooldown.
 
     On a time-based 429 we sleep until the cooldown clears (+skew buffer) and
     retry, so the *scheduled* run recovers the same day. Bounded by
     DP_COOLDOWN_MAX_WAIT_S — past that (or if the retry time is unparseable) we
     re-raise so the failure alerts and the next run's overlapping window
-    backfills the gap."""
+    backfills the gap. Shared by the daily combined ingest and the weekly
+    saved-places sync (which passes no time window)."""
     from ingestion.google.portability import DataPortabilityRateLimited
 
     waited = 0.0
@@ -449,7 +463,12 @@ def _initiate_dp_with_cooldown_wait(context, client, resources, start_time, end_
             if exc.retry_after is None:
                 context.log.error("DP cooldown 429 with no parseable retry time — giving up: %s", exc)
                 raise
-            sleep_s = max(exc.seconds_until_ready(buffer_s=60), 30.0)
+            # Sleep exactly to the clear time (+buffer); the 30s floor only kicks
+            # in when the cooldown should already be clear but Google still 429s
+            # (clock skew) — a brief retry rather than per-day creep.
+            sleep_s = exc.seconds_until_ready(buffer_s=DP_COOLDOWN_BUFFER_S)
+            if sleep_s <= 0:
+                sleep_s = 30.0
             if waited + sleep_s > DP_COOLDOWN_MAX_WAIT_S:
                 context.log.error(
                     "DP per-client cooldown until %s (prev jobs: %s) exceeds the %ds wait cap — "
@@ -530,9 +549,13 @@ google_dp_daily_job = define_asset_job(
 
 google_dp_daily_schedule = ScheduleDefinition(
     job=google_dp_daily_job,
-    cron_schedule="0 4 * * *",
+    # 04:00 UTC every day EXCEPT Monday (0=Sun … 6=Sat). Monday is reserved for
+    # maps_private_places_sync, which shares the per-client 24h DP cooldown and
+    # can't co-exist with a second initiate in the same window. The Monday gap
+    # in activity is backfilled by Tuesday's DP_DAILY_LOOKBACK_DAYS window.
+    cron_schedule="0 4 * * 0,2,3,4,5,6",
     name="google_dp_daily_schedule",
-    description="Daily 04:00 combined Maps + YouTube DP ingest + enrichment.",
+    description="Combined Maps + YouTube DP ingest + enrichment, 04:00 UTC Sun + Tue–Sat (Mon reserved for saved-places).",
     default_status=DefaultScheduleStatus.RUNNING,
 )
 
