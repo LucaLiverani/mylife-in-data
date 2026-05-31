@@ -40,6 +40,7 @@ Only port `22` is open inbound on the VM. Every other service reaches the public
 | Dagster UI | `https://dagster.<DOMAIN>` | Cloudflare Access email PIN |
 | Grafana | `https://grafana.<DOMAIN>` | Cloudflare Access email PIN |
 | Redpanda Console | `https://redpanda.<DOMAIN>` | Cloudflare Access email PIN |
+| Umami (web analytics) | `https://umami.<DOMAIN>` | Cloudflare Access email PIN; `/script.js` + `/api/send` Bypass (public) |
 | VM shell | `ssh <VM_USER>@<VM_IP>` | SSH key (`~/.ssh/id_ed25519`) |
 
 ---
@@ -49,7 +50,7 @@ Only port `22` is open inbound on the VM. Every other service reaches the public
 ```bash
 cd infrastructure
 cp .env.example .env       # then chmod 600 .env and fill in real values
-./start-all.sh             # idempotent — boots Redpanda → ClickHouse → Dagster → monitoring
+./start-all.sh             # idempotent — boots Redpanda → ClickHouse → Dagster → monitoring → Umami
 ./stop-all.sh
 ```
 
@@ -60,6 +61,7 @@ cp .env.example .env       # then chmod 600 .env and fill in real values
 | ClickHouse HTTP | http://localhost:8123 | `<CH_USER>` | (from `infrastructure/.env`) |
 | Grafana | http://localhost:3001 | `<CH_USER>` | (from `infrastructure/.env`) |
 | Prometheus | http://localhost:9090 | — | — |
+| Umami | http://localhost:3002 | `admin` | `umami` (change on first login) |
 
 If `:3000` is held by another process, uncomment `DAGSTER_PORT=3030` in `infrastructure/.env`.
 
@@ -81,7 +83,7 @@ If you'd rather have pushes to `main` auto-deploy: Cloudflare Pages dashboard �
 
 ### Production env vars
 
-Six secrets, uploaded automatically by the deploy script from `dashboard/.env.production` (gitignored, 600 perms):
+Eight lines, uploaded automatically from `dashboard/.env.production` (gitignored, 600 perms) — six runtime Function secrets plus the two `VITE_UMAMI_*` (build-time, inlined into the client bundle as the analytics tracker):
 
 ```
 CLICKHOUSE_HOST=https://clickhouse.<DOMAIN>
@@ -90,6 +92,8 @@ CLICKHOUSE_PASSWORD=<from password manager / infrastructure/.env on VM>
 CLICKHOUSE_DATABASE=gold
 CF_ACCESS_CLIENT_ID=<CF_ACCESS_CLIENT_ID>
 CF_ACCESS_CLIENT_SECRET=<from password manager — shown once at creation>
+VITE_UMAMI_SRC=https://umami.<DOMAIN>/script.js
+VITE_UMAMI_WEBSITE_ID=<from Umami UI → website → Edit>
 ```
 
 ### Mocks vs ClickHouse
@@ -99,6 +103,18 @@ Every `/api/*` endpoint tries ClickHouse first; on failure (network, auth, missi
 `public/mocks/` is the single source of truth for both dev (`npm run dev` via the Vite plugin in `vite-plugins/mock-api.ts`) and production fallback. Regenerate the seeded sample data with `npm run seed`.
 
 Every `/api/*` route is now a real Pages Function backed by ClickHouse. The last mock-only route, `/api/now/timeline` (the Live Console feed), became a real handler querying `silver.silver_events_unified`; a `_redirects` rewrite to the mock remains only as a dormant fallback (Pages routes the Function ahead of it). Mocks now exist solely as the offline-fallback corpus + dev seed.
+
+---
+
+## Web analytics (Umami)
+
+Cookieless, self-hosted analytics for the dashboard — its own compose stack (`infrastructure/compose/umami/`: `umami` + a dedicated Postgres), host port **3002**, brought up by `start-all.sh` / `deploy.sh` like any other service.
+
+- **Access:** the UI sits behind an email-PIN app, but two extra Access apps **Bypass** (`action: Bypass`, Everyone) `umami.<DOMAIN>/script.js` and `/api/send` so visitors' browsers can load the tracker and post events. Sanity check: `/` → 302 to cloudflareaccess, `/script.js` → 200, `/api/send` (GET) → 405.
+- **Tracker** is injected at runtime by `dashboard/src/main.tsx`, gated on `VITE_UMAMI_SRC` + `VITE_UMAMI_WEBSITE_ID` (in `dashboard/.env.production`; unset in dev → dev traffic untracked). Re-deploy the dashboard after changing them.
+- **DNS:** the VM has no cloudflared origin cert, so `cloudflared tunnel route dns` fails there — add the `umami` CNAME (→ `<TUNNEL_ID>.cfargotunnel.com`, proxied) via the Cloudflare dashboard instead.
+
+Ingesting Umami events into ClickHouse (`bronze.web_analytics_*` → silver/gold) is a future workstream.
 
 ---
 
@@ -189,7 +205,7 @@ ssh <VM_USER>@<VM_IP>
 cd ~/mylife-in-data/infrastructure
 ./start-all.sh            # idempotent — brings everything up
 ./stop-all.sh             # everything down
-docker ps                 # 9 containers expected (redpanda + console, clickhouse + keeper, dagster trio, grafana, prometheus)
+docker ps                 # 11 containers expected (redpanda + console, clickhouse + keeper, dagster trio, grafana, prometheus, umami + postgres)
 ```
 
 The cloudflared tunnel is a systemd service:
@@ -263,6 +279,7 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 | Cloudflare Access app save fails with "allow_authenticate_via_warp cannot be set" | Account-level WARP Session Duration not configured | Zero Trust → Settings → WARP Client → set any duration; retry |
 | ClickHouse 4xx error contains "Database gold does not exist" | Phase 2 leftover — no data on VM yet | Expected until pipelines are built. Dashboard falls back to mocks transparently |
 | Pages Function returns 200 but `_meta.cached` is `true` | CH is unreachable from the Function OR the query failed | Check `_meta.error` field for the upstream error message |
+| Every service's env empty / Postgres `you must specify POSTGRES_PASSWORD` | `infrastructure/.env` got replaced by a broken symlink — it must stay a **regular file** (the `compose/*/.env` symlink *to* it, never the reverse) | Restore it: `scp` the laptop's `infrastructure/.env` to the VM, then re-set `MYLIFE_TOKEN_WRITER=1` + `DAGSTER_SCHEDULES_ENABLED=1` |
 
 ---
 
