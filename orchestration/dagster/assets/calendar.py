@@ -217,15 +217,19 @@ def calendar_sync_drain(context) -> dict:
     n_events = 0
     n_processed = 0
     for calendar_id, notifs in by_cal.items():
+        # Collapse the calendar's many channel rows to its freshest non-empty
+        # syncToken (see calendar_polling_fallback for why FINAL alone is wrong).
         cal_meta = client.query(
-            "SELECT calendar_name, sync_token FROM auth.calendar_channels FINAL "
-            "WHERE calendar_id = %(c)s LIMIT 1",
+            "SELECT argMax(calendar_name, _updated_at) AS calendar_name, "
+            "argMaxIf(sync_token, _updated_at, sync_token != '') AS sync_token, "
+            "count() AS n "
+            "FROM auth.calendar_channels WHERE calendar_id = %(c)s",
             parameters={"c": calendar_id},
         ).result_rows
-        if not cal_meta:
+        if not cal_meta or cal_meta[0][2] == 0:
             context.log.warning("No channel row for %s — skipping", calendar_id)
             continue
-        calendar_name, sync_token = cal_meta[0]
+        calendar_name, sync_token = cal_meta[0][0], cal_meta[0][1]
         events, next_token = cal_client.events_list(calendar_id, sync_token=sync_token or None)
         rows_to_insert = [event_to_row(e, calendar_id=calendar_id, calendar_name=calendar_name) for e in events]
         rows_to_insert = [r for r in rows_to_insert if r is not None]
@@ -277,8 +281,16 @@ def calendar_polling_fallback(context) -> dict:
     from ingestion.google.calendar.insert import insert_events
 
     client = get_client()
+    # One row per calendar carrying its freshest non-empty syncToken. The table
+    # is keyed (calendar_id, channel_id) and calendar_channels_renew mints a new
+    # empty-token channel row daily, so a plain FINAL returns one row per channel
+    # (hundreds) — each empty token would force a fresh full history pull. Collapse
+    # to one row per calendar and keep the most recently written real token.
     rows = client.query(
-        "SELECT calendar_id, calendar_name, sync_token FROM auth.calendar_channels FINAL"
+        "SELECT calendar_id, "
+        "argMax(calendar_name, _updated_at) AS calendar_name, "
+        "argMaxIf(sync_token, _updated_at, sync_token != '') AS sync_token "
+        "FROM auth.calendar_channels GROUP BY calendar_id"
     ).result_rows
 
     if not rows:
