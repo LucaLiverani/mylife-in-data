@@ -143,8 +143,15 @@ def calendar_channels_renew(context) -> int:
         return 0
 
     client = get_client()
+    # One channel per *calendar*, not per existing channel row. The table is
+    # keyed (calendar_id, channel_id), so a plain FINAL returned every channel
+    # ever minted; renew then re-watched each one and inserted a fresh row per
+    # row — doubling the table (and the events.watch API calls) every single
+    # day. Collapse to distinct calendars so renew mints exactly one new channel
+    # per calendar per run.
     rows = client.query(
-        "SELECT calendar_id, calendar_name FROM auth.calendar_channels FINAL"
+        "SELECT calendar_id, argMax(calendar_name, _updated_at) AS calendar_name "
+        "FROM auth.calendar_channels GROUP BY calendar_id"
     ).result_rows
     if not rows:
         context.log.info("No calendar channels to renew.")
