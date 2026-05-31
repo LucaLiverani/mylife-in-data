@@ -1,22 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Home, Lock, Unlock } from 'lucide-react';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { KPIMetric } from '@/components/KPIMetric';
 import { TravelMap } from '@/components/maps/TravelMap';
 import { MapsCharts } from '@/components/charts/MapsCharts';
+import { TripTimeline, type Trip, type TripStatus } from '@/components/maps/TripTimeline';
 import { Surface } from '@/components/Surface';
 import { travelAPI } from '@/lib/api';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-function formatTripRange(start: string, end: string): string {
-  const s = new Date(start);
-  const e = new Date(end);
-  const sm = MONTHS[s.getMonth()];
-  const em = MONTHS[e.getMonth()];
-  if (sm === em) return `${sm} ${s.getDate()}–${e.getDate()}`;
-  return `${sm} ${s.getDate()} – ${em} ${e.getDate()}`;
-}
+const OWNER_TOKEN_KEY = 'mlid_trip_label_token';
 
 interface TravelData {
   stats: {
@@ -40,23 +33,11 @@ interface TravelData {
     daysAwayFromHome?: number | string;
     newPlacesThisYear?: number | string;
     longestTripDays?: number | string;
+    homeLocality?: string;
+    homeCountry?: string;
   };
   locations: Array<{ name: string; lat: number; lng: number; duration: string }>;
-  trips?: Array<{
-    start: string;
-    end: string;
-    destination: string;
-    days: number;
-    km: number;
-    title?: string;
-    type?: string;
-    country?: string;
-    summary?: string;
-    confidence?: number;
-    weather?: string;
-    tempMean?: number;
-    precipMm?: number;
-  }>;
+  trips?: Trip[];
   charts: {
     hourlyActivity: Array<{ hour: string; activities: number }>;
     lastActivities: Array<{ time: string; location: string; type: string; timeOfDay: string }>;
@@ -69,6 +50,65 @@ export default function MapsPage() {
   const [travelData, setTravelData] = useState<TravelData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Owner mode — a token (stored client-side) unlocks confirm/reject/edit.
+  // Absent → the page is read-only for the public.
+  const [ownerToken, setOwnerToken] = useState<string>(() => {
+    try { return localStorage.getItem(OWNER_TOKEN_KEY) || ''; } catch { return ''; }
+  });
+  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [tokenDraft, setTokenDraft] = useState('');
+  const [statusByKey, setStatusByKey] = useState<Record<string, TripStatus>>({});
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const ownerMode = ownerToken.length > 0;
+
+  const enableOwner = () => {
+    const t = tokenDraft.trim();
+    if (!t) return;
+    try { localStorage.setItem(OWNER_TOKEN_KEY, t); } catch { /* ignore */ }
+    setOwnerToken(t);
+    setShowTokenInput(false);
+    setTokenDraft('');
+  };
+  const disableOwner = () => {
+    try { localStorage.removeItem(OWNER_TOKEN_KEY); } catch { /* ignore */ }
+    setOwnerToken('');
+  };
+
+  const handleLabel = async (
+    trip: Trip,
+    label: TripStatus,
+    edited?: { title: string; destination: string; type: string },
+  ) => {
+    if (!trip.tripKey || !ownerToken) return;
+    setBusyKey(trip.tripKey);
+    setLabelError(null);
+    try {
+      await travelAPI.postTripLabel(ownerToken, {
+        trip_key: trip.tripKey,
+        label,
+        edited_title: edited?.title,
+        edited_destination: edited?.destination,
+        edited_trip_type: edited?.type,
+      });
+      setStatusByKey(prev => ({ ...prev, [trip.tripKey as string]: label }));
+      if (label === 'edit' && edited) {
+        setTravelData(prev => prev ? {
+          ...prev,
+          trips: prev.trips?.map(x =>
+            x.tripKey === trip.tripKey
+              ? { ...x, title: edited.title, destination: edited.destination, type: edited.type }
+              : x),
+        } : prev);
+      }
+    } catch (e) {
+      setLabelError(e instanceof Error ? e.message : 'Could not save label');
+      if (e instanceof Error && e.message === 'forbidden') disableOwner();
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -168,33 +208,76 @@ export default function MapsPage() {
               </FadeIn>
             </section>
 
-            {/* Trip segments */}
+            {/* Home base */}
+            {travelData.stats.homeLocality && (
+              <FadeIn delay={0.16}>
+                <div className="mb-12 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-signal-white/10 bg-rack-black/60 px-5 py-3">
+                  <Home className="size-4 shrink-0 text-channel-violet" aria-hidden="true" />
+                  <span className="font-mono text-xs uppercase tracking-wider text-signal-white/60">Home base</span>
+                  <span className="text-sm font-medium text-signal-white">
+                    {travelData.stats.homeLocality}{travelData.stats.homeCountry ? `, ${travelData.stats.homeCountry}` : ''}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-signal-white/40">· trips measured from here</span>
+                </div>
+              </FadeIn>
+            )}
+
+            {/* Trips — inferred, LLM-named; owner can confirm/reject/edit */}
             {travelData.trips && travelData.trips.length > 0 && (
               <section className="mb-12">
                 <FadeIn delay={0.18}>
                   <Surface>
-                    <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-                      Trip segments
-                    </h2>
-                    <ul className="-mx-6 -mb-6">
-                      {travelData.trips.map((t, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center gap-4 border-t border-signal-white/5 px-6 py-3 transition-colors duration-150 ease-snap hover:bg-signal-white/[0.03]"
-                        >
-                          <span className="block size-2 rounded-sm bg-channel-violet" aria-hidden="true" />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium text-signal-white">{t.destination}</div>
-                            <div className="font-mono text-[10px] uppercase tracking-wider text-signal-white/50">
-                              {formatTripRange(t.start, t.end)}
-                            </div>
+                    <div className="mb-6 flex items-center justify-between gap-3">
+                      <h2 className="font-mono text-xs uppercase tracking-wider text-signal-white/60">
+                        Trips · {travelData.trips.length}
+                      </h2>
+                      <div className="flex items-center gap-2">
+                        {labelError && <span className="font-mono text-[10px] text-trace-down">{labelError}</span>}
+                        {ownerMode ? (
+                          <button
+                            type="button"
+                            onClick={disableOwner}
+                            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-channel-violet transition-colors hover:text-channel-violet/80"
+                          >
+                            <Unlock className="size-3.5" /> Owner
+                          </button>
+                        ) : showTokenInput ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="password"
+                              value={tokenDraft}
+                              autoFocus
+                              onChange={(e) => setTokenDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') enableOwner();
+                                if (e.key === 'Escape') setShowTokenInput(false);
+                              }}
+                              placeholder="owner token"
+                              className="w-32 rounded-sm border border-signal-white/15 bg-rack-black/80 px-2 py-0.5 font-mono text-[10px] text-signal-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-channel-violet"
+                            />
+                            <button type="button" onClick={enableOwner} className="font-mono text-[10px] uppercase tracking-wider text-channel-violet">
+                              Unlock
+                            </button>
                           </div>
-                          <div className="text-right font-mono text-xs">
-                            <div className="text-channel-violet tabular-nums">{t.days}d · {t.km.toLocaleString()} km</div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowTokenInput(true)}
+                            aria-label="Enter owner mode"
+                            className="text-signal-white/25 transition-colors hover:text-signal-white/60"
+                          >
+                            <Lock className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <TripTimeline
+                      trips={travelData.trips}
+                      ownerMode={ownerMode}
+                      statusByKey={statusByKey}
+                      busyKey={busyKey}
+                      onLabel={handleLabel}
+                    />
                   </Surface>
                 </FadeIn>
               </section>

@@ -28,6 +28,8 @@ interface TravelKPIs {
   days_away_from_home: number;
   longest_trip_days: number;
   new_places_this_year: number;
+  home_locality: string;
+  home_country: string;
 }
 
 interface Location {
@@ -71,6 +73,10 @@ interface Trip {
   temp_mean: number;
   precip_mm: number;
   weather: string;
+  trip_key: string;
+  localities: number;
+  countries: number;
+  max_km: number;
 }
 
 export async function onRequest(context: { env: Env; request: Request }): Promise<Response> {
@@ -113,6 +119,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         days_away_from_home: 0,
         longest_trip_days: 0,
         new_places_this_year: 0,
+        home_locality: '',
+        home_country: '',
       };
 
       // Null-safe coercion: ClickHouse can return NULL for ratio columns
@@ -138,6 +146,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           daysAwayFromHome: num(kpis.days_away_from_home).toString(),
           longestTripDays: num(kpis.longest_trip_days).toString(),
           newPlacesThisYear: num(kpis.new_places_this_year).toString(),
+          homeLocality: kpis.home_locality || '',
+          homeCountry: kpis.home_country || '',
           firstActivity: kpis.first_activity,
           lastActivity: kpis.last_activity,
         },
@@ -163,6 +173,10 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           weather: t.weather || '',
           tempMean: Number(t.temp_mean),
           precipMm: Number(t.precip_mm),
+          tripKey: t.trip_key,
+          localities: Number(t.localities),
+          countries: Number(t.countries),
+          maxKm: Number(t.max_km),
         })),
         charts: {
           hourlyActivity: hourlyActivity.map(h => ({ hour: h.hour, activities: Number(h.activities) })),
@@ -207,6 +221,8 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         daysAwayFromHome: '0',
         longestTripDays: '0',
         newPlacesThisYear: '0',
+        homeLocality: '',
+        homeCountry: '',
         firstActivity: '',
         lastActivity: '',
       },

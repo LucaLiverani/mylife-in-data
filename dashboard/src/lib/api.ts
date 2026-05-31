@@ -28,8 +28,30 @@ export const spotifyAPI = {
   getCurrent: () => fetchAPI('/api/spotify/current'),
 };
 
+export interface TripLabelBody {
+  trip_key: string;
+  label: 'confirm' | 'reject' | 'edit';
+  edited_title?: string;
+  edited_destination?: string;
+  edited_trip_type?: string;
+  note?: string;
+}
+
 export const travelAPI = {
   getData: () => fetchAPI('/api/travel/data'),
+  /** Owner-only: write a confirm/reject/edit label. Throws on non-2xx. */
+  postTripLabel: async (token: string, body: TripLabelBody) => {
+    const response = await fetch('/api/travel/trip-label', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-trip-label-token': token },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error((data as { error?: string }).error || `HTTP ${response.status}`);
+    }
+    return data as { ok: boolean; trip_key: string; label: string };
+  },
 };
 
 export const youtubeAPI = {

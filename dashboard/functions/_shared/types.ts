@@ -32,6 +32,11 @@ export interface Env {
   // Calendar webhook — shared secret between Pages Function and Google's
   // events.watch subscriptions. Validated on every notification POST.
   CALENDAR_WEBHOOK_TOKEN?: string;
+
+  // Owner-only trip labeling. The /api/travel/trip-label endpoint accepts a
+  // write only when the request carries this token; the dashboard's "owner
+  // mode" stores it client-side. Absent (public) → labeling is read-only.
+  TRIP_LABEL_TOKEN?: string;
 }
 
 /**
