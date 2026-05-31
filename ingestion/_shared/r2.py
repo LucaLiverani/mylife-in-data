@@ -41,3 +41,33 @@ def download_bytes(key: str) -> bytes:
         raise RuntimeError("R2_BUCKET not set")
     resp = get_client().get_object(Bucket=bucket, Key=key)
     return resp["Body"].read()
+
+
+def download_file(key: str, dest: Any) -> None:
+    """Stream an object straight to a local file (boto3 managed multipart).
+
+    Use this instead of download_bytes for large blobs (e.g. multi-GB Takeout
+    zips) — it never holds the whole object in memory."""
+    bucket = os.environ.get("R2_BUCKET")
+    if not bucket:
+        raise RuntimeError("R2_BUCKET not set")
+    get_client().download_file(bucket, key, os.fspath(dest))
+
+
+def list_keys(prefix: str) -> list[str]:
+    """List object keys under a prefix (paginated). Skips directory markers."""
+    bucket = os.environ.get("R2_BUCKET")
+    if not bucket:
+        raise RuntimeError("R2_BUCKET not set")
+    client = get_client()
+    keys: list[str] = []
+    token: str | None = None
+    while True:
+        kwargs: dict[str, Any] = {"Bucket": bucket, "Prefix": prefix}
+        if token:
+            kwargs["ContinuationToken"] = token
+        resp = client.list_objects_v2(**kwargs)
+        keys.extend(obj["Key"] for obj in (resp.get("Contents") or []) if not obj["Key"].endswith("/"))
+        if not resp.get("IsTruncated"):
+            return keys
+        token = resp.get("NextContinuationToken")
