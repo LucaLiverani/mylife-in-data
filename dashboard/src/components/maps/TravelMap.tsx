@@ -11,6 +11,9 @@ interface TravelMapProps {
   }>;
 }
 
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+
 export function TravelMap({ locations }: TravelMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -23,14 +26,14 @@ export function TravelMap({ locations }: TravelMapProps) {
 
     const initMap = async () => {
       try {
-        // Dynamically import Leaflet only on client side
+        // Leaflet + the marker-cluster plugin (extends L) — client-only.
         const L = (await import('leaflet')).default;
-        // @ts-expect-error — CSS side-effect import; Vite handles, tsc cannot resolve.
+        await import('leaflet.markercluster');
         await import('leaflet/dist/leaflet.css');
+        await import('leaflet.markercluster/dist/MarkerCluster.css');
 
         if (!isMounted || !mapRef.current || mapInstanceRef.current) return;
 
-        // Initialize map
         const map = L.map(mapRef.current, {
           center: [20, 0],
           zoom: 2,
@@ -43,15 +46,13 @@ export function TravelMap({ locations }: TravelMapProps) {
 
         mapInstanceRef.current = map;
 
-        // Dark tile layer
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
           noWrap: true,
         }).addTo(map);
 
-        // Custom marker: flat at rest; glow lives in the hover handler below.
-        // (DESIGN.md §4 Flat-Rest Rule — shadow is a response, not decoration.)
+        // Leaf marker: flat dot at rest; glow on hover (DESIGN.md §4 Flat-Rest).
         const customIcon = L.divIcon({
           className: 'travel-marker',
           html: `<div class="travel-marker-dot"></div>`,
@@ -59,42 +60,46 @@ export function TravelMap({ locations }: TravelMapProps) {
           iconAnchor: [6, 6],
         });
 
-        // Add markers
-        const markers: L.Marker[] = [];
-        locations.forEach((location) => {
-          const marker = L.marker([location.lat, location.lng], { icon: customIcon })
-            .addTo(map)
-            .bindPopup(`
-              <div class="travel-popup">
-                <div class="travel-popup-name">${location.name}</div>
-                <div class="travel-popup-meta">${location.duration}</div>
-              </div>
-            `);
-          markers.push(marker);
+        // Cluster the ~hundreds of neighbourhood points so dense metros collapse
+        // into a single count bubble that expands on zoom — instead of an
+        // unreadable pile of overlapping dots. (No connector lines: the points
+        // are ranked by activity, not a travel route, so lines would be noise.)
+        const clusterGroup = (L as typeof L & {
+          markerClusterGroup: (opts: Record<string, unknown>) => L.LayerGroup & {
+            addLayer: (l: L.Layer) => void;
+            getBounds: () => L.LatLngBounds;
+          };
+        }).markerClusterGroup({
+          showCoverageOnHover: false,
+          spiderfyOnMaxZoom: true,
+          maxClusterRadius: 48,
+          chunkedLoading: true,
+          iconCreateFunction: (cluster: { getChildCount: () => number }) => {
+            const n = cluster.getChildCount();
+            const size = n < 10 ? 34 : n < 50 ? 42 : n < 150 ? 52 : 62;
+            const tier = n < 10 ? 'sm' : n < 150 ? 'md' : 'lg';
+            return L.divIcon({
+              html: `<div class="travel-cluster travel-cluster-${tier}"><span>${n}</span></div>`,
+              className: 'travel-cluster-wrap',
+              iconSize: [size, size],
+              iconAnchor: [size / 2, size / 2],
+            });
+          },
         });
 
-        // Draw connections between consecutive locations
-        if (locations.length > 1) {
-          for (let i = 0; i < locations.length - 1; i++) {
-            const from = locations[i];
-            const to = locations[i + 1];
+        let added = 0;
+        locations.forEach((location) => {
+          if (!location.lat || !location.lng) return;
+          const marker = L.marker([location.lat, location.lng], { icon: customIcon }).bindPopup(
+            `<div class="travel-popup"><div class="travel-popup-name">${escapeHtml(location.name)}</div></div>`,
+          );
+          clusterGroup.addLayer(marker);
+          added += 1;
+        });
+        map.addLayer(clusterGroup);
 
-            L.polyline(
-              [[from.lat, from.lng], [to.lat, to.lng]],
-              {
-                color: CHANNEL_HEX.maps,
-                weight: 2,
-                opacity: 0.6,
-                dashArray: '5, 10',
-              }
-            ).addTo(map);
-          }
-        }
-
-        // Fit bounds to show all markers
-        if (markers.length > 0) {
-          const group = L.featureGroup(markers);
-          map.fitBounds(group.getBounds().pad(0.1));
+        if (added > 0) {
+          map.fitBounds(clusterGroup.getBounds().pad(0.1));
         }
 
         setIsLoading(false);
@@ -106,7 +111,6 @@ export function TravelMap({ locations }: TravelMapProps) {
 
     initMap();
 
-    // Cleanup
     return () => {
       isMounted = false;
       if (mapInstanceRef.current) {
@@ -124,7 +128,7 @@ export function TravelMap({ locations }: TravelMapProps) {
         }
         .leaflet-tile-pane { opacity: 0.8; }
 
-        /* Marker — flat at rest, glow on hover (Flat-Rest Rule) */
+        /* Leaf marker — flat at rest, glow on hover (Flat-Rest Rule) */
         .travel-marker-dot {
           width: 12px;
           height: 12px;
@@ -138,7 +142,25 @@ export function TravelMap({ locations }: TravelMapProps) {
           box-shadow: 0 0 12px ${CHANNEL_HEX.maps}cc;
         }
 
-        /* Popup — Rack Black surface, mono meta */
+        /* Cluster bubble — violet, count-labelled, sized by tier */
+        .travel-cluster-wrap { background: transparent; }
+        .travel-cluster {
+          display: flex; align-items: center; justify-content: center;
+          width: 100%; height: 100%;
+          background: ${CHANNEL_HEX.maps}26;
+          border: 1.5px solid ${CHANNEL_HEX.maps};
+          border-radius: 9999px;
+          color: #FFFFFF;
+          font-family: "IBM Plex Mono", ui-monospace, monospace;
+          font-weight: 600;
+          box-shadow: 0 0 0 4px ${CHANNEL_HEX.maps}14;
+          transition: box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .travel-cluster span { font-size: 0.7rem; line-height: 1; }
+        .travel-cluster-lg span { font-size: 0.85rem; }
+        .travel-cluster-wrap:hover .travel-cluster { box-shadow: 0 0 14px ${CHANNEL_HEX.maps}aa; }
+
+        /* Popup — Rack Black surface */
         .leaflet-popup-content-wrapper {
           background: #1A1A1A;
           color: #FFFFFF;
@@ -147,12 +169,6 @@ export function TravelMap({ locations }: TravelMapProps) {
         }
         .leaflet-popup-tip { background: #1A1A1A; border: 1px solid rgba(255,255,255,0.1); }
         .travel-popup-name { font-weight: 500; }
-        .travel-popup-meta {
-          margin-top: 4px;
-          font-family: "IBM Plex Mono", ui-monospace, monospace;
-          font-size: 0.75rem;
-          color: rgba(255,255,255,0.6);
-        }
       `}</style>
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-rack-black/80">
