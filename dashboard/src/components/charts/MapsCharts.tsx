@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Surface } from '@/components/Surface';
 import { EventRow } from '@/components/EventRow';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -111,7 +111,7 @@ const formatTimeAgo = (timeString: string): string => {
   return date.toLocaleDateString();
 };
 
-export function MapsCharts({ data }: { data: MapsData }) {
+export function MapsCharts({ data, tripsSlot }: { data: MapsData; tripsSlot?: ReactNode }) {
   const [visibleSeries, setVisibleSeries] = useState<Record<MapsSeries, boolean>>({
     Directions:   true,
     Searches:     true,
@@ -121,15 +121,21 @@ export function MapsCharts({ data }: { data: MapsData }) {
 
   const toggleSeries = (s: MapsSeries) => setVisibleSeries(p => ({ ...p, [s]: !p[s] }));
 
-  const chartData = data.dailyActivity.map((d) => ({
-    date: formatChartDate(d.date),
-    Directions:   Number(d.directions)   || 0,
-    Searches:     Number(d.searches)     || 0,
-    Explorations: Number(d.explorations) || 0,
-    Other:        Number(d.other)        || 0,
-  }));
+  // Defensive sort by raw date ascending so the x-axis always reads oldest →
+  // newest (most recent day on the right), regardless of the order the API/view
+  // returns rows in. The dbt model + API both sort ASC too; this is the last
+  // line of defense so a query regression can't flip the axis again.
+  const chartData = [...data.dailyActivity]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map((d) => ({
+      date: formatChartDate(d.date),
+      Directions:   Number(d.directions)   || 0,
+      Searches:     Number(d.searches)     || 0,
+      Explorations: Number(d.explorations) || 0,
+      Other:        Number(d.other)        || 0,
+    }));
 
-  // Activity-type distribution — totals across the 90-day window. Channels
+  // Activity-type distribution — totals across the 30-day window. Channels
   // the same color scheme as the daily-activity series so legend pairs read.
   const totals = data.dailyActivity.reduce(
     (acc, d) => ({
@@ -159,7 +165,7 @@ export function MapsCharts({ data }: { data: MapsData }) {
       <section className="mb-12">
         <Surface>
           <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-            Daily activity · last 90 days
+            Daily activity · last 30 days
           </h2>
 
           <div className="mb-4 flex flex-wrap gap-3">
@@ -270,6 +276,9 @@ export function MapsCharts({ data }: { data: MapsData }) {
           />
         </Surface>
       </section>
+
+      {/* 4. Trips — injected by the page so owner-mode state stays in Maps.tsx */}
+      {tripsSlot}
 
       {/* 5. Recent events */}
       <section className="mb-12">

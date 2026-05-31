@@ -141,6 +141,69 @@ export default function MapsPage() {
     );
   }
 
+  // Trips — inferred, LLM-named; owner can confirm/reject/edit. Rendered lower
+  // on the page (after "Activity by hour") via MapsCharts' tripsSlot, but built
+  // here so the owner-mode state/handlers stay co-located with the page.
+  const tripsSection = travelData?.trips && travelData.trips.length > 0 ? (
+    <section className="mb-12">
+      <FadeIn delay={0.18}>
+        <Surface>
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <h2 className="font-mono text-xs uppercase tracking-wider text-signal-white/60">
+              Trips · {travelData.trips.length}
+            </h2>
+            <div className="flex items-center gap-2">
+              {labelError && <span className="font-mono text-[10px] text-trace-down">{labelError}</span>}
+              {ownerMode ? (
+                <button
+                  type="button"
+                  onClick={disableOwner}
+                  className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-channel-violet transition-colors hover:text-channel-violet/80"
+                >
+                  <Unlock className="size-3.5" /> Owner
+                </button>
+              ) : showTokenInput ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="password"
+                    value={tokenDraft}
+                    autoFocus
+                    onChange={(e) => setTokenDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') enableOwner();
+                      if (e.key === 'Escape') setShowTokenInput(false);
+                    }}
+                    placeholder="owner token"
+                    className="w-32 rounded-sm border border-signal-white/15 bg-rack-black/80 px-2 py-0.5 font-mono text-[10px] text-signal-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-channel-violet"
+                  />
+                  <button type="button" onClick={enableOwner} className="font-mono text-[10px] uppercase tracking-wider text-channel-violet">
+                    Unlock
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowTokenInput(true)}
+                  aria-label="Enter owner mode"
+                  className="text-signal-white/25 transition-colors hover:text-signal-white/60"
+                >
+                  <Lock className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          <TripTimeline
+            trips={travelData.trips}
+            ownerMode={ownerMode}
+            statusByKey={statusByKey}
+            busyKey={busyKey}
+            onLabel={handleLabel}
+          />
+        </Surface>
+      </FadeIn>
+    </section>
+  ) : null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
 
@@ -222,67 +285,6 @@ export default function MapsPage() {
               </FadeIn>
             )}
 
-            {/* Trips — inferred, LLM-named; owner can confirm/reject/edit */}
-            {travelData.trips && travelData.trips.length > 0 && (
-              <section className="mb-12">
-                <FadeIn delay={0.18}>
-                  <Surface>
-                    <div className="mb-6 flex items-center justify-between gap-3">
-                      <h2 className="font-mono text-xs uppercase tracking-wider text-signal-white/60">
-                        Trips · {travelData.trips.length}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        {labelError && <span className="font-mono text-[10px] text-trace-down">{labelError}</span>}
-                        {ownerMode ? (
-                          <button
-                            type="button"
-                            onClick={disableOwner}
-                            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-channel-violet transition-colors hover:text-channel-violet/80"
-                          >
-                            <Unlock className="size-3.5" /> Owner
-                          </button>
-                        ) : showTokenInput ? (
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="password"
-                              value={tokenDraft}
-                              autoFocus
-                              onChange={(e) => setTokenDraft(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') enableOwner();
-                                if (e.key === 'Escape') setShowTokenInput(false);
-                              }}
-                              placeholder="owner token"
-                              className="w-32 rounded-sm border border-signal-white/15 bg-rack-black/80 px-2 py-0.5 font-mono text-[10px] text-signal-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-channel-violet"
-                            />
-                            <button type="button" onClick={enableOwner} className="font-mono text-[10px] uppercase tracking-wider text-channel-violet">
-                              Unlock
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setShowTokenInput(true)}
-                            aria-label="Enter owner mode"
-                            className="text-signal-white/25 transition-colors hover:text-signal-white/60"
-                          >
-                            <Lock className="size-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <TripTimeline
-                      trips={travelData.trips}
-                      ownerMode={ownerMode}
-                      statusByKey={statusByKey}
-                      busyKey={busyKey}
-                      onLabel={handleLabel}
-                    />
-                  </Surface>
-                </FadeIn>
-              </section>
-            )}
-
             {/* Map Section */}
             <section className="mb-12">
               <FadeIn delay={0.2}>
@@ -295,9 +297,9 @@ export default function MapsPage() {
               </FadeIn>
             </section>
 
-            {/* Charts Section */}
+            {/* Charts Section — Trips inject after "Activity by hour" */}
             <FadeIn delay={0.3}>
-              <MapsCharts data={travelData.charts} />
+              <MapsCharts data={travelData.charts} tripsSlot={tripsSection} />
             </FadeIn>
           </>
         )}

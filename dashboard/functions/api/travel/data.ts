@@ -92,7 +92,7 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           queryClickHouse<LastActivity>(env, `SELECT * FROM gold.gold_maps_recent_activities LIMIT 10`),
           queryClickHouse<{ date: string; directions: number; searches: number; explorations: number; other: number }>(
             env,
-            `SELECT * FROM gold.gold_maps_daily_activity_dashboard`
+            `SELECT * FROM gold.gold_maps_daily_activity_dashboard ORDER BY date ASC`
           ),
           queryClickHouse<TopDestination>(env, `SELECT * FROM gold.gold_maps_destinations_dashboard LIMIT 10`),
           queryClickHouse<Trip>(env, `SELECT * FROM gold.gold_maps_trips LIMIT 100`),
