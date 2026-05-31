@@ -30,8 +30,12 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from dotenv import load_dotenv  # noqa: E402
 
+# Host-run tool: the .env's CLICKHOUSE_HOST targets the Docker network
+# ("clickhouse"), which the VM host can't resolve. Default to localhost (the
+# published port) unless CLICKHOUSE_HOST was set explicitly in the shell.
+_ch_host = os.environ.get("CLICKHOUSE_HOST")
 load_dotenv(REPO_ROOT / "infrastructure" / ".env")
-os.environ.setdefault("CLICKHOUSE_HOST", "localhost")
+os.environ["CLICKHOUSE_HOST"] = _ch_host or "localhost"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("backfill-calendar")
