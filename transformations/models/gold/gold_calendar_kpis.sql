@@ -1,13 +1,13 @@
--- /api/google/calendar.kpis — scheduled-time KPIs over the trailing 365 days.
+-- /api/google/calendar.kpis — scheduled-time KPIs since the shared kpi_start_date.
 --
 -- Scope decisions (so the numbers mean something):
 --   * Timed events only (is_all_day = 0). All-day holidays/trips would
 --     otherwise inflate meetingHours into the tens of thousands and pin every
 --     "busy hour" at 00:00.
---   * Trailing 365 days, no future rows. Subscribed-holiday calendars run out
---     to 2031; without a bound, freeDays counted ~16 years of span.
+--   * Floored at the shared kpi_start_date, no future rows. Subscribed-holiday
+--     calendars run out to 2031; without a bound, freeDays counted ~16 years.
 --   * plansCount = timed meetings with at least one other attendee.
---   * freeDays = days in the last year with no timed event on the calendar.
+--   * freeDays = days from kpi_start_date to today with no timed event.
 
 {{ config(materialized='view', schema='gold') }}
 
@@ -16,7 +16,7 @@ WITH ev AS (
     FROM {{ ref('silver_calendar_events') }}
     WHERE is_all_day = 0
       AND started_at <= now()
-      AND event_date >= today() - 365
+      AND event_date >= toDate('{{ var("kpi_start_date") }}')
 ),
 days AS (
     SELECT event_date AS d, count() AS c FROM ev GROUP BY event_date
@@ -33,7 +33,9 @@ busiest AS (
 )
 SELECT
     (SELECT countIf(attendee_count > 0) FROM ev)                                AS plansCount,
-    toUInt32(greatest(0, 365 - (SELECT count() FROM days)))                     AS freeDays,
+    toUInt32(greatest(0,
+        (today() - toDate('{{ var("kpi_start_date") }}')) - (SELECT count() FROM days)
+    ))                                                                          AS freeDays,
     (SELECT count() FROM ev)                                                    AS totalEvents,
     toUInt32(round((SELECT sum(duration_minutes) FROM ev) / 60.0, 0))           AS meetingHours,
     coalesce(round(

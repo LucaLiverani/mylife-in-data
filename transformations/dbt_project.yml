@@ -21,6 +21,14 @@ vars:
   # Override at run time (`dbt run --vars '{trip_window_days: 30}'`).
   trip_window_days: 365
 
+  # Shared start date for every headline KPI (the metric cards on each source
+  # page + the home overview). All sources are floored to this one date so the
+  # numbers are comparable instead of each spanning a different history.
+  # YouTube's "My Activity" export only reaches ~2024-12, which is why the
+  # common floor can't be earlier. Change this + rebuild gold to adjust:
+  #   dbt run --vars '{kpi_start_date: 2024-12-09}'  (or edit here)
+  kpi_start_date: '2025-01-01'
+
 models:
   mylife:
     silver:

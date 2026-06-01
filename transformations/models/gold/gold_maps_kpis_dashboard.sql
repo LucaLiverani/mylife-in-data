@@ -8,6 +8,7 @@
 WITH a AS (
     SELECT * FROM {{ ref('silver_maps_activity_enriched') }}
     WHERE is_private = 0
+      AND event_date >= toDate('{{ var("kpi_start_date") }}')
 )
 SELECT
     (SELECT count() FROM a)                                                       AS total_activities,
@@ -56,10 +57,15 @@ SELECT
     ), 0)                                                                         AS explore_pct,
     -- Movement KPIs over GENUINE trips (gold_maps_trips already applies the
     -- LLM verdict + human overrides + genuine-trip gate), so the 2 rejected
-    -- candidates don't inflate them. 0 until trips exist.
-    (SELECT coalesce(sum(days), 0) FROM {{ ref('gold_maps_trips') }})             AS days_away_from_home,
-    (SELECT coalesce(max(days), 0) FROM {{ ref('gold_maps_trips') }})             AS longest_trip_days,
-    (SELECT coalesce(toInt32(sum(km)), 0) FROM {{ ref('gold_maps_trips') }})      AS kilometers_traveled,
+    -- candidates don't inflate them. 0 until trips exist. Floored to the shared
+    -- kpi_start_date (gold_maps_trips itself stays full so the /maps timeline
+    -- keeps every trip).
+    (SELECT coalesce(sum(days), 0) FROM {{ ref('gold_maps_trips') }}
+        WHERE toDate(start) >= toDate('{{ var("kpi_start_date") }}'))             AS days_away_from_home,
+    (SELECT coalesce(max(days), 0) FROM {{ ref('gold_maps_trips') }}
+        WHERE toDate(start) >= toDate('{{ var("kpi_start_date") }}'))             AS longest_trip_days,
+    (SELECT coalesce(toInt32(sum(km)), 0) FROM {{ ref('gold_maps_trips') }}
+        WHERE toDate(start) >= toDate('{{ var("kpi_start_date") }}'))             AS kilometers_traveled,
     -- Distinct destinations whose FIRST trip is in the current year.
     (SELECT count() FROM (
         SELECT destination, min(toYear(toDate(start))) AS first_year

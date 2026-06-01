@@ -11,6 +11,7 @@ WITH stats AS (
         uniqExact(primary_artist_id)           AS artists,
         uniqExact(toDate(played_at))           AS active_days
     FROM {{ ref('silver_spotify_plays') }}
+    WHERE played_at >= toDateTime('{{ var("kpi_start_date") }}')
 )
 SELECT
     concat(toString(round(total_ms / 3600000.0, 1)), ' hrs')                         AS total_time,

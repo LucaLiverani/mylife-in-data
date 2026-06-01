@@ -5,9 +5,11 @@
 
 WITH watches AS (
     SELECT * FROM {{ ref('silver_youtube_watches') }}
+    WHERE watched_date >= toDate('{{ var("kpi_start_date") }}')
 ),
 search AS (
     SELECT * FROM {{ ref('silver_youtube_searches') }}
+    WHERE searched_date >= toDate('{{ var("kpi_start_date") }}')
 )
 SELECT
     (SELECT count() FROM watches)                                                AS videos_watched,
