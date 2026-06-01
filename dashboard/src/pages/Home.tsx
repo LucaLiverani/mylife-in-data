@@ -167,6 +167,9 @@ export default function Home() {
             <p className="max-w-2xl text-xl italic text-signal-white/70">
               Pretty charts, brutal honesty, optional self-improvement.
             </p>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-signal-white/60">
+              This is a project about reclaiming ownership of my own data. I'm collecting it from the services I use the most to better understand my digital footprint, and maybe get to know myself as well as the big companies already do. Along the way, I get to do the things I love: learning new technologies, experimenting, breaking things, making mistakes and growing.
+            </p>
             {overviewData?._meta?.cached && (
               <div role="status" className="mt-4 inline-block rounded-sm border border-trace-down/30 bg-trace-down/10 px-3 py-2 font-mono text-xs text-trace-down">
                 ClickHouse offline — showing cached signal.
