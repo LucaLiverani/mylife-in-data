@@ -14,13 +14,17 @@ SELECT
     (SELECT uniqExact(primary_artist_id) FROM {{ ref('silver_spotify_plays') }}
         WHERE primary_artist_id != ''
           AND played_at >= toDateTime('{{ var("kpi_start_date") }}'))             AS artistsListened,
-    (SELECT count() FROM {{ source('bronze', 'youtube_watch_history') }}
-        WHERE watched_at >= toDateTime('{{ var("kpi_start_date") }}'))            AS videosWatched,
-    (SELECT uniqExact(channel_id) FROM {{ source('bronze', 'youtube_watch_history') }}
+    -- Read the deduped silver views (not raw bronze.youtube_*): overlapping
+    -- Takeout + live imports leave duplicate rows in bronze, which counting
+    -- without FINAL inflated (~21k vs the true ~12k). Silver matches the
+    -- YouTube page so home and per-source KPIs agree.
+    (SELECT count() FROM {{ ref('silver_youtube_watches') }}
+        WHERE watched_date >= toDate('{{ var("kpi_start_date") }}'))             AS videosWatched,
+    (SELECT uniqExact(channel_id) FROM {{ ref('silver_youtube_watches') }}
         WHERE channel_id != ''
-          AND watched_at >= toDateTime('{{ var("kpi_start_date") }}'))           AS youtubeChannels,
-    (SELECT count() FROM {{ source('bronze', 'youtube_search_history') }}
-        WHERE searched_at >= toDateTime('{{ var("kpi_start_date") }}'))
+          AND watched_date >= toDate('{{ var("kpi_start_date") }}'))            AS youtubeChannels,
+    (SELECT count() FROM {{ ref('silver_youtube_searches') }}
+        WHERE searched_date >= toDate('{{ var("kpi_start_date") }}'))
       + (SELECT countIf(activity_type = 'search')
          FROM {{ ref('silver_maps_activity_enriched') }}
          WHERE is_private = 0
