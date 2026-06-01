@@ -21,7 +21,12 @@ SELECT
     -- at ingest — so the freshest plays show a title/artist/art immediately.
     if(t.track_name != '', t.track_name, p.track_name)                AS track_name,
     if(t.duration_ms > 0, t.duration_ms, p.duration_ms)               AS duration_ms,
-    arrayElement(p.artists_ids, 1)                                    AS primary_artist_id,
+    -- The extended-history export carries no per-play artist ids (only the
+    -- album artist name), so imported plays have empty artists_ids. Fall back to
+    -- the enriched track's primary artist so historical plays still resolve an
+    -- id — without it gold_spotify_top_artists (WHERE primary_artist_id != '')
+    -- would drop the entire backfilled history.
+    if(notEmpty(p.artists_ids), arrayElement(p.artists_ids, 1), arrayElement(t.artists_ids, 1)) AS primary_artist_id,
     if(a.artist_name != '', a.artist_name, arrayElement(p.artists_names, 1))  AS primary_artist_name,
     a.genres                                                          AS genres,
     if(t.album_name != '', t.album_name, p.album_name)                AS album_name,
@@ -30,4 +35,4 @@ SELECT
     p.context_uri                                                     AS context_uri
 FROM plays p
 LEFT JOIN tracks t ON t.track_id = p.track_id
-LEFT JOIN artists a ON a.artist_id = arrayElement(p.artists_ids, 1)
+LEFT JOIN artists a ON a.artist_id = if(notEmpty(p.artists_ids), arrayElement(p.artists_ids, 1), arrayElement(t.artists_ids, 1))
