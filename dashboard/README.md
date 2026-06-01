@@ -1,6 +1,6 @@
 # My Life in Data - Cloudflare Dashboard
 
-A real-time personal analytics dashboard built with React and deployed on Cloudflare Pages, visualizing data from Spotify, YouTube, Google Search, and travel activities.
+A real-time personal analytics dashboard built with React and deployed on Cloudflare Pages, visualizing data from Spotify, YouTube, Google Maps, and Google Calendar.
 
 ## Architecture
 
@@ -49,7 +49,7 @@ dashboard/
 ├── scripts/
 │   ├── seed-mocks.mjs      # Regenerate public/mocks/ with `npm run seed`
 │   ├── deploy-to-pages.sh
-│   └── export-fallback-data.sh
+│   └── run-dev.sh
 ├── wrangler.toml
 ├── vite.config.ts
 └── package.json
@@ -153,7 +153,7 @@ npx wrangler pages deploy dist
 5. Configure build settings:
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-   - **Root directory**: `dashboard-cloudflare`
+   - **Root directory**: `dashboard`
 6. Add environment variables:
    - `CLICKHOUSE_HOST`
    - `CLICKHOUSE_USER`
@@ -169,7 +169,7 @@ Cloudflare will automatically deploy on every push to your main branch.
 - **Home**: Overview dashboard with KPIs and recent activity
 - **Spotify**: Live streaming track, top artists, genre distribution, listening trends
 - **YouTube**: Watch time analytics, top channels, category distribution
-- **Google**: Search history analytics, search volume trends, top searches
+- **Calendar** (`/google`): Schedule analytics — plans, free days, meeting hours, and daily-event trends
 - **Maps**: Interactive travel map with Leaflet, trip visualization by continent
 
 ### Key Features
@@ -184,23 +184,28 @@ Cloudflare will automatically deploy on every push to your main branch.
 
 ### Fallback System
 
-When ClickHouse is unavailable, the app automatically serves static data from `public/fallback-data/`:
+When ClickHouse is unavailable, the app automatically serves the bundled mock JSON from `public/mocks/` (the same corpus the dev server uses — see "One mock corpus, two consumers" above):
 
-- `/api/overview/stats` → `overview-stats.json`
-- `/api/spotify/current` → `spotify-current.json`
+- `/api/overview/stats` → `public/mocks/overview/stats.json`
+- `/api/spotify/current` → `public/mocks/spotify/current.json`
 
-Responses include `_meta.cached: true` to indicate fallback mode.
+Responses include `_meta.cached: true` (object bodies) or `X-Data-Source: cache` (array bodies) to indicate fallback mode.
 
 ## API Endpoints
 
 | Endpoint | Description | Fallback |
 |----------|-------------|----------|
-| `/api/overview/stats` | Dashboard overview KPIs | ✅ Yes |
-| `/api/spotify/current` | Current playing track (polling) | ✅ Yes |
-| `/api/spotify/data` | Full Spotify analytics data | ❌ No |
-| `/api/spotify/recent` | Recent tracks list | ❌ No |
-| `/api/spotify/summary` | Spotify summary statistics | ❌ No |
-| `/api/travel/data` | Travel locations and stats | ❌ No |
+| `/api/overview/stats` | Home overview KPIs | ✅ Yes |
+| `/api/home/recent-events` | Recent cross-channel events | ✅ Yes |
+| `/api/spotify/current` | Current / most-recent track (polled) | ✅ Yes |
+| `/api/spotify/data` | Full Spotify analytics | ✅ Yes |
+| `/api/spotify/recent` | Recent tracks list | ✅ Yes |
+| `/api/spotify/summary` | Spotify summary statistics | ✅ Yes |
+| `/api/youtube/data` | YouTube watch analytics | ✅ Yes |
+| `/api/google/calendar` | Calendar analytics | ✅ Yes |
+| `/api/travel/data` | Travel map locations + stats | ✅ Yes |
+| `/api/now/timeline` | Live cross-channel timeline | ✅ Yes |
+| `/api/system/health` | Pipeline freshness / health | ✅ Yes |
 
 ## Scripts
 
@@ -212,15 +217,13 @@ Builds and deploys the application to Cloudflare Pages:
 ./scripts/deploy-to-pages.sh
 ```
 
-### `export-fallback-data.sh`
+### `seed-mocks.mjs`
 
-Exports fresh data from ClickHouse to fallback JSON files:
+Regenerates everything under `public/mocks/` (the dev + fallback corpus) using a seeded PRNG, so output is stable across runs:
 
 ```bash
-./scripts/export-fallback-data.sh
+npm run seed
 ```
-
-Requires ClickHouse credentials to be configured.
 
 ## Configuration
 
@@ -229,7 +232,7 @@ Requires ClickHouse credentials to be configured.
 Cloudflare Pages configuration:
 
 ```toml
-name = "mylife-dashboard"
+name = "mylife-in-data"
 compatibility_date = "2024-11-16"
 pages_build_output_dir = "dist"
 ```
@@ -266,9 +269,9 @@ npm run build
 
 ### Fallback data not loading
 
-- Ensure JSON files are in `public/fallback-data/`
+- Ensure JSON files are in `public/mocks/`
 - Check file names match the loader in `functions/_shared/fallback.ts`
-- Verify build includes public directory (`dist/fallback-data/`)
+- Verify build includes public directory (`dist/mocks/`)
 
 ## Performance
 

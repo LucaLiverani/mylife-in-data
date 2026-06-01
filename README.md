@@ -6,7 +6,9 @@
 
 ### _Pretty charts, brutal honesty, optional self-improvement._
 
-A personal data platform that pulls my own activity back out of the services I use most (Spotify, YouTube, Google Maps, Google Calendar, etc..). It streams everything into **ClickHouse**, models it with **dbt**, orchestrates the pipeline with **Dagster**, and serves it through a **Cloudflare-hosted dashboard**, so the data these apps quietly collect about me finally answers to *me*.
+This is a project about reclaiming ownership of my own data. I'm collecting it from the services I use the most to better understand my digital footprint, and maybe get to know myself as well as the big companies already do. Along the way, I get to do the things I love: learning new technologies, experimenting, breaking things, making mistakes and growing.
+
+Under the hood, it's a personal data platform that pulls my activity back out of Spotify, YouTube, Google Maps, and Google Calendar, streams it into **ClickHouse**, models it with **dbt**, orchestrates the pipeline with **Dagster**, and serves it through a **Cloudflare-hosted dashboard**.
 
 [**▶ Live demo: mylife-in-data.com**](https://mylife-in-data.com) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Run it yourself](#run-it-yourself) &nbsp;·&nbsp; [Deeper docs](#deeper-docs)
 
@@ -42,10 +44,16 @@ The dashboard is the surface. The pipeline underneath it is the actual project.
 
 Every source becomes its own channel, with one signature color and its own page. The home page mixes all of them into a single console.
 
-|  |  |
-|---|---|
-| [![Spotify](docs/screenshots/spotify.png)](https://mylife-in-data.com/spotify)<br>**Spotify** · _A deep dive into my musical obsessions and sonic rabbit holes._ | [![YouTube](docs/screenshots/youtube.png)](https://mylife-in-data.com/youtube)<br>**YouTube** · _Where productivity goes to die, one autoplay at a time._ |
-| [![Maps](docs/screenshots/maps.png)](https://mylife-in-data.com/maps)<br>**Maps** · _Collecting passport stamps and existential crises since 2024._ | [![Calendar](docs/screenshots/calendar.png)](https://mylife-in-data.com/google)<br>**Calendar** · _Meetings I'll show up to, plans I might honor, white space I should defend._ |
+<table width="100%">
+<tr>
+<td width="50%"><a href="https://mylife-in-data.com/spotify"><img src="docs/screenshots/spotify.png" width="100%" alt="Spotify"></a><br><b>Spotify</b> · <i>Documenting my questionable taste in music, one play at a time.</i></td>
+<td width="50%"><a href="https://mylife-in-data.com/youtube"><img src="docs/screenshots/youtube.png" width="100%" alt="YouTube"></a><br><b>YouTube</b> · <i>An overview of my YouTube rabbit holes and the hours they've quietly stolen.</i></td>
+</tr>
+<tr>
+<td width="50%"><a href="https://mylife-in-data.com/maps"><img src="docs/screenshots/maps.png" width="100%" alt="Maps"></a><br><b>Maps</b> · <i>An overview of the passport stamps and existential crises I've collected.</i></td>
+<td width="50%"><a href="https://mylife-in-data.com/google"><img src="docs/screenshots/calendar.png" width="100%" alt="Calendar"></a><br><b>Calendar</b> · <i>A public overview of how I waste my time.</i></td>
+</tr>
+</table>
 
 ## How it works
 
