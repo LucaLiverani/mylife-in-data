@@ -3,6 +3,7 @@ import { ChannelStrip, type ChannelStatus } from '@/components/ChannelStrip';
 import { LiveConsole } from '@/components/LiveConsole';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { DataGenerationChart } from '@/components/charts/DataGenerationChart';
+import { KpiSince } from '@/components/KpiSince';
 import { overviewAPI, travelAPI, calendarAPI, homeAPI } from '@/lib/api';
 import { CHANNEL_CLASS, type Channel } from '@/lib/channels';
 import { formatCount } from '@/lib/format';
@@ -212,7 +213,7 @@ export default function Home() {
         <section className="mb-14" aria-labelledby="channels-heading">
           <FadeIn delay={0.12}>
             <h2 id="channels-heading" className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">
-              Channels
+              Channels<KpiSince />
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <ChannelStrip

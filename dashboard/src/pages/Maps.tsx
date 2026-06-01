@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Home, Lock, Unlock } from 'lucide-react';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { KPIMetric } from '@/components/KPIMetric';
+import { KpiSince } from '@/components/KpiSince';
 import { TravelMap } from '@/components/maps/TravelMap';
 import { MapsCharts } from '@/components/charts/MapsCharts';
 import { TripTimeline, type Trip, type TripStatus } from '@/components/maps/TripTimeline';
@@ -248,7 +249,7 @@ export default function MapsPage() {
             {/* Primary KPIs */}
             <section className="mb-8">
               <FadeIn delay={0.1}>
-                <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Overview</h2>
+                <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Overview<KpiSince /></h2>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                   <KPIMetric label="Cities"    value={travelData.stats.citiesVisited}    kind="count" channel="maps" />
                   <KPIMetric label="Countries" value={travelData.stats.countriesVisited} kind="count" channel="maps" />

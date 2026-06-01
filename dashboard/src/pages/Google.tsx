@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { FadeIn } from '@/components/animations/FadeIn';
 import { Surface } from '@/components/Surface';
 import { KPIMetric } from '@/components/KPIMetric';
+import { KpiSince } from '@/components/KpiSince';
 import { ChannelPie } from '@/components/charts/ChannelPie';
 import { ChannelHistogram } from '@/components/charts/ChannelHistogram';
 import { CalendarHeatmap } from '@/components/charts/CalendarHeatmap';
@@ -99,7 +100,7 @@ export default function GooglePage() {
         {/* Primary KPI row */}
         <section className="mb-8" aria-labelledby="calendar-kpis">
           <FadeIn delay={0.1}>
-            <h2 id="calendar-kpis" className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Overview</h2>
+            <h2 id="calendar-kpis" className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Overview<KpiSince /></h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <KPIMetric label="Plans"     value={data.kpis.plansCount}   kind="count"   channel="calendar" />
               <KPIMetric label="Free days" value={data.kpis.freeDays}     kind="count"   channel="calendar" />

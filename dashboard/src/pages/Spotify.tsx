@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { KPIMetric } from '@/components/KPIMetric';
+import { KpiSince } from '@/components/KpiSince';
 import { SpotifyCharts } from '@/components/charts/SpotifyCharts';
 import { SpotifyLiveStream } from '@/components/spotify/SpotifyLiveStream';
 import { spotifyAPI } from '@/lib/api';
@@ -110,6 +111,7 @@ export default function SpotifyPage() {
         {/* KPI Section */}
         <section className="mb-12">
           <FadeIn delay={0.2}>
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">Overview<KpiSince /></h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <KPIMetric label="Hours"     value={data.kpis.totalTime}     kind="hours" channel="spotify" />
               <KPIMetric label="Artists"   value={data.kpis.uniqueArtists} kind="count" channel="spotify" />
