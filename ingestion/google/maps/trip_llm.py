@@ -194,9 +194,10 @@ def _build_messages(trip, home: dict, activity: dict, calendar: list) -> list:
         "CALENDAR: 'Holidays in <country>' entries are public-holiday calendar "
         "subscriptions, NOT evidence of being there. Weigh flights, hotels, and "
         "foreign/far event locations far more.\n\n"
-        "AUDIENCE: 'title' and 'summary' are shown to the traveler as a keepsake "
-        "recap of the trip, so write them about the trip itself — never about how "
-        "you reached your verdict. Your reasoning goes in 'evidence', which is "
+        "AUDIENCE: 'title' and 'summary' are shown to a reader as a short recap "
+        "of the trip. Write them in the THIRD PERSON, describing the trip itself "
+        "— never address the traveler as 'you'/'your', and never explain how you "
+        "reached your verdict. Your reasoning goes in 'evidence', which is "
         "internal and never shown.\n\n"
         "Respond with ONLY a JSON object (no prose, no code fence) with EXACTLY "
         "these keys:\n"
@@ -207,7 +208,7 @@ def _build_messages(trip, home: dict, activity: dict, calendar: list) -> list:
         '  "destination_label": string (clean city or region; "" if not a trip),\n'
         '  "destination_country": string (country name; "" if unknown),\n'
         '  "title": string (short, e.g. "Long weekend in Berlin"; "" if not a trip),\n'
-        '  "summary": string — 1-2 sentences recapping the trip for the traveler: where they went and what the visit was like (notable places, neighbourhoods, the overall feel). Describe the trip itself, not why it qualifies as a trip; "" if not a trip,\n'
+        '  "summary": string — 1-2 sentences describing the trip in the third person (no "you"/"your"), e.g. "A relaxed few days around Venice, based at a canalside campsite, with time for the lagoon and the bacaro scene." Cover where it went and what it was like (notable places, neighbourhoods, the overall feel), not why it qualifies as a trip; "" if not a trip,\n'
         '  "evidence": string — one short sentence naming the key signals you relied on (your internal rationale; keep all "why I decided this" wording OUT of summary),\n'
         '  "suggested_split": array of {"start":"YYYY-MM-DD","end":"YYYY-MM-DD","label":string} — [] unless clearly multiple trips\n'
         '}'
