@@ -271,8 +271,11 @@ def maps_trip_llm(context) -> dict:
 
     raw_limit = os.environ.get("MAPS_TRIP_LLM_LIMIT")
     limit = int(raw_limit) if raw_limit else None
+    # MAPS_TRIP_LLM_FORCE=1 re-adjudicates every trip (regeneration after a
+    # prompt change); unset/0 keeps the cheap monotonic default.
+    force = os.environ.get("MAPS_TRIP_LLM_FORCE", "").lower() in {"1", "true", "yes"}
     try:
-        n = adjudicate_trips(limit=limit)
+        n = adjudicate_trips(limit=limit, force=force)
     except LLMConfigError as exc:
         context.log.warning("LLM not configured (%s) — skipping trip adjudication", exc)
         return {"enriched": 0, "skipped": True}
