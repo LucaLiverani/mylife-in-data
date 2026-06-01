@@ -12,6 +12,7 @@ WITH artists AS (
         round(sum(duration_ms) / 3600000.0, 1)                AS hours
     FROM {{ ref('silver_spotify_plays') }}
     WHERE primary_artist_id != ''
+      AND played_at >= toDateTime('{{ var("kpi_start_date") }}')
     GROUP BY primary_artist_id
 ),
 -- Per-artist daily play counts over the last 30 days, indexed 0..29 by the

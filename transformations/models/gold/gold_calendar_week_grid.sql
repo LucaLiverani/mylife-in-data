@@ -17,7 +17,7 @@ counts AS (
         toInt16(toHour(started_at))                AS hour,
         count()                                    AS c
     FROM {{ ref('silver_calendar_events') }}
-    WHERE is_all_day = 0 AND started_at <= now() AND event_date >= today() - 365
+    WHERE is_all_day = 0 AND started_at <= now() AND event_date >= toDate('{{ var("kpi_start_date") }}')
     GROUP BY dow, hour
 ),
 -- Normalise intensity against the busiest slot so the heatmap spans 0..1

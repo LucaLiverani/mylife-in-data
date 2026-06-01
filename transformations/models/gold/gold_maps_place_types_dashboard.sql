@@ -8,6 +8,7 @@ SELECT
     count()                                          AS value
 FROM {{ ref('silver_maps_activity_enriched') }}
 WHERE is_private = 0
+  AND event_date >= toDate('{{ var("kpi_start_date") }}')
 GROUP BY name
 ORDER BY value DESC
 LIMIT 20

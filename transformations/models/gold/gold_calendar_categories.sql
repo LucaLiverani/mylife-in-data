@@ -2,13 +2,13 @@
 
 {{ config(materialized='view', schema='gold') }}
 
--- Trailing 365 days, no future rows (subscribed holidays run to 2031).
+-- Since the shared kpi_start_date, no future rows (subscribed holidays run to 2031).
 -- Includes all-day events so "Holidays" shows as a category; category labels
 -- are already privacy-safe (email → "Personal") in the silver model.
 WITH base AS (
     SELECT category
     FROM {{ ref('silver_calendar_events') }}
-    WHERE started_at <= now() AND event_date >= today() - 365
+    WHERE started_at <= now() AND event_date >= toDate('{{ var("kpi_start_date") }}')
 ),
 totals AS (
     SELECT count() AS total FROM base

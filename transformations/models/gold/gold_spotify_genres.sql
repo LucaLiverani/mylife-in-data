@@ -8,6 +8,7 @@ SELECT
 FROM {{ ref('silver_spotify_plays') }}
 ARRAY JOIN genres AS genre
 WHERE genre != ''
+  AND played_at >= toDateTime('{{ var("kpi_start_date") }}')
 GROUP BY genre
 ORDER BY value DESC
 LIMIT 20

@@ -8,6 +8,7 @@ WITH hours AS (
 per_hour AS (
     SELECT watched_hour AS h, count() AS activities
     FROM {{ ref('silver_youtube_watches') }}
+    WHERE watched_date >= toDate('{{ var("kpi_start_date") }}')
     GROUP BY watched_hour
 )
 SELECT

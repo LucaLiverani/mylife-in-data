@@ -13,9 +13,11 @@ SELECT
     anyHeavy(primary_type)                           AS type
 FROM {{ ref('silver_maps_activity_enriched') }}
 WHERE is_private = 0
+  AND event_date >= toDate('{{ var("kpi_start_date") }}')
   AND country IN (
       SELECT DISTINCT country FROM {{ ref('silver_maps_activity_enriched') }}
       WHERE is_private = 0 AND activity_type = 'directions' AND country != ''
+        AND event_date >= toDate('{{ var("kpi_start_date") }}')
   )
 GROUP BY destination
 HAVING destination != 'Unknown'

@@ -29,12 +29,10 @@ SELECT
          FROM {{ ref('silver_maps_activity_enriched') }}
          WHERE is_private = 0
            AND event_date >= toDate('{{ var("kpi_start_date") }}'))              AS searchQueries,
-    -- "Cities" = distinct enriched localities from Maps activity. Populates as
-    -- maps_place_enrichment fills bronze.maps_place_catalog (locality column).
-    (SELECT uniqExactIf(locality, locality != '')
-     FROM {{ ref('silver_maps_activity_enriched') }}
-     WHERE is_private = 0
-       AND event_date >= toDate('{{ var("kpi_start_date") }}'))                  AS citiesVisited,
+    -- "Cities" = the Maps page's strict definition (localities you actually
+    -- NAVIGATED to, not every distinct locality) so home and /maps agree. Read
+    -- straight from the maps KPI view — one source of truth, already floored.
+    (SELECT cities_visited FROM {{ ref('gold_maps_kpis_dashboard') }})            AS citiesVisited,
     -- Hours for the Home channel strips. YouTube is the count×duration proxy
     -- (0 until the enricher fills durations).
     round((SELECT sum(duration_ms) FROM {{ ref('silver_spotify_plays') }}

@@ -8,6 +8,7 @@
 
 WITH watches AS (
     SELECT * FROM {{ ref('silver_youtube_watches') }}
+    WHERE watched_date >= toDate('{{ var("kpi_start_date") }}')
 ),
 mapped AS (
     SELECT

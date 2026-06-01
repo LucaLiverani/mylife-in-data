@@ -8,7 +8,7 @@ WITH hours AS (
 counts AS (
     SELECT hour_of_day AS h, count() AS events
     FROM {{ ref('silver_calendar_events') }}
-    WHERE is_all_day = 0 AND started_at <= now() AND event_date >= today() - 365
+    WHERE is_all_day = 0 AND started_at <= now() AND event_date >= toDate('{{ var("kpi_start_date") }}')
     GROUP BY hour_of_day
 )
 SELECT

@@ -9,6 +9,7 @@ counts AS (
     SELECT hour_of_day AS h, count() AS activities
     FROM {{ ref('silver_maps_activity_enriched') }}
     WHERE is_private = 0
+      AND event_date >= toDate('{{ var("kpi_start_date") }}')
     GROUP BY hour_of_day
 )
 SELECT
