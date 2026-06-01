@@ -92,7 +92,7 @@ export default function GooglePage() {
               <span className="text-channel-blue">Calendar</span> Analytics
             </h1>
             <p className="text-xl italic text-signal-white/60">
-              Meetings I'll show up to, plans I might honor, white space I should defend.
+              A public overview of how I waste my time.
             </p>
           </div>
         </FadeIn>

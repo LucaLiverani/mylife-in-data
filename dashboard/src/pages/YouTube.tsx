@@ -117,7 +117,7 @@ export default function YouTubePage() {
               <span className="text-channel-red">YouTube</span> Analytics
             </h1>
             <p className="text-xl text-signal-white/60 italic">
-              Where productivity goes to die, one autoplay at a time.
+              An overview of my YouTube rabbit holes and the hours they've quietly stolen.
             </p>
           </div>
         </FadeIn>

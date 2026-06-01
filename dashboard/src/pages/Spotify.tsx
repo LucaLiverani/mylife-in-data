@@ -95,7 +95,7 @@ export default function SpotifyPage() {
               <span className="text-channel-green">Spotify</span> Analytics
             </h1>
             <p className="text-xl text-signal-white/60 italic">
-              A deep dive into my musical obsessions and sonic rabbit holes.
+              Documenting my questionable taste in music, one play at a time.
             </p>
           </div>
         </FadeIn>

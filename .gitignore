@@ -58,5 +58,6 @@ private/
 .legacy-data/
 
 # Scratch / TODO files for next-day sessions — never committed.
+TODO.md
 TODO_*.md
 MAPS_HANDOFF.md

@@ -220,7 +220,7 @@ export default function MapsPage() {
               <span className="text-channel-violet">Travel</span> Analytics
             </h1>
             <p className="text-xl text-signal-white/60 italic">
-              Collecting passport stamps and existential crises since 2024.
+              An overview of the passport stamps and existential crises I've collected.
             </p>
           </div>
         </FadeIn>
