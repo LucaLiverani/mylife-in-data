@@ -38,9 +38,12 @@ def _parse_release_date(value: str | None) -> date | None:
         return None
     for fmt in ("%Y-%m-%d", "%Y-%m", "%Y"):
         try:
-            return datetime.strptime(value, fmt).date()
+            parsed = datetime.strptime(value, fmt).date()
         except ValueError:
             continue
+        # bronze.spotify_tracks.album_release_date is Date32 (1900-2299); clamp
+        # out-of-range values to NULL so a stray date can't break the insert.
+        return parsed if 1900 <= parsed.year <= 2299 else None
     return None
 
 

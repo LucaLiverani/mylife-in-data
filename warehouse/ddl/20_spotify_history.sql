@@ -40,11 +40,17 @@ CREATE TABLE IF NOT EXISTS bronze.spotify_tracks (
     album_name         String,
     album_uri          String,
     album_images       Array(String),
-    album_release_date Nullable(Date),
+    -- Date32 (1900-2299), not Date (UInt16, 1970-2149): Spotify returns release
+    -- dates for pre-1970 albums (60s/jazz/classical), which overflow Date.
+    album_release_date Nullable(Date32),
     artists_ids        Array(String),
     _fetched_at        DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree(_fetched_at)
 ORDER BY track_id;
+
+-- Idempotent: widen a pre-existing Date column to Date32 on redeploy (no-op
+-- once already Date32). Without this an old album would crash the enricher.
+ALTER TABLE bronze.spotify_tracks MODIFY COLUMN album_release_date Nullable(Date32);
 
 CREATE TABLE IF NOT EXISTS bronze.spotify_artists (
     artist_id          String,
