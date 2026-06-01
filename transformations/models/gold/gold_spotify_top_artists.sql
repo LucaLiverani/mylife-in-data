@@ -1,5 +1,6 @@
--- Top 15 artists with 30-day per-day play counts as `trend`.
--- Handler keys: rank, name, plays, hours, genre, trend.
+-- Top 15 artists since the shared kpi_start_date, with a per-WEEK play-count
+-- sparkline (`trend`) over the same window. Handler keys: rank, name, plays,
+-- hours, genre, trend.
 
 {{ config(materialized='view', schema='gold') }}
 
@@ -15,28 +16,37 @@ WITH artists AS (
       AND played_at >= toDateTime('{{ var("kpi_start_date") }}')
     GROUP BY primary_artist_id
 ),
--- Per-artist daily play counts over the last 30 days, indexed 0..29 by the
--- offset from (today - 29). day_idx is the array position the count lands in.
-daily_by_artist AS (
+-- Per-artist weekly play counts from kpi_start_date → today. Bucketing by week
+-- (not day) keeps the sparkline readable over the ~17-month window; week 0 is
+-- the week containing kpi_start_date.
+weekly_by_artist AS (
     SELECT
         primary_artist_id,
-        toInt32(toDate(played_at) - (today() - 29))           AS day_idx,
+        toUInt32(intDiv(toDate(played_at) - toDate('{{ var("kpi_start_date") }}'), 7)) AS week_idx,
         count()                                               AS c
     FROM {{ ref('silver_spotify_plays') }}
-    WHERE played_at >= today() - 29
-    GROUP BY primary_artist_id, day_idx
+    WHERE primary_artist_id != ''
+      AND played_at >= toDateTime('{{ var("kpi_start_date") }}')
+    GROUP BY primary_artist_id, week_idx
 ),
--- groupArrayInsertAt(default, size)(value, pos) builds a fixed-length 30-slot
--- array, filling untouched days with 0. This replaces the previous
--- arrayMap(i -> aggregate FILTER ...) form, which referenced the lambda var
--- `i` inside an aggregate under GROUP BY (illegal → NOT_FOUND_COLUMN).
+-- Densify into a gap-filled array (0 for silent weeks). The number of weeks is
+-- derived from the window, so the array grows over time — no hardcoded length.
+-- CAST((keys, values) -> Map) + a map lookup over range(weeks) sidesteps
+-- groupArrayInsertAt's constant-size requirement.
 trend AS (
     SELECT
         primary_artist_id,
-        groupArrayInsertAt(toUInt64(0), 30)(c, toUInt32(day_idx)) AS trend
-    FROM daily_by_artist
-    WHERE day_idx >= 0 AND day_idx < 30
-    GROUP BY primary_artist_id
+        arrayMap(
+            w -> toUInt64(m[toUInt32(w)]),
+            range(toUInt32(intDiv(today() - toDate('{{ var("kpi_start_date") }}'), 7) + 1))
+        )                                                     AS trend
+    FROM (
+        SELECT
+            primary_artist_id,
+            CAST((groupArray(week_idx), groupArray(c)), 'Map(UInt32, UInt64)') AS m
+        FROM weekly_by_artist
+        GROUP BY primary_artist_id
+    )
 )
 SELECT
     row_number() OVER (ORDER BY a.plays DESC, a.name)                     AS rank,
@@ -44,7 +54,9 @@ SELECT
     a.plays                                                               AS plays,
     a.hours                                                               AS hours,
     arrayElement(a.genres, 1)                                             AS genre,
-    if(length(t.trend) = 30, t.trend, arrayMap(x -> toUInt64(0), range(30))) AS trend
+    -- Every ranked artist has in-window plays, so the join always hits and
+    -- trend is the full weekly array.
+    t.trend                                                               AS trend
 FROM artists a
 LEFT JOIN trend t USING (primary_artist_id)
 ORDER BY a.plays DESC, a.name

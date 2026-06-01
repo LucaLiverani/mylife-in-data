@@ -11,7 +11,8 @@ export interface TopListItem {
   secondary?: string;
   /** Raw numeric value used for sort + display. */
   value: number;
-  /** Optional per-item trend (typically 30 daily values). Rendered as an inline sparkline. */
+  /** Optional per-item trend values. Rendered as an inline sparkline; length
+   *  varies by source/window (e.g. Spotify = weekly since the KPI start date). */
   trend?: number[];
 }
 
@@ -33,7 +34,7 @@ interface TopListProps {
  *       lo-fi              ▁▂▃▅▇██▇▅▃▁▁▂▅▇█
  *
  * Always sorted by `value` descending. Inline per-item sparkline shows the
- * item's own 30-day momentum (not a comparison to other items).
+ * item's own momentum over its source's window (not a comparison to other items).
  *
  * Sparkline alignment: secondary labels naturally have different widths
  * ("lo-fi" vs "Science & Technology"), which would make sparklines start
