@@ -145,7 +145,7 @@ export function TripTimeline({ trips, ownerMode, statusByKey, busyKey, onLabel }
 
             {open && (
               <div className="space-y-4 px-6 pb-4 pl-12">
-                {t.summary && <p className="max-w-prose text-sm leading-relaxed text-signal-white/80">{t.summary}</p>}
+                {t.summary && <p className="text-sm leading-relaxed text-signal-white/80">{t.summary}</p>}
 
                 <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-wider text-signal-white/50">
                   {t.country && <span>Country · <span className="text-signal-white/80">{t.country}</span></span>}
