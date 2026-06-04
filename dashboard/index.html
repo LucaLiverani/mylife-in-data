@@ -36,9 +36,52 @@
       content="A personal data platform to take ownership of my data. Pretty charts, brutal honesty."
     />
     <meta name="twitter:image" content="https://mylife-in-data.com/og-image.png" />
+    <style>
+      /* Pre-React branded splash: shown before the app mounts and to crawlers
+         that render the page without running JS (e.g. link-preview bots), so
+         the page is never a blank black frame. React's createRoot().render()
+         replaces #root on mount, which removes this. */
+      html,
+      body {
+        margin: 0;
+        background: #1a1a1a;
+      }
+      #app-splash {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 24px;
+        text-align: center;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      #app-splash h1 {
+        margin: 0;
+        font-size: clamp(40px, 9vw, 88px);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+      }
+      #app-splash h1 span {
+        color: #1db954;
+      }
+      #app-splash p {
+        margin: 0;
+        font-size: clamp(14px, 2.5vw, 20px);
+        font-style: italic;
+        color: #b3b3b3;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="app-splash">
+        <h1>My Life <span>in Data</span></h1>
+        <p>Pretty charts, brutal honesty, optional self-improvement.</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
