@@ -1,7 +1,7 @@
 -- Travel KPIs for /api/travel/data, computed from activity (not Timeline).
 -- Column list keeps the TravelKPIs shape the handler expects.
--- Privacy: only is_private=0 rows count toward public KPIs. Private events
--- are reported via gold_maps_private_summary (a single anonymized counter).
+-- Privacy: only is_private=0 rows count toward public KPIs; private events
+-- are excluded entirely.
 
 {{ config(materialized='view', schema='gold') }}
 
