@@ -48,8 +48,8 @@ transformations/logs/
 .claude/settings.local.json
 .claude/settings.json
 
-# Personal notes (real VM IP, user, tunnel UUID, etc. live here — gitignored)
-PERSONAL.md
+# Access / deployment values (real VM IP, user, tunnel UUID, etc. live here; gitignored)
+ACCESS.md
 
 # Private content workspace
 private/

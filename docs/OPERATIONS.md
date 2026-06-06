@@ -1,6 +1,6 @@
 # Operations
 
-How to run, deploy, and operate the platform. Placeholders like `<VM_IP>`, `<VM_USER>`, `<DOMAIN>`, `<TUNNEL_ID>`, `<CF_ACCESS_CLIENT_ID>`, `<CH_USER>` in this doc stand for personal values — see `PERSONAL.md` (gitignored) for the real ones, or `infrastructure/.env` for what's actually loaded into the running stack.
+How to run, deploy, and operate the platform. Placeholders like `<VM_IP>`, `<VM_USER>`, `<DOMAIN>`, `<TUNNEL_ID>`, `<CF_ACCESS_CLIENT_ID>`, `<CH_USER>` in this doc stand for personal values — see `ACCESS.md` (gitignored) for the real ones, or `infrastructure/.env` for what's actually loaded into the running stack.
 
 For the deployment history (what was migrated from Airflow+Kafka to Dagster+Redpanda, how Cloudflare Tunnel + Access were set up), see the brief "Deployment history" section at the bottom.
 
@@ -157,7 +157,7 @@ edits don't touch any container.
 > `ssh <VM> 'docker exec dagster-webserver bash -lc "cd /opt/dagster/repo/transformations && DBT_TARGET_PATH=/tmp/t DBT_LOG_PATH=/tmp/dbt-logs dbt run --profiles-dir ."'` — **after** the pull lands, or the live views silently lag the deployed code. Run the rebuild only once the VM repo is at the new commit (a rebuild against a not-yet-pulled repo builds the old models). Both `DBT_*_PATH` vars redirect dbt's `target/` and `logs/` to writable `/tmp`: the repo is bind-mounted read-only into the container, so without `DBT_LOG_PATH` dbt aborts trying to write `logs/dbt.log`.
 
 `VM_SSH` / `VM_REPO_PATH` come from `infrastructure/.env` (gitignored — see
-`PERSONAL.md` for real values). `VM_SSH` is anything `ssh` can resolve: a
+`ACCESS.md` for real values). `VM_SSH` is anything `ssh` can resolve: a
 `~/.ssh/config` alias (recommended — carries the key + port) or a literal
 `user@host`. Override on the CLI:
 
@@ -249,7 +249,7 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 | `infrastructure/.env` (laptop + VM, gitignored) | All service passwords. One identity shared by ClickHouse, Grafana, Dagster Postgres |
 | `dashboard/.env.production` (gitignored) | Production Pages secrets — synced to Cloudflare encrypted store by `deploy-to-pages.sh` |
 | `dashboard/.env.development` (gitignored) | Local-dev CH credentials. Only used by `pages:dev` (rarely; `npm run dev` reads mocks instead) |
-| `PERSONAL.md` (gitignored) | Cheat-sheet mapping every placeholder in this doc to its real value |
+| `ACCESS.md` (gitignored) | Cheat-sheet mapping every placeholder in this doc to its real value |
 | Password manager | Cloudflare service token Client Secret (shown once at creation), VM sudo password, GitHub PAT if used |
 | Cloudflare Zero Trust | Service Token `dashboard-clickhouse` (Client ID + Secret), Access app policies |
 

@@ -25,7 +25,7 @@ Repo invariants to enforce (see CLAUDE.md for the full picture):
 - **Sources/docs sync.** New bronze tables → add to `sources.yml` and `docs/DATA_MODEL.md`.
   Flag drift.
 - **Public-repo hygiene.** No secrets, IPs, emails, tokens, or tunnel IDs in committed
-  files (placeholders + gitignored `PERSONAL.md`/`.env`). The LLM endpoint stays
+  files (placeholders + gitignored `ACCESS.md`/`.env`). The LLM endpoint stays
   provider-neutral (no vendor name).
 - **Conventions.** New env vars appear in both `infrastructure/.env` and `.env.example`;
   prose avoids em dashes.

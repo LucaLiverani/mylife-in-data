@@ -20,4 +20,4 @@ deploys separately (`dashboard/scripts/deploy-to-pages.sh`) and is not part of t
    views dropped). Re-confirm a couple of live gold tables are still populated.
 
 Caveats: `deploy.sh` updates itself on pull, so a change to deploy.sh's own logic won't run
-until the next deploy. Never put secrets/IPs in committed files (placeholders + `PERSONAL.md`).
+until the next deploy. Never put secrets/IPs in committed files (placeholders + `ACCESS.md`).

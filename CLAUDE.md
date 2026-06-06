@@ -63,7 +63,7 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 ## Conventions
 
 - **Public repo**: never commit secrets, IPs, emails, tokens, tunnel IDs. Use placeholders
-  (`<VM_IP>`, `<DOMAIN>`, …); real values live in gitignored `PERSONAL.md` / `infrastructure/.env`.
+  (`<VM_IP>`, `<DOMAIN>`, …); real values live in gitignored `ACCESS.md` / `infrastructure/.env`.
 - **Env vars**: add to `infrastructure/.env` (empty) and `.env.example` (placeholder)
   together with the code that reads them.
 - **LLM endpoint**: provider-neutral OpenAI-compatible (`LLM_API_BASE/_KEY/_MODEL`); never
