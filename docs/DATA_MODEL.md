@@ -29,11 +29,11 @@ batch jobs — KPIs are live by construction.
 
 ## Sources and their endpoint inventory
 
-| Source | Bronze topic(s) | Refresh | Ingest path |
+| Source | Bronze table(s) | Refresh | Ingest path |
 |---|---|---|---|
-| **Spotify currently-playing** | `spotify.player.current` | 5–10s | long-running container (`spotify-current-producer`) |
-| **Spotify recently-played** | `spotify.plays.raw` | 60s | Dagster `@schedule`, dedupe on `played_at` |
-| **Spotify entity catalogs** | `spotify.tracks.raw`, `spotify.artists.raw` | enrichment | Dagster sensor on unknown IDs in bronze |
+| **Spotify currently-playing** | `bronze.spotify_player_current` | 5–10s | producer container (`spotify-current-producer`) → Redpanda topic `spotify.player.current` → ClickHouse Kafka engine. **The only streamed source** — everything below is a direct batch INSERT |
+| **Spotify recently-played** | `bronze.spotify_plays_raw` | 60s | Dagster `@schedule`, direct INSERT, dedupe on `played_at` |
+| **Spotify entity catalogs** | `bronze.spotify_tracks`, `bronze.spotify_artists` | enrichment | Dagster sensor on unknown IDs in bronze, direct INSERT |
 | **Spotify saved tracks** | `bronze.spotify_saved_tracks` | 5 min | Dagster `@schedule` polls `me/tracks`; dedup on `added_at`. Powers the "Liked" rows in `/api/now/timeline` |
 | **YouTube history** | `bronze.youtube_watch_history`, `bronze.youtube_search_history` | daily | Dagster schedule → Google **Data Portability** (Takeout-equivalent payload) |
 | **YouTube metadata** | `bronze.youtube_videos`, `bronze.youtube_channels` | enrichment | Dagster sensor on unknown `video_id` in bronze → **YouTube Data API v3** (`videos?id=…&part=snippet,contentDetails`, `channels?id=…&part=snippet`), batched 50 IDs per call |
@@ -183,11 +183,15 @@ CREATE TABLE bronze.spotify_saved_tracks (
 ORDER BY (track_id, added_at);
 ```
 
-Stream path: `spotify.player.current` and `spotify.plays.raw` are Redpanda
-topics with matching ClickHouse Kafka-engine consumer tables
-(`bronze.kafka_*`) and a 1:1 MV that pumps each row into the storage table
-above. The tracks/artists catalogs INSERT directly via the enricher (no
-Kafka — they're low-volume and we want UPSERT semantics).
+Stream path: only `spotify.player.current` is a Redpanda topic. It has a
+matching ClickHouse Kafka-engine consumer table
+(`bronze.kafka_spotify_player_current`) and a 1:1 MV that pumps each row into
+`bronze.spotify_player_current`. Everything else on this page, including
+`spotify_plays_raw` and the tracks/artists catalogs, is a plain batch INSERT
+from Dagster (recently-played, saved tracks, enrichment) or the one-time
+history import. These are low-volume API responses with natural dedup keys:
+Kafka would be overkill, and the `ReplacingMergeTree` UPSERT semantics are
+exactly what we want.
 
 ### YouTube (Data Portability for history + Data API v3 for metadata)
 

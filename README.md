@@ -8,7 +8,7 @@
 
 This is a project about reclaiming ownership of my own data. I'm collecting it from the services I use the most to better understand my digital footprint, and maybe get to know myself as well as the big companies already do. Along the way, I get to do the things I love: learning new technologies, experimenting, breaking things, making mistakes and growing.
 
-Under the hood, it's a personal data platform that pulls my activity back out of Spotify, YouTube, Google Maps, and Google Calendar, streams it into **ClickHouse**, models it with **dbt**, orchestrates the pipeline with **Dagster**, and serves it through a **Cloudflare-hosted dashboard**.
+Under the hood, it's a personal data platform that pulls my activity back out of Spotify, YouTube, Google Maps, and Google Calendar, lands it in **ClickHouse**, models it with **dbt**, orchestrates the pipeline with **Dagster**, and serves it through a **Cloudflare-hosted dashboard**.
 
 [**▶ Live demo: mylife-in-data.com**](https://mylife-in-data.com) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Run it yourself](#run-it-yourself) &nbsp;·&nbsp; [Deeper docs](#deeper-docs)
 
@@ -61,18 +61,19 @@ Four sources, one pipeline, four stops on the way to a chart:
 
 ```mermaid
 flowchart LR
-    S[Spotify] & Y[YouTube] & M[Maps] & C[Calendar] --> ING[Ingestion<br/>producers + batch pulls]
-    ING --> RP[(Redpanda)]
+    S[Spotify<br/>now playing] -->|real-time stream| RP[(Redpanda)]
     RP --> BR[(ClickHouse<br/>bronze)]
+    Y[YouTube] & M[Maps] & C[Calendar] & SH[Spotify history] -->|daily / scheduled batch| BR
     BR -->|dbt| GOLD[(silver → gold)]
     GOLD --> FN[Pages Functions<br/>/api]
     FN --> UI[React dashboard]
-    DAG{{Dagster}} -. orchestrates .-> ING
-    DAG -.-> BR
+    DAG{{Dagster}} -. orchestrates .-> BR
     DAG -.-> GOLD
 ```
 
-- **Ingest.** A Spotify producer polls "now playing" every few seconds. Google data (YouTube, Maps, Calendar) arrives as daily batch pulls through the Data Portability and Calendar APIs. Events land in Redpanda, then ClickHouse bronze.
+Redpanda carries exactly one thing, the live "now playing" signal. Every other source is a scheduled batch pull that Dagster writes straight into bronze.
+
+- **Ingest.** A Spotify producer polls "now playing" every few seconds and publishes it to Redpanda (a Kafka-compatible log); a ClickHouse Kafka-engine table drains that one real-time stream into bronze. Everything else, Spotify listening history plus all the Google data (YouTube, Maps, Calendar) through the Data Portability and Calendar APIs, arrives as scheduled batch pulls that Dagster writes straight into bronze. Redpanda carries only the live "now playing" signal.
 - **Model.** dbt builds the silver (cleaned, conformed) and gold (dashboard-ready) layers as ClickHouse views and tables.
 - **Orchestrate.** Dagster runs ~30 assets across every source: schedules, sensors, a Calendar webhook, and a daily freshness monitor.
 - **Serve.** Cloudflare Pages hosts the static React app. Pages Functions (`/api/*`) query gold over a Cloudflare Tunnel. The VM owns OAuth-token refresh and every scheduled ingest; the laptop stays dev-only.
