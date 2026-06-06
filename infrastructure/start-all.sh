@@ -29,9 +29,14 @@ echo "[1/5] Streaming (Redpanda)..."
 (cd "$COMPOSE_DIR/redpanda" && docker compose up -d)
 sleep 15
 echo "      Ensuring topics exist..."
+# Redpanda transports exactly one signal: the real-time Spotify "now playing"
+# stream (producer → spotify.player.current → ClickHouse Kafka engine). Every
+# other source is a direct batch INSERT into bronze, so no other topic is
+# needed. Do NOT re-add the legacy spotify.tracks.raw / spotify.artist_ids /
+# spotify.artists.raw / google.*.raw topics — they were never consumed and
+# only reappeared on each redeploy.
 docker exec redpanda rpk topic create \
-    spotify.tracks.raw spotify.player.current spotify.artist_ids spotify.artists.raw \
-    google.youtube.raw google.maps.raw \
+    spotify.player.current \
     -p 3 -r 1 -c retention.ms=604800000 2>/dev/null || true
 
 echo
