@@ -79,5 +79,4 @@ Set up a temporary Cloudflare tunnel pointing at your laptop's ClickHouse, swap 
 ## Open follow-ups (not blocking)
 
 - Maps Places API enrichment full loop (~2,650 lookups, ~$45 of $200 free credit). One-shot once on whichever environment you decide is canonical (laptop or VM).
-- Monthly Timeline export (manual phone export → `scripts/import_maps_timeline_export.py`) for ground-truth visit data that `silver.maps_trips` and trip segmentation can consume.
-- Inference layer (heuristic country/city from activity density, deferred ML model trained on Timeline ground truth) — Phase 5c, build when you have ≥1 month of Timeline exports as labels.
+- Inference layer refinements: trip and locality inference is now driven entirely by Maps activity density (`silver_geo_daily` → trip segmentation), so the old plan to train on manual Timeline exports is dropped. Future work is tuning the activity-based heuristics.
