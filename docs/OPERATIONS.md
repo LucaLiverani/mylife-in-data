@@ -165,6 +165,13 @@ edits don't touch any container.
 make deploy-vm VM_SSH=other-alias
 ```
 
+**The VM pulls over a dedicated GitHub SSH alias.** The VM's git `origin` is
+`git@github-mylife-in-data:LucaLiverani/mylife-in-data.git`, a `~/.ssh/config` Host alias
+backed by a per-repo deploy key (HostName is still github.com), so it coexists with other
+GitHub identities on the box. `deploy.sh` is remote-agnostic (it uses `origin`), so if you
+rotate the key or rename the alias, repoint once on the VM:
+`git remote set-url origin git@<alias>:LucaLiverani/mylife-in-data.git`. The alias name is in `ACCESS.md`.
+
 ### Borrowing tokens for a one-shot laptop run
 
 When the laptop needs to hit Google APIs directly (e.g., re-running a

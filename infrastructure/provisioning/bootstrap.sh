@@ -16,8 +16,8 @@
 #   5. Configures UFW: deny inbound, allow 22 only
 #   6. Installs fail2ban (SSH bruteforce protection)
 #   7. Enables unattended-upgrades (security patches)
-#   8. Generates a GitHub deploy key for the data platform repo + an SSH config
-#      entry so `git clone git@github.com:...` resolves to it
+#   8. Generates a GitHub deploy key for the data platform repo + a dedicated SSH
+#      Host alias (git@github-mylife-in-data:...) so the key is used only for this repo
 #   9. Prints the deploy key + next-step instructions
 #
 # What it does NOT do:
@@ -33,7 +33,8 @@ USERNAME="${USERNAME:-admin}"
 TIMEZONE="${TIMEZONE:-Europe/Zurich}"
 HOSTNAME_NEW="${HOSTNAME_NEW:-myvm}"
 GH_DEPLOY_KEY_NAME="github_${USERNAME}_deploy_key"  # filename (without .pub) for the GitHub deploy key, stored in the new user's ~/.ssh/
-GH_REPO_HOST="github.com"
+GH_REPO_HOST="github.com"                 # real GitHub host (HostName + known_hosts target)
+GH_SSH_ALIAS="github-mylife-in-data"      # dedicated SSH Host alias for this repo's deploy key (clone + git remote use git@$GH_SSH_ALIAS:...); coexists with other GitHub identities
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pre-flight
@@ -174,13 +175,14 @@ else
     -C "$USERNAME@$HOSTNAME_NEW deploy-key"
 fi
 
-# SSH config so github.com uses the deploy key
+# Dedicated SSH alias so this repo's deploy key is used only for git@$GH_SSH_ALIAS,
+# leaving the global github.com (and any other GitHub identities) untouched.
 SSH_CONFIG="$USER_HOME/.ssh/config"
-if ! grep -q "Host $GH_REPO_HOST" "$SSH_CONFIG" 2>/dev/null; then
-  echo "▶ Adding SSH config entry for $GH_REPO_HOST"
+if ! grep -q "Host $GH_SSH_ALIAS" "$SSH_CONFIG" 2>/dev/null; then
+  echo "▶ Adding SSH config entry for $GH_SSH_ALIAS"
   cat >> "$SSH_CONFIG" <<EOF
 
-Host $GH_REPO_HOST
+Host $GH_SSH_ALIAS
   HostName $GH_REPO_HOST
   User git
   IdentityFile $KEY_PATH
@@ -264,7 +266,7 @@ $DEPLOY_PUBKEY
  3. Clone the repo as $USERNAME:
 
       ssh $USERNAME@<VM_IP>
-      git clone git@github.com:<you>/mylife-in-data.git
+      git clone git@$GH_SSH_ALIAS:<you>/mylife-in-data.git
       cd mylife-in-data
       cp infrastructure/.env.example infrastructure/.env
       \$EDITOR infrastructure/.env       # fill in credentials, set MYLIFE_TOKEN_WRITER=1 + DAGSTER_SCHEDULES_ENABLED=1
