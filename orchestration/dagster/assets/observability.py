@@ -38,7 +38,7 @@ WITH sources AS (
     UNION ALL
     SELECT 'youtube', max(watched_at) FROM bronze.youtube_watch_history
     UNION ALL
-    SELECT 'maps', max(started_at) FROM bronze.maps_visits
+    SELECT 'maps', max(event_ts) FROM bronze.maps_activity
     UNION ALL
     SELECT 'calendar', max(started_at) FROM bronze.calendar_events
 )

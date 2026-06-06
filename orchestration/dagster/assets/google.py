@@ -1,9 +1,9 @@
 """Google Data Portability-driven assets: Maps + YouTube history.
 
-Maps Timeline data is post-2024 on-device only for many users; the probe
-script (scripts/probe_maps_data_portability.py) tells you whether the cloud
-copy is still there. If it isn't, fall back to manual on-device exports via
-scripts/import_maps_timeline_export.py.
+Maps Timeline (location visits/paths) moved on-device for many users in 2024,
+so the daily ingest uses MyActivity (search/view/directions) via Data
+Portability instead. Full history is a one-time load from a manual Google
+Takeout export (scripts/import_google_takeout.py).
 """
 
 from __future__ import annotations
@@ -66,46 +66,9 @@ def _maps_ingest_window(years_back: float = 0, days_back: int = 1) -> tuple[date
     return end - timedelta(days=days_back), end
 
 
-def _run_maps_activity_ingest(context, *, years_back: float, days_back: int) -> dict:
-    from ingestion.google.portability import DataPortabilityClient
-    from ingestion.google.maps.activity_parser import parse_archive_for_activity
-    from ingestion.google.maps.insert import insert_activity
-
-    creds = context.resources.google_auth_portability.get_credentials()
-    client = DataPortabilityClient(creds)
-
-    start_time, end_time = _maps_ingest_window(years_back=years_back, days_back=days_back)
-    context.log.info("Maps activity DP window: %s → %s", start_time.isoformat(), end_time.isoformat())
-
-    job_id = client.initiate_archive(
-        MAPS_ACTIVITY_RESOURCES, start_time=start_time, end_time=end_time
-    )
-    job = client.wait_for_archive(job_id)
-
-    with tempfile.TemporaryDirectory(prefix="maps-act-") as tmp:
-        root = Path(tmp)
-        client.download_archive(job, root)
-        rows = parse_archive_for_activity(root)
-
-    n = insert_activity(rows)
-    context.log.info("Inserted %d activity rows into bronze.maps_activity", n)
-    return {"activity_rows": n}
-
-
-@asset(
-    group_name="google",
-    description="One-shot 1y backfill of Maps activity (search/view/directions).",
-    deps=[maps_schema],
-    required_resource_keys={"google_auth_portability"},
-)
-def maps_activity_initial_backfill(context) -> dict:
-    return _run_maps_activity_ingest(context, years_back=1.0, days_back=0)
-
-
-# NOTE: the daily incremental Maps ingest is no longer a standalone asset —
-# it's folded into `maps_youtube_dp_daily` (defined below) so Maps + YouTube
-# share a single Data Portability archive and don't collide on the per-client
-# 24h cooldown. `_run_maps_activity_ingest` is still used by the backfill above.
+# NOTE: the daily incremental Maps ingest is folded into `maps_youtube_dp_daily`
+# (defined below) so Maps + YouTube share a single Data Portability archive and
+# don't collide on the per-client 24h cooldown.
 
 
 @asset(
@@ -357,44 +320,8 @@ def youtube_schema(context) -> str:
     return "ok"
 
 
-def _youtube_ingest(context, *, years_back: float, days_back: int) -> dict:
-    from ingestion.google.portability import DataPortabilityClient
-    from ingestion.google.youtube.parser import parse_archive
-    from ingestion.google.youtube.insert import insert_watch_history, insert_search_history
-
-    creds = context.resources.google_auth_portability.get_credentials()
-    client = DataPortabilityClient(creds)
-
-    start_time, end_time = _maps_ingest_window(years_back=years_back, days_back=days_back)
-    context.log.info("YouTube DP window: %s → %s", start_time.isoformat(), end_time.isoformat())
-
-    job_id = client.initiate_archive(YOUTUBE_RESOURCES, start_time=start_time, end_time=end_time)
-    job = client.wait_for_archive(job_id)
-
-    with tempfile.TemporaryDirectory(prefix="yt-dp-") as tmp:
-        root = Path(tmp)
-        client.download_archive(job, root)
-        watch, search = parse_archive(root)
-
-    n_watch = insert_watch_history(watch)
-    n_search = insert_search_history(search)
-    context.log.info("Inserted %d watch + %d search rows", n_watch, n_search)
-    return {"watch": n_watch, "search": n_search}
-
-
-@asset(
-    group_name="google",
-    description="One-shot 1y YouTube history backfill.",
-    deps=[youtube_schema],
-    required_resource_keys={"google_auth_portability"},
-)
-def youtube_history_initial_backfill(context) -> dict:
-    return _youtube_ingest(context, years_back=1.0, days_back=0)
-
-
 # NOTE: the daily incremental YouTube ingest is folded into
-# `maps_youtube_dp_daily` (below). `_youtube_ingest` is still used by the
-# one-shot backfill above.
+# `maps_youtube_dp_daily` (below).
 
 
 @asset(

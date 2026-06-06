@@ -8,8 +8,6 @@ backfill years of YouTube watch/search history and Maps activity beyond the
 Request at takeout.google.com:
   - "YouTube and YouTube Music" -> history -> set format to JSON (not HTML)
   - "My Activity" -> Maps -> format JSON
-For Maps *Timeline* (location visits/paths) use
-scripts/import_maps_timeline_export.py instead — that's a different data shape.
 
 Idempotent: every bronze target is ReplacingMergeTree on a natural key, so
 overlap with the live DP ingest dedups automatically.
