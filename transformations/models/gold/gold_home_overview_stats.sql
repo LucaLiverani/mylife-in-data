@@ -1,6 +1,6 @@
 -- One row of cross-source totals for the home page.
--- Maps metrics come from the activity-based silver model (the Timeline-era
--- bronze.maps_visits / bronze.maps_search tables are empty post-pivot).
+-- Maps metrics come from the activity-based silver model (the legacy Timeline
+-- bronze tables were removed when Maps Timeline moved on-device in 2024).
 -- searchQueries combines YouTube + Maps search activity.
 
 {{ config(materialized='view', schema='gold') }}

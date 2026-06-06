@@ -11,10 +11,6 @@
 --   3. silver.maps_private_places ← coordinates ONLY from starred places,
 --                                   used as a spatial filter so friends'
 --                                   addresses never reach gold tables
---
--- The Timeline tables (bronze.maps_visits, bronze.maps_path) defined in
--- 50_maps.sql remain, fed only by monthly manual export via
--- scripts/import_maps_timeline_export.py.
 
 CREATE TABLE IF NOT EXISTS bronze.maps_activity (
     event_ts          DateTime64(3),

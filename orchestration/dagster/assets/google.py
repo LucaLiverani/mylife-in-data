@@ -48,11 +48,11 @@ MAPS_ACTIVITY_RESOURCES = ["myactivity.maps"]
 MAPS_SAVED_PLACES_RESOURCES = ["maps.aliased_places", "maps.starred_places"]
 
 
-@asset(group_name="google", description="DDL bootstrap for Maps tables (Timeline + activity).")
+@asset(group_name="google", description="DDL bootstrap for Maps tables (trips + activity).")
 def maps_schema(context) -> str:
     from ingestion._shared.clickhouse import execute_file
 
-    # 50 = Timeline tables (legacy, filled by manual export only)
+    # 50 = home anchor + trip segmentation/enrichment tables
     # 51 = activity + place catalog + private filter (the primary daily flow)
     execute_file(str(_ddl_path("50_maps.sql")))
     execute_file(str(_ddl_path("51_maps_activity.sql")))
