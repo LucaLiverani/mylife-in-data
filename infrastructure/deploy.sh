@@ -56,6 +56,14 @@ echo "→ Applying ClickHouse DDL..."
 set -a; source "$SCRIPT_DIR/.env"; set +a
 CLICKHOUSE_DDL_HOST=localhost bash "$REPO_ROOT/warehouse/ddl/apply.sh"
 
+# ── Reconcile dbt views (drop orphans left by deleted models) ─────────────
+# DDL only ever CREATEs, so a deleted dbt model leaves its view behind in CH.
+# This drops any gold/silver VIEW that is neither a current dbt model nor a
+# DDL-created view. View-only + gold/silver-only, so raw bronze tables and the
+# Dagster/DDL trip tables are never touched. Never fails the deploy.
+echo "→ Pruning orphaned dbt views..."
+CLICKHOUSE_DDL_HOST=localhost bash "$REPO_ROOT/warehouse/ddl/prune_orphaned_views.sh" || true
+
 # ── Service-level restart decisions ───────────────────────────────────────
 # Heuristics: anything that lives inside the Dagster image (orchestration,
 # ingestion, transformations, dbt) or its build context (Dockerfile,
