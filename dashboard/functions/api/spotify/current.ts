@@ -24,8 +24,6 @@ interface ClickHouseTrackRow {
   artists_names: string[];
   is_playing: boolean;
   captured_at: string;
-  progress_ms: number;
-  track_duration_ms: number;
   device_id: string;
   device_name: string;
   device_type: string;
@@ -68,8 +66,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
             uri: row.album_uri,
             images: row.album_images.map(url => ({ url, height: 0, width: 0 })),
           },
-          duration_ms: row.track_duration_ms,
-          progress_ms: row.progress_ms,
           is_playing: row.is_playing,
           device: {
             id: row.device_id,

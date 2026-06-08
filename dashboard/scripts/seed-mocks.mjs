@@ -213,8 +213,6 @@ write('spotify/current.json', {
         { url: 'https://picsum.photos/seed/dopelemon/300', height: 300, width: 300 },
       ],
     },
-    duration_ms: 233713,
-    progress_ms: 45000,
     is_playing: true,
     device: { id: 'dev-1', name: 'MacBook Pro', type: 'Computer', volume_percent: 65 },
     context: { type: 'playlist', uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M' },
