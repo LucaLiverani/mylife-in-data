@@ -28,11 +28,11 @@ export default function NowPage() {
 
   return (
     <main className="min-h-screen text-signal-white">
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <FadeIn>
           <div className="mb-8">
             <p className="mb-2 font-mono text-xs uppercase tracking-wider text-signal-white/60">Live console</p>
-            <h1 className="text-5xl font-bold leading-[1.0] tracking-tight lg:text-6xl">Now</h1>
+            <h1 className="text-4xl font-bold leading-[1.0] tracking-tight sm:text-5xl lg:text-6xl">Now</h1>
             <p className="mt-3 max-w-xl text-sm italic text-signal-white/60">
               Everything that's reached the warehouse in the last {windowLabel}, across every channel.
             </p>
@@ -107,7 +107,7 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
         {localTime}
       </time>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-signal-white">
+        <p className="break-words text-sm text-signal-white">
           <span className={cn('mr-2 font-mono text-[10px] uppercase tracking-widest', channelText)}>{event.channel}</span>
           <span className="text-signal-white/70">{event.label}:</span>{' '}
           <span className="font-medium text-signal-white">{event.value}</span>

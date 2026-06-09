@@ -41,7 +41,7 @@ interface TravelData {
   trips?: Trip[];
   charts: {
     hourlyActivity: Array<{ hour: string; activities: number }>;
-    lastActivities: Array<{ time: string; location: string; type: string; timeOfDay: string }>;
+    lastActivities: Array<{ time: string; location: string; type: string }>;
     topDestinations: Array<{ destination: string; count: number; type: string; trend?: number[] }>;
     dailyActivity: Array<{ date: string; directions: number; searches: number; explorations: number; other: number }>;
   };
@@ -149,7 +149,7 @@ export default function MapsPage() {
     <section className="mb-12">
       <FadeIn delay={0.18}>
         <Surface>
-          <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 gap-y-2">
             <h2 className="font-mono text-xs uppercase tracking-wider text-signal-white/60">
               Trips · {travelData.trips.length}
             </h2>
@@ -186,7 +186,7 @@ export default function MapsPage() {
                   type="button"
                   onClick={() => setShowTokenInput(true)}
                   aria-label="Enter owner mode"
-                  className="text-signal-white/25 transition-colors hover:text-signal-white/60"
+                  className="-m-2.5 p-2.5 text-signal-white/25 transition-colors hover:text-signal-white/60"
                 >
                   <Lock className="size-3.5" />
                 </button>
@@ -208,7 +208,7 @@ export default function MapsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 sm:px-6 sm:py-20">
         {/* Header */}
         <FadeIn>
           <Link to="/" className="inline-flex items-center gap-2 text-signal-white/60 hover:text-signal-white transition-colors mb-8">
@@ -216,7 +216,7 @@ export default function MapsPage() {
             Back to Dashboard
           </Link>
           <div className="mb-12">
-            <h1 className="text-5xl lg:text-7xl font-bold mb-4">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4">
               <span className="text-channel-violet">Travel</span> Analytics
             </h1>
             <p className="text-xl text-signal-white/60 italic">
@@ -291,7 +291,7 @@ export default function MapsPage() {
               <FadeIn delay={0.2}>
                 <Surface>
                   <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">Travel map</h2>
-                  <div className="h-[500px] overflow-hidden rounded-md">
+                  <div className="h-[320px] overflow-hidden rounded-md sm:h-[500px]">
                     <TravelMap locations={travelData.locations} />
                   </div>
                 </Surface>

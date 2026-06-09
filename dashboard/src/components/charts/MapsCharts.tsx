@@ -7,6 +7,7 @@ import { ChannelHistogram } from './ChannelHistogram';
 import { ChannelPie } from './ChannelPie';
 import { CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatChartDate } from './chartConfig';
 import { CHANNEL_HEX } from '@/lib/channels';
+import { formatTimeAgo, formatTimeOfDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 // Channel-violet owns the page (primary "Directions" series). Other series
@@ -29,7 +30,7 @@ type MapsSeries = 'Directions' | 'Searches' | 'Explorations' | 'Other';
 
 interface MapsData {
   hourlyActivity: Array<{ hour: string; activities: number }>;
-  lastActivities: Array<{ time: string; location: string; type: string; timeOfDay: string }>;
+  lastActivities: Array<{ time: string; location: string; type: string }>;
   topDestinations: Array<{ destination: string; count: number; type: string; trend?: number[] }>;
   dailyActivity: Array<{ date: string; directions: number; searches: number; explorations: number; other: number }>;
 }
@@ -94,21 +95,6 @@ const getActivityIcon = (type: string) => {
         </svg>
       );
   }
-};
-
-const formatTimeAgo = (timeString: string): string => {
-  const date = new Date(timeString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
 };
 
 export function MapsCharts({ data, tripsSlot }: { data: MapsData; tripsSlot?: ReactNode }) {
@@ -177,7 +163,7 @@ export function MapsCharts({ data, tripsSlot }: { data: MapsData; tripsSlot?: Re
                   onClick={() => toggleSeries(s.name)}
                   aria-pressed={on}
                   className={cn(
-                    'flex items-center gap-2 rounded-sm px-2 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                    'flex items-center gap-2 rounded-sm px-2 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors sm:py-1',
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-channel-violet',
                     on ? 'text-signal-white/90' : 'text-signal-white/30',
                   )}
@@ -286,7 +272,7 @@ export function MapsCharts({ data, tripsSlot }: { data: MapsData; tripsSlot?: Re
           <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
             Last activity
           </h2>
-          <div className="-mx-6 -mb-6 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-channel-violet/50 scrollbar-track-transparent">
+          <div className="-mx-4 -mb-4 max-h-[600px] sm:-mx-6 sm:-mb-6 overflow-y-auto scrollbar-thin scrollbar-thumb-channel-violet/50 scrollbar-track-transparent">
             {data.lastActivities.map((activity, index) => (
               <EventRow
                 key={index}
@@ -294,7 +280,7 @@ export function MapsCharts({ data, tripsSlot }: { data: MapsData; tripsSlot?: Re
                 primary={activity.location}
                 secondary={formatActivityType(activity.type)}
                 rightTop={formatTimeAgo(activity.time)}
-                rightBottom={activity.timeOfDay}
+                rightBottom={formatTimeOfDay(activity.time)}
                 leftIcon={getActivityIcon(activity.type)}
               />
             ))}

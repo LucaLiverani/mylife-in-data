@@ -78,7 +78,7 @@ export default function SystemPage() {
 
   if (error || !data) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-20 text-signal-white">
+      <main className="mx-auto max-w-2xl px-4 py-20 text-signal-white sm:px-6">
         <p className="mb-4 font-mono text-xs uppercase tracking-wider text-trace-down">
           The system page can't reach itself.
         </p>
@@ -93,12 +93,12 @@ export default function SystemPage() {
 
   return (
     <main className="min-h-screen text-signal-white">
-      <div className="mx-auto max-w-7xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <FadeIn>
           <div className="mb-12">
             <p className="mb-2 font-mono text-xs uppercase tracking-wider text-signal-white/60">System health</p>
-            <div className="flex items-baseline gap-4">
-              <h1 className="text-5xl font-bold leading-[1.0] tracking-tight lg:text-6xl">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h1 className="text-4xl font-bold leading-[1.0] tracking-tight sm:text-5xl lg:text-6xl">
                 <span className={overall.text}>{overall.label}</span>
               </h1>
               <span className="font-mono text-xs uppercase tracking-widest text-signal-white/50">
@@ -150,9 +150,9 @@ export default function SystemPage() {
                   No alerts. <span className="text-signal-white/40">(All quiet.)</span>
                 </p>
               ) : (
-                <ul className="-mx-6 -mb-6">
+                <ul className="-mx-4 -mb-4 sm:-mx-6 sm:-mb-6">
                   {errors.map((e, i) => (
-                    <li key={i} className="flex items-start gap-3 border-t border-signal-white/5 px-6 py-3">
+                    <li key={i} className="flex items-start gap-3 border-t border-signal-white/5 px-4 py-3 sm:px-6">
                       <span
                         className={cn(
                           'mt-1.5 block size-1.5 shrink-0 rounded-sm',

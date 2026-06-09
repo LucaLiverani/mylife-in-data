@@ -31,7 +31,7 @@ export function LiveConsole({ limit = 6, refreshMs = 15_000 }: LiveConsoleProps)
     <Link
       to="/now"
       aria-label="Open the live timeline"
-      className="group block rounded-md border border-signal-white/10 bg-rack-black/60 p-6 transition-shadow duration-200 ease-snap hover:shadow-lift hover:border-signal-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white"
+      className="group block rounded-md border border-signal-white/10 bg-rack-black/60 p-4 transition-shadow duration-200 ease-snap hover:shadow-lift hover:border-signal-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white sm:p-6"
     >
       <header className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">

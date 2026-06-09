@@ -17,7 +17,7 @@ export const Surface = React.forwardRef<HTMLDivElement, SurfaceProps>(
     <Tag
       ref={ref}
       className={cn(
-        !bare && 'rounded-md border border-signal-white/10 bg-rack-black/60 p-6',
+        !bare && 'rounded-md border border-signal-white/10 bg-rack-black/60 p-4 sm:p-6',
         className,
       )}
       {...props}

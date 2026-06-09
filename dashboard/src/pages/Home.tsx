@@ -6,7 +6,7 @@ import { DataGenerationChart } from '@/components/charts/DataGenerationChart';
 import { KpiSince } from '@/components/KpiSince';
 import { overviewAPI, travelAPI, calendarAPI, homeAPI } from '@/lib/api';
 import { CHANNEL_CLASS, type Channel } from '@/lib/channels';
-import { formatCount } from '@/lib/format';
+import { formatCount, formatDuration, formatTimeAgo, formatTimeOfDay, formatTimeUntil, parseEventDate } from '@/lib/format';
 import { useLiveSpotify } from '@/lib/useLiveSpotify';
 import { cn } from '@/lib/utils';
 
@@ -63,24 +63,21 @@ interface CalendarSummary {
     title: string;
     category: string;
     time: string;
-    relativeTime: string;
     durationMinutes: number;
   }>;
   dailyEvents: Array<{ date: string; events: number }>;
 }
 
 interface RecentEvents {
-  spotify: Array<{ track: string; artist: string; time: string; relativeTime: string; albumArt: string }>;
-  youtube: Array<{ title: string; activityType: string; time: string; isFromAds: boolean; relativeTime: string }>;
-  maps: Array<{ location: string; type: string; time: string; timeOfDay: string }>;
+  spotify: Array<{ track: string; artist: string; time: string; albumArt: string }>;
+  youtube: Array<{ title: string; activityType: string; time: string; isFromAds: boolean }>;
+  maps: Array<{ location: string; type: string; time: string }>;
 }
 
 function isToday(iso: string | undefined | null): boolean {
-  if (!iso) return false;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return false;
-  const now = new Date();
-  return d.toDateString() === now.toDateString();
+  const d = parseEventDate(iso);
+  if (!d) return false;
+  return d.toDateString() === new Date().toDateString();
 }
 
 export default function Home() {
@@ -152,7 +149,7 @@ export default function Home() {
 
   return (
     <main className="text-signal-white">
-      <div className="mx-auto max-w-7xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
 
         {/* Hero — tighter, blockquote stripped, tagline does the work */}
         <section className="mb-10" aria-labelledby="home-hero">
@@ -160,7 +157,7 @@ export default function Home() {
             <p className="mb-3 font-mono text-xs uppercase tracking-wider text-signal-white/60">
               Producer's console · {consoleSig?.daysTracked ? `${formatCount(consoleSig.daysTracked)} days tracked` : 'all channels'}
             </p>
-            <h1 id="home-hero" className="mb-4 text-5xl font-bold leading-[1.0] tracking-tight lg:text-7xl">
+            <h1 id="home-hero" className="mb-4 text-4xl font-bold leading-[1.0] tracking-tight sm:text-5xl lg:text-7xl">
               <span>My Life </span>
               <span className="text-channel-green">in Data</span>
             </h1>
@@ -228,7 +225,7 @@ export default function Home() {
                   spotifyTrack
                     ? spotifyArtists
                     : spotifyMostRecent
-                      ? `${spotifyMostRecent.artist} · ${spotifyMostRecent.relativeTime}`
+                      ? `${spotifyMostRecent.artist} · ${formatTimeAgo(spotifyMostRecent.time)}`
                       : 'No signal'
                 }
                 sparkline={sparks.spotify}
@@ -243,7 +240,7 @@ export default function Home() {
                 primary={youtubeMostRecent?.title ?? 'No recent videos.'}
                 secondary={
                   youtubeMostRecent
-                    ? `${youtubeMostRecent.isFromAds ? 'From Ads' : 'Watched'} · ${youtubeMostRecent.relativeTime}`
+                    ? `${youtubeMostRecent.isFromAds ? 'From Ads' : 'Watched'} · ${formatTimeAgo(youtubeMostRecent.time)}`
                     : 'No signal'
                 }
                 sparkline={sparks.youtube}
@@ -258,7 +255,7 @@ export default function Home() {
                 primary={mapsMostRecent?.location ?? 'Nowhere new today.'}
                 secondary={
                   mapsMostRecent
-                    ? `${mapsMostRecent.type.replace('_', ' ')} · ${mapsMostRecent.timeOfDay.toLowerCase()}`
+                    ? `${mapsMostRecent.type.replace('_', ' ')} · ${formatTimeOfDay(mapsMostRecent.time).toLowerCase()}`
                     : 'No signal'
                 }
                 sparkline={sparks.maps}
@@ -273,7 +270,7 @@ export default function Home() {
                 primary={nextEvent?.title ?? 'Nothing on the schedule.'}
                 secondary={
                   nextEvent
-                    ? `${nextEvent.relativeTime} · ${nextEvent.durationMinutes} min`
+                    ? `${formatTimeUntil(nextEvent.time)} · ${formatDuration(nextEvent.durationMinutes)}`
                     : 'Free as a bird'
                 }
                 sparkline={sparks.calendar}
@@ -292,8 +289,8 @@ export default function Home() {
               <h2 id="data-gen-heading" className="mb-4 font-mono text-xs uppercase tracking-wider text-signal-white/60">
                 Signal over time
               </h2>
-              <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-6">
-                <div className="h-96">
+              <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-4 sm:p-6">
+                <div className="h-72 sm:h-96">
                   <DataGenerationChart data={overviewData.dataGeneration} />
                 </div>
               </div>
@@ -333,7 +330,7 @@ function ConsoleMeter({
   return (
     <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-5">
       <p className="font-mono text-[10px] uppercase tracking-widest text-signal-white/60">{label}</p>
-      <p className={cn('mt-2 font-mono text-2xl font-bold capitalize tabular-nums', valueClass)}>{value}</p>
+      <p className={cn('mt-2 truncate font-mono text-xl font-bold capitalize tabular-nums sm:text-2xl', valueClass)}>{value}</p>
       {hint && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-signal-white/40">{hint}</p>}
     </div>
   );

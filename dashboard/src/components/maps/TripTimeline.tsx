@@ -80,7 +80,7 @@ export function TripTimeline({ trips, ownerMode, statusByKey, busyKey, onLabel }
   };
 
   return (
-    <ul className="-mx-6 -mb-6">
+    <ul className="-mx-4 -mb-4 sm:-mx-6 sm:-mb-6">
       {trips.map((t) => {
         const key = t.tripKey || `${t.start}_${t.end}`;
         const status = statusByKey[key];
@@ -103,7 +103,7 @@ export function TripTimeline({ trips, ownerMode, statusByKey, busyKey, onLabel }
               type="button"
               onClick={() => setExpanded(open ? null : key)}
               aria-expanded={open}
-              className="flex w-full items-center gap-4 px-6 py-3 text-left hover:bg-signal-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-channel-violet"
+              className="flex w-full items-center gap-4 px-4 py-3 text-left hover:bg-signal-white/[0.03] sm:px-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-channel-violet"
             >
               <span className="block size-2 shrink-0 rounded-sm bg-channel-violet" aria-hidden="true" />
               <div className="min-w-0 flex-1">
@@ -129,9 +129,11 @@ export function TripTimeline({ trips, ownerMode, statusByKey, busyKey, onLabel }
                 </div>
                 <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-signal-white/50">
                   {formatRange(t.start, t.end)}
+                  {/* On phones the right meta column is hidden — keep the days inline */}
+                  <span className="sm:hidden"> · {t.days}d</span>
                 </div>
               </div>
-              <div className="shrink-0 text-right font-mono text-xs">
+              <div className="hidden shrink-0 text-right font-mono text-xs sm:block">
                 <div className="tabular-nums text-channel-violet">
                   {t.days}d · {t.km.toLocaleString()} km
                 </div>
@@ -144,7 +146,7 @@ export function TripTimeline({ trips, ownerMode, statusByKey, busyKey, onLabel }
             </button>
 
             {open && (
-              <div className="space-y-4 px-6 pb-4 pl-12">
+              <div className="space-y-4 px-4 pb-4 sm:px-6 sm:pl-12">
                 {t.summary && <p className="text-sm leading-relaxed text-signal-white/80">{t.summary}</p>}
 
                 <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-wider text-signal-white/50">

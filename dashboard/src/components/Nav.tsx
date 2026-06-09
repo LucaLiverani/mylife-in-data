@@ -79,7 +79,7 @@ export function Nav() {
         {/* Mobile menu trigger */}
         <button
           type="button"
-          className="ml-auto inline-flex size-9 items-center justify-center rounded-sm border border-signal-white/10 text-signal-white/80 transition-colors hover:border-signal-white/30 hover:text-signal-white md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white"
+          className="ml-auto inline-flex size-11 items-center justify-center rounded-sm border border-signal-white/10 text-signal-white/80 transition-colors hover:border-signal-white/30 hover:text-signal-white md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white"
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
           aria-controls="mobile-nav"
@@ -123,7 +123,7 @@ function NavChip({ item, stacked = false }: { item: NavItem; stacked?: boolean }
           'group relative rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-widest transition-colors',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
           item.channel ? CHANNEL_CLASS.focusRing[item.channel] : 'focus-visible:outline-signal-white',
-          stacked && 'flex items-center justify-between',
+          stacked && 'flex items-center justify-between py-3 text-xs',
           isActive ? 'text-signal-white' : 'text-signal-white/60 hover:text-signal-white',
         )
       }
@@ -163,7 +163,7 @@ function UtilLink({ item, stacked = false }: { item: NavItem; stacked?: boolean 
         cn(
           'rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-widest transition-colors',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white',
-          stacked && 'flex items-center justify-between',
+          stacked && 'flex items-center justify-between px-3 py-3 text-xs',
           isActive ? 'text-signal-white' : 'text-signal-white/40 hover:text-signal-white/80',
         )
       }
@@ -189,7 +189,7 @@ function RepoLink({ stacked = false }: { stacked?: boolean }) {
       className={cn(
         'rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-widest text-signal-white/40 transition-colors hover:text-signal-white/80',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white',
-        stacked ? 'flex items-center justify-between' : 'inline-flex items-center',
+        stacked ? 'flex items-center justify-between px-3 py-3 text-xs' : 'inline-flex items-center',
       )}
     >
       {stacked && <span>GitHub</span>}

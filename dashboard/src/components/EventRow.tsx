@@ -38,7 +38,7 @@ export function EventRow({
 }: EventRowProps) {
   const channelText = CHANNEL_CLASS.text[channel];
   return (
-    <div className="flex items-center gap-3 border-b border-signal-white/5 px-6 py-3 last:border-b-0 transition-colors duration-150 ease-snap hover:bg-signal-white/[0.03]">
+    <div className="flex items-center gap-3 border-b border-signal-white/5 px-4 py-3 last:border-b-0 transition-colors duration-150 ease-snap hover:bg-signal-white/[0.03] sm:px-6">
       {leftImage ? (
         <img
           src={leftImage}
@@ -56,7 +56,7 @@ export function EventRow({
         <div className="truncate text-sm font-medium text-signal-white">{primary}</div>
         <div className="truncate text-xs text-signal-white/60">{secondary}</div>
       </div>
-      <div className="text-right">
+      <div className="shrink-0 whitespace-nowrap text-right">
         <div className={cn('font-mono text-xs font-medium', channelText)}>{rightTop}</div>
         <div className="font-mono text-[10px] text-signal-white/60">{rightBottom}</div>
       </div>

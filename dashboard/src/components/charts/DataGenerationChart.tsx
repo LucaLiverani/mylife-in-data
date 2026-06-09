@@ -62,7 +62,7 @@ export function DataGenerationChart({ data }: DataGenerationChartProps) {
               onClick={() => toggleSeries(s.name)}
               aria-pressed={on}
               className={cn(
-                'flex items-center gap-2 rounded-sm px-2 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                'flex items-center gap-2 rounded-sm px-2 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors sm:py-1',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-white',
                 on ? 'text-signal-white/90' : 'text-signal-white/30',
               )}

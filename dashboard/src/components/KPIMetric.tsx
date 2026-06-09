@@ -25,7 +25,7 @@ export function KPIMetric({ label, value, kind = 'count', channel = 'spotify', t
       <div className="rounded-md border border-signal-white/10 bg-rack-black/60 p-5">
         <p className="font-mono text-xs uppercase tracking-wider text-signal-white/60">{label}</p>
         <div className="mt-2 flex items-baseline justify-between">
-          <p className={`font-mono text-3xl font-bold tabular-nums ${valueColor}`}>{display}</p>
+          <p className={`min-w-0 truncate font-mono text-2xl font-bold tabular-nums sm:text-3xl ${valueColor}`}>{display}</p>
           {trend && (
             <span
               className={`font-mono text-sm font-medium ${

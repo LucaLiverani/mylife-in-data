@@ -27,7 +27,6 @@ interface RecentTrack {
   track: string;
   artist: string;
   time: string;
-  relativeTime: string;
   albumArt: string;
 }
 
@@ -70,7 +69,7 @@ export default function SpotifyPage() {
   if (error || !data) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
-        <div className="mx-auto max-w-2xl px-6 py-20">
+        <div className="mx-auto max-w-2xl px-4 py-20 sm:px-6">
           <p className="mb-4 font-mono text-xs uppercase tracking-wider text-trace-down">{error || 'No signal on this channel.'}</p>
           <Link to="/" className="font-mono text-xs uppercase tracking-wider text-signal-white/60 hover:text-signal-white">
             Back to console
@@ -83,7 +82,7 @@ export default function SpotifyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rack-black to-rack-charcoal text-signal-white">
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 sm:px-6 sm:py-20">
         {/* Header */}
         <FadeIn>
           <Link to="/" className="inline-flex items-center gap-2 text-signal-white/60 hover:text-signal-white transition-colors mb-8">
@@ -91,7 +90,7 @@ export default function SpotifyPage() {
             Back to Dashboard
           </Link>
           <div className="mb-12">
-            <h1 className="text-5xl lg:text-7xl font-bold mb-4">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4">
               <span className="text-channel-green">Spotify</span> Analytics
             </h1>
             <p className="text-xl text-signal-white/60 italic">

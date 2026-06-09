@@ -10,6 +10,7 @@ import { ChannelPie } from '@/components/charts/ChannelPie';
 import { ChannelHistogram } from '@/components/charts/ChannelHistogram';
 import { CalendarHeatmap } from '@/components/charts/CalendarHeatmap';
 import { calendarAPI } from '@/lib/api';
+import { formatDuration, formatTimeUntil } from '@/lib/format';
 import { CHANNEL_HEX, CHANNEL_RAMP } from '@/lib/channels';
 import { CHART_STYLES, formatChartDate } from '@/components/charts/chartConfig';
 
@@ -25,7 +26,7 @@ interface CalendarData {
   busyHours: Array<{ hour: string; events: number }>;
   categories: Array<{ name: string; value: number; percentage: number }>;
   weekdayBreakdown: Array<{ day: string; events: number }>;
-  upcomingEvents: Array<{ title: string; category: string; time: string; relativeTime: string; durationMinutes: number }>;
+  upcomingEvents: Array<{ title: string; category: string; time: string; durationMinutes: number }>;
   dailyEvents: Array<{ date: string; events: number }>;
   weekGrid?: Array<{ day: number; hour: number; intensity: number }>;
 }
@@ -50,7 +51,7 @@ export default function GooglePage() {
 
   if (!data) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-20 text-signal-white">
+      <main className="mx-auto max-w-2xl px-4 py-20 text-signal-white sm:px-6">
         <p className="font-mono text-xs uppercase tracking-wider text-trace-down">
           No calendar data yet. Calendar ingestion is still being wired up.
         </p>
@@ -78,7 +79,7 @@ export default function GooglePage() {
 
   return (
     <main className="min-h-screen text-signal-white">
-      <div className="mx-auto max-w-7xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <FadeIn>
           <Link
             to="/"
@@ -88,7 +89,7 @@ export default function GooglePage() {
             Back to console
           </Link>
           <div className="mb-12">
-            <h1 className="mb-4 text-5xl font-bold leading-[1.0] tracking-tight lg:text-7xl">
+            <h1 className="mb-4 text-4xl font-bold leading-[1.0] tracking-tight sm:text-5xl lg:text-7xl">
               <span className="text-channel-blue">Calendar</span> Analytics
             </h1>
             <p className="text-xl italic text-signal-white/60">
@@ -192,11 +193,11 @@ export default function GooglePage() {
               <h2 id="calendar-upcoming" className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
                 Coming up
               </h2>
-              <ul className="-mx-6 -mb-6">
+              <ul className="-mx-4 -mb-4 sm:-mx-6 sm:-mb-6">
                 {data.upcomingEvents.map((e, i) => (
                   <li
                     key={i}
-                    className="flex items-center gap-4 border-t border-signal-white/5 px-6 py-3 transition-colors duration-150 ease-snap hover:bg-signal-white/[0.03]"
+                    className="flex items-center gap-4 border-t border-signal-white/5 px-4 py-3 transition-colors duration-150 ease-snap hover:bg-signal-white/[0.03] sm:px-6"
                   >
                     <span
                       className="block size-2 rounded-sm"
@@ -207,9 +208,9 @@ export default function GooglePage() {
                       <div className="truncate text-sm font-medium">{e.title}</div>
                       <div className="font-mono text-[10px] uppercase tracking-wider text-signal-white/50">{e.category}</div>
                     </div>
-                    <div className="text-right font-mono text-xs">
-                      <div className="text-signal-white/70">{e.relativeTime}</div>
-                      <div className="font-mono text-[10px] text-signal-white/50">{e.durationMinutes} min</div>
+                    <div className="shrink-0 whitespace-nowrap text-right font-mono text-xs">
+                      <div className="text-signal-white/70">{formatTimeUntil(e.time)}</div>
+                      <div className="font-mono text-[10px] text-signal-white/50">{formatDuration(e.durationMinutes)}</div>
                     </div>
                   </li>
                 ))}

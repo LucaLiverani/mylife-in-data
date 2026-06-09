@@ -7,6 +7,7 @@ import { CHANNEL_HEX } from '@/lib/channels';
 import { ChannelPie } from './ChannelPie';
 import { TopList } from './TopList';
 import { ChannelHistogram } from './ChannelHistogram';
+import { formatTimeAgo, formatTimeOfDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 // Sub-series palette for YouTube. The Channel-Lane Rule says channel-red
@@ -67,7 +68,7 @@ interface YouTubeData {
     uniqueChannels: number;
   }>;
   dailyWatchTimeBreakdown: DailyWatchTimeBreakdown[];
-  recentVideos: Array<{ title: string; time: string; relativeTime: string; timeOfDay: string; isFromAds: boolean }>;
+  recentVideos: Array<{ title: string; time: string; isFromAds: boolean }>;
   hourlyActivity: Array<{ hour: string; activities: number }>;
 }
 
@@ -124,7 +125,7 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
                   onClick={() => toggleSeries(s.name)}
                   aria-pressed={on}
                   className={cn(
-                    'flex items-center gap-2 rounded-sm px-2 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors',
+                    'flex items-center gap-2 rounded-sm px-2 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors sm:py-1',
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-channel-red',
                     on ? 'text-signal-white/90' : 'text-signal-white/30',
                   )}
@@ -228,15 +229,15 @@ export function YouTubeCharts({ data }: { data: YouTubeData }) {
           <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
             Recent videos
           </h2>
-          <div className="-mx-6 -mb-6 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-channel-red/50 scrollbar-track-transparent">
+          <div className="-mx-4 -mb-4 max-h-[600px] sm:-mx-6 sm:-mb-6 overflow-y-auto scrollbar-thin scrollbar-thumb-channel-red/50 scrollbar-track-transparent">
             {data.recentVideos.map((video, index) => (
               <EventRow
                 key={index}
                 channel="youtube"
                 primary={video.title}
                 secondary={video.isFromAds ? 'From Ads' : 'Watched'}
-                rightTop={video.relativeTime}
-                rightBottom={video.timeOfDay}
+                rightTop={formatTimeAgo(video.time)}
+                rightBottom={formatTimeOfDay(video.time)}
                 leftIcon={
                   video.isFromAds ? (
                     <svg className="size-4" viewBox="0 0 16 16" fill="none" aria-hidden="true">

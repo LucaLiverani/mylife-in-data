@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { CHART_COLORS, CHART_STYLES, TIME_SERIES_CHART_HEIGHT, formatDetailedDate } from './chartConfig';
 import { ChannelPie } from './ChannelPie';
 import { TopList } from './TopList';
-import { formatEventTime } from '@/lib/format';
+import { formatEventTime, formatTimeAgo } from '@/lib/format';
 
 interface SpotifyFullData {
   kpis: {
@@ -25,7 +25,6 @@ interface RecentTrack {
   track: string;
   artist: string;
   time: string;
-  relativeTime?: string;
   albumArt: string;
 }
 
@@ -110,14 +109,14 @@ export function SpotifyCharts({ data, recentTracks }: SpotifyChartsProps) {
           <h2 className="mb-6 font-mono text-xs uppercase tracking-wider text-signal-white/60">
             Recently played
           </h2>
-          <div className="-mx-6 -mb-6">
+          <div className="-mx-4 -mb-4 sm:-mx-6 sm:-mb-6">
             {recentTracks.slice(0, 10).map((track, index) => (
               <EventRow
                 key={index}
                 channel="spotify"
                 primary={track.track}
                 secondary={track.artist}
-                rightTop={track.relativeTime ?? ''}
+                rightTop={formatTimeAgo(track.time)}
                 rightBottom={formatEventTime(track.time)}
                 leftImage={track.albumArt}
               />

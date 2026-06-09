@@ -90,6 +90,14 @@ export function CalendarHeatmap({
     return () => ro.disconnect();
   }, [weeks, minCell, maxCell]);
 
+  // When the grid is wider than the container (phones), land on the most
+  // recent weeks — the left edge is the oldest, least interesting end.
+  // Runs after the cellSize layout is committed, not against the initial one.
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [cellSize, weeks]);
+
   const width = LABEL_W + weeks * (cellSize + GAP) - GAP;
   const height = 7 * (cellSize + GAP) - GAP;
 
@@ -144,6 +152,10 @@ export function CalendarHeatmap({
                 onMouseEnter={(e) => setHover({ idx, x: e.clientX, y: e.clientY })}
                 onMouseMove={(e) => setHover({ idx, x: e.clientX, y: e.clientY })}
                 onMouseLeave={() => setHover(null)}
+                // Touch devices have no hover — tap toggles the same tooltip.
+                onClick={(e) =>
+                  setHover((h) => (h?.idx === idx ? null : { idx, x: e.clientX, y: e.clientY }))
+                }
               />
             );
           }),

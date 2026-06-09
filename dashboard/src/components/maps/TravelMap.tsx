@@ -39,10 +39,21 @@ export function TravelMap({ locations }: TravelMapProps) {
           zoom: 2,
           zoomControl: true,
           scrollWheelZoom: true,
+          // On touch devices one-finger drag must scroll the PAGE, not pan
+          // the map — otherwise the full-width canvas is a scroll trap. A
+          // deliberate tap (or pinch) on the map unlocks panning below.
+          dragging: !L.Browser.mobile,
           minZoom: 2,
           maxBounds: [[-90, -180], [90, 180]],
           maxBoundsViscosity: 1.0,
         });
+
+        // Tap-to-pan: a tap or pinch is interaction intent, a scroll-by is
+        // not (swipes don't fire 'click'). Keeps the map fully usable on
+        // touch without trapping the page scroll on the way in.
+        if (!map.dragging.enabled()) {
+          map.once('click zoomstart', () => map.dragging.enable());
+        }
 
         mapInstanceRef.current = map;
 

@@ -90,7 +90,11 @@ export function TopList({
     );
   }
 
-  const secondaryStyle = secondaryWidth ? { width: secondaryWidth, flexShrink: 0 } : undefined;
+  // maxWidth caps the pinned column on narrow cards so a long secondary
+  // ("Science & Technology") can't crush the sparkline at mobile widths.
+  const secondaryStyle = secondaryWidth
+    ? { width: secondaryWidth, maxWidth: '45%', flexShrink: 0 }
+    : undefined;
 
   return (
     <ol
