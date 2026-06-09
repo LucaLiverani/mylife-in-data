@@ -1,4 +1,4 @@
-"""Cloudflare R2 (S3-compatible) helpers — used for replay staging."""
+"""Cloudflare R2 (S3-compatible) helpers: raw provider exports + the nightly warehouse Parquet archive."""
 
 from __future__ import annotations
 
@@ -52,6 +52,29 @@ def download_file(key: str, dest: Any) -> None:
     if not bucket:
         raise RuntimeError("R2_BUCKET not set")
     get_client().download_file(bucket, key, os.fspath(dest))
+
+
+def delete_keys(keys: list[str]) -> int:
+    """Delete objects in batches of 1000 (the S3 DeleteObjects cap).
+
+    DeleteObjects reports per-key failures inside a 200 response, so check
+    the Errors list instead of trusting the status code.
+    """
+    bucket = os.environ.get("R2_BUCKET")
+    if not bucket:
+        raise RuntimeError("R2_BUCKET not set")
+    client = get_client()
+    errors: list[str] = []
+    for i in range(0, len(keys), 1000):
+        batch = keys[i : i + 1000]
+        resp = client.delete_objects(
+            Bucket=bucket,
+            Delete={"Objects": [{"Key": k} for k in batch], "Quiet": True},
+        )
+        errors.extend(f"{e.get('Key')}: {e.get('Code')}" for e in (resp.get("Errors") or []))
+    if errors:
+        raise RuntimeError(f"failed to delete {len(errors)} of {len(keys)} object(s): {errors[:5]}")
+    return len(keys)
 
 
 def list_keys(prefix: str) -> list[str]:

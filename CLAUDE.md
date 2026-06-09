@@ -27,8 +27,10 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
     views needed *before* the dbt run (`silver.maps_activity_keyed`).
   - DDL is **CREATE-only / idempotent**; it never drops. A deleted dbt model leaves an
     orphan view that `deploy.sh` prunes (`warehouse/ddl/prune_orphaned_views.sh`).
-- **R2** is object storage for raw provider exports + optional replay staging, **not** a
-  conveyor in the live pipeline.
+- **R2** is object storage for raw provider exports + the nightly warehouse Parquet
+  snapshot (`warehouse_r2_archive` job: bronze + non-derivable silver state,
+  `archive/warehouse/dt=*`; restore via `scripts/restore_warehouse_from_r2.py`),
+  **not** a conveyor in the live pipeline.
 - **Orchestration**: Dagster runs producers, sensors, the daily Data Portability ingest,
   and `dbt build` via `dagster-dbt` (~09:00 UTC). **dbt does not run during deploy.**
 - **Dashboard**: Cloudflare Pages (static React) + Pages Functions (`dashboard/functions/api/**`)

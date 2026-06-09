@@ -60,7 +60,7 @@ def spotify_recently_played(context) -> int:
     from ingestion.spotify.recently_played import fetch_and_store
 
     sp = context.resources.spotify.get_client()
-    n = fetch_and_store(sp, stage_to_r2=False)
+    n = fetch_and_store(sp)
     context.log.info("Inserted %d plays", n)
     return n
 

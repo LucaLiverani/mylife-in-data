@@ -44,7 +44,7 @@ class RedpandaResource(ConfigurableResource):
 
 
 class R2Resource(ConfigurableResource):
-    """Cloudflare R2 (S3-compatible) bucket. Used for replay staging."""
+    """Cloudflare R2 (S3-compatible) bucket: raw provider exports + warehouse archive snapshots."""
 
     bucket: Optional[str] = None
 

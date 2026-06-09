@@ -88,8 +88,14 @@ missed on the cutover. The same Dagster parser assets handle:
 - Google Takeout zips,
 - on-device Maps Timeline exports.
 
-Open: whether producers stage payloads to R2 before INSERT (for
-replay-ability) — doesn't block the schema.
+Replay-ability is handled at the warehouse layer, not per producer: the
+nightly `warehouse_r2_archive` Dagster job snapshots every bronze table plus
+the non-derivable silver state tables to R2 as Parquet
+(`archive/warehouse/dt=YYYY-MM-DD/<database>.<table>.parquet` plus a
+`_MANIFEST.json` written last to mark the snapshot complete), and
+`scripts/restore_warehouse_from_r2.py` INSERTs a snapshot back (idempotent,
+since every archived table is ReplacingMergeTree on a natural key). See
+OPERATIONS.md, "Warehouse cold archive (R2)", for coverage and the runbook.
 
 ---
 
