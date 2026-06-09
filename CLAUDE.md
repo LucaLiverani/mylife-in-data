@@ -55,8 +55,20 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   on the VM: git pull → apply DDL → prune orphaned views → selective container rebuild).
   Then validate: `dagster definitions validate -f orchestration/dagster/definitions.py`.
 - **Deploy dashboard**: `cd dashboard && ./scripts/deploy-to-pages.sh` (from the laptop).
-- **Local**: full stack `cd infrastructure && ./start-all.sh`; dashboard-only on mocks
-  `cd dashboard && npm install && npm run build && npm run pages:dev`.
+- **Local stack**: `cd infrastructure && ./start-all.sh` / `./stop-all.sh` (each walks every
+  compose stack: redpanda, clickhouse, dagster, monitoring, umami).
+- **Dashboard on mocks** (no backend needed): `cd dashboard && npm install && npm run build
+  && npm run pages:dev` → http://localhost:8788 serves `dist/` + Pages Functions, which fall
+  back to `public/mocks/`. If 8788 reports "address in use", a previous runtime leaked:
+  `fuser -k 8788/tcp`.
+- **Visual check**: drive http://localhost:8788 with headless Playwright using
+  `reducedMotion: 'reduce'` (page sections sit in scroll-triggered `FadeIn` wrappers and
+  screenshot as blank otherwise). Test mobile at 390px width; `scrollWidth > clientWidth`
+  on `documentElement` means a horizontal-overflow regression.
+- **The laptop has no dbt/dagster CLIs.** `uv run dbt|dagster` fails by design: transforms
+  and orchestration only run inside the Dagster container (local stack or VM). dbt views
+  rebuild at the ~09:00 UTC Dagster build, **not** on deploy, so a changed gold model goes
+  live on the warehouse only at the next build.
 - Gotcha: `deploy.sh` git-pulls itself, so a change to *deploy.sh's own logic* only takes
   effect on the next deploy.
 
