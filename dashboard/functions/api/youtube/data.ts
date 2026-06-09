@@ -67,8 +67,6 @@ interface DailyWatchTimeBreakdown {
 interface RecentVideo {
   title: string;
   time: string;
-  relative_time: string;
-  time_of_day: string;
   is_from_ads: number;
 }
 
@@ -144,8 +142,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
         recentVideos: recentVideos.map(v => ({
           title: v.title.length > 80 ? v.title.substring(0, 80) + '...' : v.title,
           time: v.time,
-          relativeTime: v.relative_time,
-          timeOfDay: v.time_of_day,
           isFromAds: v.is_from_ads === 1,
         })),
         hourlyActivity: hourlyActivity.map(h => ({

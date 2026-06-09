@@ -234,62 +234,52 @@
       {
         "time": "2026-05-21T12:00:00.000Z",
         "location": "Milan, Italy",
-        "type": "place_view",
-        "timeOfDay": "Afternoon"
+        "type": "place_view"
       },
       {
         "time": "2026-05-21T11:25:00.000Z",
         "location": "Zurich, Switzerland",
-        "type": "place_view",
-        "timeOfDay": "Morning"
+        "type": "place_view"
       },
       {
         "time": "2026-05-21T10:50:00.000Z",
         "location": "Paris, France",
-        "type": "place_view",
-        "timeOfDay": "Morning"
+        "type": "place_view"
       },
       {
         "time": "2026-05-21T10:15:00.000Z",
         "location": "Lisbon, Portugal",
-        "type": "search",
-        "timeOfDay": "Morning"
+        "type": "search"
       },
       {
         "time": "2026-05-21T09:40:00.000Z",
         "location": "Rome, Italy",
-        "type": "directions",
-        "timeOfDay": "Morning"
+        "type": "directions"
       },
       {
         "time": "2026-05-21T09:05:00.000Z",
         "location": "New York, USA",
-        "type": "directions",
-        "timeOfDay": "Morning"
+        "type": "directions"
       },
       {
         "time": "2026-05-21T08:30:00.000Z",
         "location": "Lugano, Switzerland",
-        "type": "place_view",
-        "timeOfDay": "Morning"
+        "type": "place_view"
       },
       {
         "time": "2026-05-21T07:55:00.000Z",
         "location": "Vienna, Austria",
-        "type": "explore",
-        "timeOfDay": "Morning"
+        "type": "explore"
       },
       {
         "time": "2026-05-21T07:20:00.000Z",
         "location": "Stockholm, Sweden",
-        "type": "directions",
-        "timeOfDay": "Morning"
+        "type": "directions"
       },
       {
         "time": "2026-05-21T06:45:00.000Z",
         "location": "London, UK",
-        "type": "search",
-        "timeOfDay": "Morning"
+        "type": "search"
       }
     ],
     "topDestinations": [

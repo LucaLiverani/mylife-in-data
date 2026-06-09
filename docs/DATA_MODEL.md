@@ -388,8 +388,10 @@ SELECT argMax(c, captured_at) FROM bronze.spotify_player_current FINAL;
 
 (YouTube, Maps, Calendar each get a matching `silver.<source>_<entity>` MV
 that does the equivalent cleanup. Schemas mirror bronze with derived columns
-added — `is_weekend`, `day_name`, `time_of_day`, `relative_time` typically
-live here, not in gold.)
+added — `is_weekend`, `day_name`, `time_of_day` typically live here, not in
+gold. Relative-time labels are NOT computed in SQL: gold emits ISO-8601 UTC
+timestamps and the dashboard renders "4m ago" client-side, so labels stay
+fresh between dbt builds.)
 
 ### The cross-source merge — `silver.events_unified`
 
@@ -549,19 +551,23 @@ LIMIT 1;
 
 ### `/api/spotify/recent` → `gold.gold_spotify_recent_tracks`
 
-Last 50 plays. The handler maps `played_at`→`time`, `relative_time`→`relativeTime`.
+Last 50 plays. The handler maps `played_at`→`time`; the dashboard renders
+the relative label ("4m ago") client-side from it.
 
 ```sql
 CREATE VIEW gold.gold_spotify_recent_tracks AS
 SELECT
-    track_name                                       AS track,
-    primary_artist_name                              AS artist,
-    played_at                                        AS played_at,
-    album_art_url                                    AS album_art,
-    formatReadableTimeDelta(now() - played_at)       AS relative_time
-FROM silver.spotify_plays
-ORDER BY played_at DESC
-LIMIT 50;
+    track, artist,
+    formatDateTime(played_at_raw, '%Y-%m-%dT%H:%i:%SZ', 'UTC') AS played_at,
+    album_art
+FROM (
+    SELECT track_name AS track, primary_artist_name AS artist,
+           played_at AS played_at_raw, album_art_url AS album_art
+    FROM silver.spotify_plays
+    ORDER BY played_at_raw DESC          -- window picked on the raw DateTime
+    LIMIT 50
+)
+ORDER BY played_at DESC;
 ```
 
 ### `/api/spotify/summary` → `gold.gold_spotify_kpis_summary`
@@ -649,7 +655,7 @@ gold.gold_youtube_hourly_activity_dashboard            -- hour-of-day histogram
 ```
 
 Column lists are exactly the TS handler's `interface` definitions in
-`functions/api/youtube/data.ts:12-78` — bronze `watch_count` proxies for
+`functions/api/youtube/data.ts` — bronze `watch_count` proxies for
 watch time (Takeout limitation).
 
 ### `/api/travel/data` → six (+1) gold tables
@@ -712,24 +718,19 @@ SELECT
     title,
     multiIf(
         source = 'spotify',  subtitle,                                  -- artist name
-        source = 'youtube',  formatReadableTimeDelta(now() - event_ts), -- "18 min ago"
         source = 'maps',     kind,                                      -- "place_visit"
         ''
     )                                                                        AS subtitle,
-    event_ts                                                                 AS time,
+    formatDateTime(event_ts, '%Y-%m-%dT%H:%i:%SZ', 'UTC')                    AS time,
     image_url,
     kind                                                                     AS activity_type,
-    multiIf(
-        source = 'spotify',  formatReadableTimeDelta(now() - event_ts),
-        source = 'maps',     CASE WHEN toHour(event_ts) < 12 THEN 'Morning'
-                                  WHEN toHour(event_ts) < 18 THEN 'Afternoon'
-                                  ELSE 'Evening' END,
-        ''
-    )                                                                        AS metadata,
     is_from_ads
 FROM silver.events_unified
 QUALIFY recency_rank <= 10;
 ```
+
+Relative labels ("18 min ago") and time-of-day labels are rendered
+client-side from `time`, in the viewer's timezone.
 
 The handler does the per-source projection (spotify→{track,artist,...},
 youtube→{title,activityType,...}, maps→{location,type,...}) — see

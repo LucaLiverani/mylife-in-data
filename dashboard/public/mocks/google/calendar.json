@@ -167,56 +167,48 @@
       "title": "Deep work",
       "category": "Social",
       "time": "2026-05-21T12:45:00.000Z",
-      "relativeTime": "in 45 min",
       "durationMinutes": 48
     },
     {
       "title": "Deep work",
       "category": "Personal",
       "time": "2026-05-21T13:30:00.000Z",
-      "relativeTime": "in 2h",
       "durationMinutes": 38
     },
     {
       "title": "Concert",
       "category": "Travel",
       "time": "2026-05-21T14:15:00.000Z",
-      "relativeTime": "in 2h",
       "durationMinutes": 69
     },
     {
       "title": "Reading time",
       "category": "Personal",
       "time": "2026-05-21T15:00:00.000Z",
-      "relativeTime": "in 3h",
       "durationMinutes": 73
     },
     {
       "title": "Design review",
       "category": "Health",
       "time": "2026-05-21T15:45:00.000Z",
-      "relativeTime": "in 4h",
       "durationMinutes": 70
     },
     {
       "title": "Reading time",
       "category": "Social",
       "time": "2026-05-21T16:30:00.000Z",
-      "relativeTime": "in 5h",
       "durationMinutes": 83
     },
     {
       "title": "Run with Marco",
       "category": "Social",
       "time": "2026-05-21T17:15:00.000Z",
-      "relativeTime": "in 5h",
       "durationMinutes": 37
     },
     {
       "title": "Standup",
       "category": "Travel",
       "time": "2026-05-21T18:00:00.000Z",
-      "relativeTime": "in 6h",
       "durationMinutes": 26
     }
   ],

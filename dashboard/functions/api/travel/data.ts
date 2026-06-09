@@ -50,7 +50,6 @@ interface LastActivity {
   time: string;
   location: string;
   type: string;
-  timeOfDay: string;
 }
 
 interface TopDestination {
@@ -184,7 +183,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
             time: a.time,
             location: a.location,
             type: a.type,
-            timeOfDay: a.timeOfDay,
           })),
           topDestinations: topDestinations.map(d => ({
             destination: d.destination,

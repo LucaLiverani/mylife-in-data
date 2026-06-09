@@ -1845,71 +1845,51 @@
     {
       "title": "The truth about WebGPU for beginners",
       "time": "2026-05-21T12:00:00.000Z",
-      "relativeTime": "22 min ago",
-      "timeOfDay": "Afternoon",
       "isFromAds": true
     },
     {
       "title": "Why Linux explained",
       "time": "2026-05-21T11:38:00.000Z",
-      "relativeTime": "44 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "How Rust for beginners",
       "time": "2026-05-21T11:16:00.000Z",
-      "relativeTime": "66 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "Why TypeScript explained",
       "time": "2026-05-21T10:54:00.000Z",
-      "relativeTime": "88 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "How Postgres explained",
       "time": "2026-05-21T10:32:00.000Z",
-      "relativeTime": "110 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "Inside Postgres changes everything",
       "time": "2026-05-21T10:10:00.000Z",
-      "relativeTime": "132 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "How Kubernetes in 100 seconds",
       "time": "2026-05-21T09:48:00.000Z",
-      "relativeTime": "154 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "The truth about Postgres in 100 seconds",
       "time": "2026-05-21T09:26:00.000Z",
-      "relativeTime": "176 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": true
     },
     {
       "title": "How WebGPU for beginners",
       "time": "2026-05-21T09:04:00.000Z",
-      "relativeTime": "198 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     },
     {
       "title": "Inside Linux for beginners",
       "time": "2026-05-21T08:42:00.000Z",
-      "relativeTime": "220 min ago",
-      "timeOfDay": "Morning",
       "isFromAds": false
     }
   ],

@@ -27,7 +27,6 @@ interface UpcomingItem {
   title: string;
   category: string;
   time: string;
-  relativeTime: string;
   durationMinutes: number;
 }
 
@@ -59,7 +58,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           title: u.title,
           category: u.category,
           time: u.time,
-          relativeTime: u.relativeTime,
           durationMinutes: Number(u.durationMinutes) || 0,
         })),
       };

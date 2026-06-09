@@ -1,5 +1,6 @@
 -- Last 10 Maps activities, aggregated by neighborhood (no per-address detail).
--- Handler keys: time, location, type, timeOfDay.
+-- Handler keys: time, location, type. Time-of-day labels are rendered
+-- client-side from `time`, in the viewer's timezone.
 
 {{ config(materialized='view', schema='gold') }}
 
@@ -20,12 +21,7 @@ SELECT
         activity_type = 'search',                      'search',
         primary_type != '',                            primary_type,
         'view'
-    )                                                                         AS type,
-    CASE
-        WHEN hour_of_day < 12 THEN 'Morning'
-        WHEN hour_of_day < 18 THEN 'Afternoon'
-        ELSE 'Evening'
-    END                                                                       AS timeOfDay
+    )                                                                         AS type
 FROM {{ ref('silver_maps_activity_enriched') }}
 WHERE is_private = 0
 ORDER BY event_ts DESC

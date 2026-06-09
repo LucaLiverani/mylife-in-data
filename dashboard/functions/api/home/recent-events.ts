@@ -15,7 +15,6 @@ interface RecentEvent {
   time: string;
   image_url: string;
   activity_type: string;
-  metadata: string;
   is_from_ads: number;
 }
 
@@ -43,7 +42,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           track: e.title,
           artist: e.subtitle,
           time: e.time,
-          relativeTime: e.metadata,
           albumArt: e.image_url || `https://picsum.photos/seed/${e.subtitle}/100`,
         }));
 
@@ -54,7 +52,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           activityType: e.activity_type,
           time: e.time,
           isFromAds: e.is_from_ads === 1,
-          relativeTime: e.subtitle,
         }));
 
       const maps = events
@@ -63,7 +60,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           location: e.title,
           type: e.subtitle,
           time: e.time,
-          timeOfDay: e.metadata,
         }));
 
       return { spotify, youtube, maps };

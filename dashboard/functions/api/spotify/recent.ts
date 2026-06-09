@@ -12,14 +12,12 @@ interface RecentTrack {
   artist: string;
   played_at: string;
   album_art: string;
-  relative_time: string;
 }
 
 interface FormattedRecent {
   track: string;
   artist: string;
   time: string;
-  relativeTime: string;
   albumArt: string;
 }
 
@@ -36,7 +34,6 @@ export async function onRequest(context: { env: Env; request: Request }): Promis
           track: track.track,
           artist: track.artist,
           time: track.played_at,
-          relativeTime: track.relative_time,
           albumArt: track.album_art || `https://picsum.photos/seed/${track.artist}/100`,
         }))
         .slice(0, 10);
