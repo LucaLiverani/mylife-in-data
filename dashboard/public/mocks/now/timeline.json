@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-21T21:21:28.507Z",
+  "generatedAt": "2026-05-21T12:00:00.000Z",
   "windowMinutes": 10080,
   "ingestionCadence": {
     "spotify": "real-time stream",
@@ -9,1507 +9,1501 @@
   },
   "events": [
     {
-      "time": "2026-05-21T21:07:55.173Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-21T20:41:06.016Z",
-      "channel": "maps",
-      "label": "Directions",
-      "value": "Zürich HB → home"
-    },
-    {
-      "time": "2026-05-21T19:35:26.957Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-21T18:44:53.743Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-21T18:24:01.200Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-21T18:22:04.107Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Modular synth basics in 12 minutes"
-    },
-    {
-      "time": "2026-05-21T16:12:06.912Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-21T16:10:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Team standup · 30 min"
-    },
-    {
-      "time": "2026-05-21T15:54:00.000Z",
+      "time": "2026-05-21T16:27:00.000Z",
       "channel": "calendar",
       "label": "Event ended",
       "value": "Design review · 60 min"
     },
     {
-      "time": "2026-05-21T15:30:16.401Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-21T15:07:53.584Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-21T14:58:08.015Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-21T14:45:01.796Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-21T13:57:09.320Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-21T13:43:04.865Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Hideaway — Kiesza"
-    },
-    {
-      "time": "2026-05-21T13:38:13.711Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-21T12:58:00.000Z",
+      "time": "2026-05-21T14:15:00.000Z",
       "channel": "calendar",
       "label": "Meeting started",
-      "value": "1:1 with manager · 30 min"
+      "value": "Team standup · 30 min"
     },
     {
-      "time": "2026-05-21T12:51:43.659Z",
+      "time": "2026-05-21T11:50:35.960Z",
       "channel": "spotify",
       "label": "Track started",
-      "value": "Roygbiv — Boards of Canada"
+      "value": "Outro — M83"
     },
     {
-      "time": "2026-05-21T12:43:52.976Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-21T11:52:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Lunch (sandwich)"
-    },
-    {
-      "time": "2026-05-21T11:23:33.312Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Teardrop — Massive Attack"
-    },
-    {
-      "time": "2026-05-21T11:17:19.777Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-21T11:07:08.272Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Avril 14th — Aphex Twin"
-    },
-    {
-      "time": "2026-05-21T10:59:40.459Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-21T10:12:02.208Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-21T08:50:31.098Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
-    },
-    {
-      "time": "2026-05-21T08:10:00.000Z",
+      "time": "2026-05-21T11:46:00.000Z",
       "channel": "calendar",
       "label": "Meeting started",
       "value": "Sprint planning · 90 min"
     },
     {
-      "time": "2026-05-21T07:01:59.400Z",
+      "time": "2026-05-21T11:20:32.383Z",
       "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
+      "label": "Now playing",
+      "value": "Midnight City — M83"
     },
     {
-      "time": "2026-05-21T06:32:26.268Z",
+      "time": "2026-05-21T10:50:53.230Z",
       "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
     },
     {
-      "time": "2026-05-21T05:54:10.974Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Lazerhawk — Visitors"
-    },
-    {
-      "time": "2026-05-21T05:52:14.452Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-21T04:33:17.208Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-21T03:39:44.853Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Why your dbt jobs are slow"
-    },
-    {
-      "time": "2026-05-21T02:49:21.550Z",
-      "channel": "maps",
-      "label": "Place visit",
-      "value": "Café Schober"
-    },
-    {
-      "time": "2026-05-20T23:41:33.812Z",
-      "channel": "youtube",
-      "label": "Searched",
-      "value": "How to lay down vinyl flooring"
-    },
-    {
-      "time": "2026-05-20T22:28:47.281Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Bored ambient #3"
-    },
-    {
-      "time": "2026-05-20T21:51:08.497Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Strobe Reprise — Deadmau5"
-    },
-    {
-      "time": "2026-05-20T20:30:38.593Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-20T18:28:23.466Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-20T17:58:39.205Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-20T17:52:12.121Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-20T17:38:35.101Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Outro — M83"
-    },
-    {
-      "time": "2026-05-20T17:36:53.595Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-20T17:35:27.154Z",
+      "time": "2026-05-21T10:22:28.375Z",
       "channel": "spotify",
       "label": "Track started",
       "value": "Strobe — Deadmau5"
     },
     {
-      "time": "2026-05-20T17:28:42.674Z",
+      "time": "2026-05-21T10:03:54.621Z",
       "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
     },
     {
-      "time": "2026-05-20T17:12:26.955Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-20T16:09:50.581Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Yet Another Lofi"
-    },
-    {
-      "time": "2026-05-20T15:33:01.917Z",
+      "time": "2026-05-21T09:59:32.155Z",
       "channel": "spotify",
       "label": "Track started",
       "value": "Genesis — Justice"
     },
     {
-      "time": "2026-05-20T15:19:00.000Z",
+      "time": "2026-05-21T09:45:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Lunch (sandwich)"
+    },
+    {
+      "time": "2026-05-21T09:38:35.213Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-21T09:33:13.483Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Modular synth basics in 12 minutes"
+    },
+    {
+      "time": "2026-05-21T09:23:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "1:1 with manager · 30 min"
+    },
+    {
+      "time": "2026-05-21T08:52:31.331Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Lazerhawk — Visitors"
+    },
+    {
+      "time": "2026-05-21T06:12:57.349Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Random Access Memories — Daft Punk"
+    },
+    {
+      "time": "2026-05-21T04:46:43.007Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Why your dbt jobs are slow"
+    },
+    {
+      "time": "2026-05-21T04:06:58.124Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-21T04:03:34.543Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-21T02:23:59.643Z",
+      "channel": "youtube",
+      "label": "Searched",
+      "value": "How to lay down vinyl flooring"
+    },
+    {
+      "time": "2026-05-20T23:41:46.279Z",
+      "channel": "maps",
+      "label": "Place visit",
+      "value": "Café Schober"
+    },
+    {
+      "time": "2026-05-20T22:16:13.368Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
+    },
+    {
+      "time": "2026-05-20T22:11:19.995Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-20T20:31:03.104Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-20T19:52:44.044Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
+    },
+    {
+      "time": "2026-05-20T18:42:09.019Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-20T18:08:01.795Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-20T17:40:50.552Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-20T17:27:55.316Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-20T15:55:05.970Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-20T15:41:00.000Z",
       "channel": "calendar",
       "label": "Meeting started",
       "value": "Architecture sync · 45 min"
     },
     {
-      "time": "2026-05-20T15:13:14.170Z",
+      "time": "2026-05-20T15:06:17.742Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-20T14:43:39.259Z",
       "channel": "spotify",
       "label": "Track ended",
-      "value": "Avril 14th — Aphex Twin"
+      "value": "Tempo Tantrum — RJD2"
     },
     {
-      "time": "2026-05-20T14:09:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Pair on auth refactor"
+      "time": "2026-05-20T14:41:38.728Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
     },
     {
-      "time": "2026-05-20T13:35:00.000Z",
+      "time": "2026-05-20T14:07:00.000Z",
       "channel": "calendar",
       "label": "Event ended",
       "value": "Yoga · 60 min"
     },
     {
-      "time": "2026-05-20T13:32:08.692Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-20T13:30:13.884Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-20T13:13:30.269Z",
+      "time": "2026-05-20T14:01:02.901Z",
       "channel": "spotify",
       "label": "Track started",
-      "value": "Roygbiv — Boards of Canada"
+      "value": "Genesis — Justice"
     },
     {
-      "time": "2026-05-20T13:12:25.102Z",
+      "time": "2026-05-20T13:51:27.280Z",
       "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
+      "label": "Liked",
+      "value": "Selva — Floating Points"
     },
     {
-      "time": "2026-05-20T12:41:00.000Z",
+      "time": "2026-05-20T13:00:00.000Z",
       "channel": "calendar",
       "label": "Event ended",
       "value": "Coffee with Ana"
     },
     {
-      "time": "2026-05-20T12:37:14.942Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-20T11:35:52.004Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Yet Another Lofi"
-    },
-    {
-      "time": "2026-05-20T09:31:19.010Z",
+      "time": "2026-05-20T12:30:55.062Z",
       "channel": "spotify",
       "label": "Track started",
-      "value": "Cosmic Latte — Lone"
+      "value": "Strobe — Deadmau5"
     },
     {
-      "time": "2026-05-20T08:41:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Customer demo · 30 min"
-    },
-    {
-      "time": "2026-05-20T08:31:56.534Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-20T06:31:48.725Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Tempo Tantrum — RJD2"
-    },
-    {
-      "time": "2026-05-20T05:22:37.394Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-20T04:07:38.596Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Hideaway — Kiesza"
-    },
-    {
-      "time": "2026-05-20T02:20:42.801Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-20T02:07:42.684Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Inside the Polestar 4 — review"
-    },
-    {
-      "time": "2026-05-20T01:58:00.292Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-19T23:35:23.022Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-19T22:58:14.605Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
-    },
-    {
-      "time": "2026-05-19T22:53:03.187Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "React 19 the things they didn’t tell you"
-    },
-    {
-      "time": "2026-05-19T22:39:51.207Z",
-      "channel": "spotify",
-      "label": "Album opened",
-      "value": "In Rainbows — Radiohead"
-    },
-    {
-      "time": "2026-05-19T21:31:13.265Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-19T21:08:38.408Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-19T20:36:49.918Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-19T20:32:42.935Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-19T20:06:01.649Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-19T19:30:58.865Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-19T19:15:37.734Z",
-      "channel": "maps",
-      "label": "Directions",
-      "value": "home → Zürich HB"
-    },
-    {
-      "time": "2026-05-19T19:12:06.344Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-19T17:54:39.702Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-19T17:03:29.018Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-19T16:45:23.815Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Outro — M83"
-    },
-    {
-      "time": "2026-05-19T16:37:28.375Z",
-      "channel": "maps",
-      "label": "Search",
-      "value": "sika headquarters baar"
-    },
-    {
-      "time": "2026-05-19T16:03:14.228Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-19T14:33:03.697Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-19T13:16:18.112Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-19T13:09:43.618Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-19T12:55:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Hiring loop · 45 min"
-    },
-    {
-      "time": "2026-05-19T12:50:35.934Z",
-      "channel": "youtube",
-      "label": "Searched",
-      "value": "Postgres bloat reindex concurrently"
-    },
-    {
-      "time": "2026-05-19T12:38:18.914Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Linux on a Framework 13 — one year later"
-    },
-    {
-      "time": "2026-05-19T11:12:54.183Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "How to design a producer console UI"
-    },
-    {
-      "time": "2026-05-19T11:00:19.450Z",
-      "channel": "spotify",
-      "label": "Album opened",
-      "value": "In Rainbows — Radiohead"
-    },
-    {
-      "time": "2026-05-19T10:05:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Family dinner"
-    },
-    {
-      "time": "2026-05-19T09:22:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Doctor appointment"
-    },
-    {
-      "time": "2026-05-19T09:21:33.455Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-19T08:56:34.497Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-19T08:46:02.682Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Yet Another Lofi"
-    },
-    {
-      "time": "2026-05-19T08:33:58.016Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-19T07:24:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Retrospective · 60 min"
-    },
-    {
-      "time": "2026-05-19T07:12:58.744Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-19T07:08:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Reading time · 30 min"
-    },
-    {
-      "time": "2026-05-19T06:43:04.474Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-19T06:24:47.810Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-19T06:04:04.003Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-19T04:28:27.866Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-19T04:22:33.348Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-18T23:33:46.599Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-18T23:13:04.663Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "How TypeScript has too many ways to type a thing"
-    },
-    {
-      "time": "2026-05-18T22:29:09.360Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-18T22:20:34.804Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-18T21:33:04.996Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Tempo Tantrum — RJD2"
-    },
-    {
-      "time": "2026-05-18T21:25:53.148Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-18T21:10:06.448Z",
+      "time": "2026-05-20T12:22:37.391Z",
       "channel": "spotify",
       "label": "Liked",
       "value": "Lazerhawk — Visitors"
     },
     {
-      "time": "2026-05-18T20:56:09.081Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-18T20:43:51.915Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-18T19:27:47.708Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Strobe Reprise — Deadmau5"
-    },
-    {
-      "time": "2026-05-18T18:26:33.996Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-18T18:15:18.273Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-18T17:11:32.169Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Lazerhawk — Visitors"
-    },
-    {
-      "time": "2026-05-18T16:59:59.738Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-18T16:22:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Sales sync · 30 min"
-    },
-    {
-      "time": "2026-05-18T14:55:29.465Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Teardrop — Massive Attack"
-    },
-    {
-      "time": "2026-05-18T14:31:56.555Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Generic Lofi Beat 247"
-    },
-    {
-      "time": "2026-05-18T14:10:07.782Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Strobe Reprise — Deadmau5"
-    },
-    {
-      "time": "2026-05-18T13:23:35.577Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-18T13:01:59.630Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-18T12:52:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Concert · 3h"
-    },
-    {
-      "time": "2026-05-18T12:51:57.808Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-18T12:31:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Roadmap review · 60 min"
-    },
-    {
-      "time": "2026-05-18T12:09:00.000Z",
-      "channel": "calendar",
-      "label": "Meeting started",
-      "value": "Deep work block · 90 min"
-    },
-    {
-      "time": "2026-05-18T12:02:48.417Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-18T11:05:55.569Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-18T10:48:25.105Z",
-      "channel": "youtube",
-      "label": "Searched",
-      "value": "Best espresso machines"
-    },
-    {
-      "time": "2026-05-18T10:18:22.974Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-18T10:16:55.792Z",
+      "time": "2026-05-20T11:53:44.495Z",
       "channel": "spotify",
       "label": "Track started",
       "value": "Roygbiv — Boards of Canada"
     },
     {
-      "time": "2026-05-18T09:39:47.222Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-18T09:35:38.973Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-18T09:17:54.918Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-18T08:36:12.618Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Generic Lofi Beat 247"
-    },
-    {
-      "time": "2026-05-18T08:31:43.756Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-18T08:22:07.232Z",
-      "channel": "spotify",
-      "label": "Album opened",
-      "value": "In Rainbows — Radiohead"
-    },
-    {
-      "time": "2026-05-18T08:20:02.206Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Synthwave essentials — 70 min mix"
-    },
-    {
-      "time": "2026-05-18T08:13:00.000Z",
-      "channel": "calendar",
-      "label": "Event ended",
-      "value": "Run with Marco"
-    },
-    {
-      "time": "2026-05-18T08:11:46.588Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Bored ambient #3"
-    },
-    {
-      "time": "2026-05-18T08:01:11.748Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-18T07:57:37.199Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-18T07:39:54.716Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Selva — Floating Points"
-    },
-    {
-      "time": "2026-05-18T07:09:27.231Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Hideaway — Kiesza"
-    },
-    {
-      "time": "2026-05-18T07:06:53.217Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-18T06:43:45.818Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Outro — M83"
-    },
-    {
-      "time": "2026-05-18T05:33:44.509Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-18T05:02:09.309Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Tempo Tantrum — RJD2"
-    },
-    {
-      "time": "2026-05-18T04:48:16.926Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Outro — M83"
-    },
-    {
-      "time": "2026-05-18T04:45:45.845Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-18T04:38:27.761Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-17T23:29:39.203Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-17T22:05:40.057Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-17T21:08:40.547Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Bored ambient #3"
-    },
-    {
-      "time": "2026-05-17T20:48:11.678Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Generic Lofi Beat 247"
-    },
-    {
-      "time": "2026-05-17T19:48:27.082Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-17T19:26:18.631Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Outro — M83"
-    },
-    {
-      "time": "2026-05-17T16:27:33.687Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-17T15:53:09.278Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-17T15:30:46.265Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
-    },
-    {
-      "time": "2026-05-17T15:15:26.794Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Tempo Tantrum — RJD2"
-    },
-    {
-      "time": "2026-05-17T14:00:49.266Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-17T13:39:15.446Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Cosmic Latte — Lone"
-    },
-    {
-      "time": "2026-05-17T13:15:39.771Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-17T12:52:47.058Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
-    },
-    {
-      "time": "2026-05-17T11:39:22.688Z",
-      "channel": "maps",
-      "label": "Search",
-      "value": "dim sum near me"
-    },
-    {
-      "time": "2026-05-17T11:11:41.679Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Tempo Tantrum — RJD2"
-    },
-    {
-      "time": "2026-05-17T10:19:06.561Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-17T09:24:33.097Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-17T07:35:55.838Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Teardrop — Massive Attack"
-    },
-    {
-      "time": "2026-05-17T06:57:10.289Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Cosmic Latte — Lone"
-    },
-    {
-      "time": "2026-05-17T06:24:05.277Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "How dbt does incremental models"
-    },
-    {
-      "time": "2026-05-17T06:02:43.380Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Berghain documentary — first 15 minutes"
-    },
-    {
-      "time": "2026-05-17T05:32:39.165Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-17T05:32:27.456Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-17T04:21:20.295Z",
-      "channel": "youtube",
-      "label": "Searched",
-      "value": "What is webgpu actually for"
-    },
-    {
-      "time": "2026-05-17T04:17:34.841Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Hideaway — Kiesza"
-    },
-    {
-      "time": "2026-05-16T22:49:39.236Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-16T22:32:05.279Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-16T22:10:21.625Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-16T22:08:52.033Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-16T21:27:57.073Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-16T20:33:55.702Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-16T19:46:58.601Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-16T19:04:51.507Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Bored ambient #3"
-    },
-    {
-      "time": "2026-05-16T18:08:57.023Z",
+      "time": "2026-05-20T11:45:10.427Z",
       "channel": "spotify",
       "label": "Track ended",
       "value": "Avril 14th — Aphex Twin"
     },
     {
-      "time": "2026-05-16T17:19:33.966Z",
+      "time": "2026-05-20T11:36:22.444Z",
       "channel": "spotify",
       "label": "Track ended",
       "value": "Last Resort — Trentemøller"
     },
     {
-      "time": "2026-05-16T16:49:15.957Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-16T15:44:40.463Z",
+      "time": "2026-05-20T10:29:08.382Z",
       "channel": "spotify",
       "label": "Album opened",
       "value": "In Rainbows — Radiohead"
     },
     {
-      "time": "2026-05-16T14:44:46.748Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Building a CLI in Go — full tutorial"
+      "time": "2026-05-20T10:27:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Pair on auth refactor"
     },
     {
-      "time": "2026-05-16T14:08:58.791Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Innerbloom — RÜFÜS DU SOL"
-    },
-    {
-      "time": "2026-05-16T12:39:48.077Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-16T11:41:37.670Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Tempo Tantrum — RJD2"
-    },
-    {
-      "time": "2026-05-16T10:51:05.097Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-16T10:28:00.906Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Why I switched from Vue to Solid"
-    },
-    {
-      "time": "2026-05-16T10:18:53.160Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-16T08:38:58.351Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Roygbiv — Boards of Canada"
-    },
-    {
-      "time": "2026-05-16T07:56:49.942Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-16T07:50:09.612Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Cloudflare Pages vs Workers — comparison"
-    },
-    {
-      "time": "2026-05-16T07:45:12.496Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Cosmic Latte — Lone"
-    },
-    {
-      "time": "2026-05-16T07:40:43.378Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Genesis — Justice"
-    },
-    {
-      "time": "2026-05-16T07:20:07.588Z",
-      "channel": "maps",
-      "label": "Place visit",
-      "value": "Coop Pronto"
-    },
-    {
-      "time": "2026-05-16T06:44:26.898Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Strobe Reprise — Deadmau5"
-    },
-    {
-      "time": "2026-05-16T05:27:36.890Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Nightcall — Kavinsky"
-    },
-    {
-      "time": "2026-05-16T05:24:53.803Z",
-      "channel": "spotify",
-      "label": "Album opened",
-      "value": "In Rainbows — Radiohead"
-    },
-    {
-      "time": "2026-05-16T05:20:34.812Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Generic Lofi Beat 247"
-    },
-    {
-      "time": "2026-05-16T04:27:28.814Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Random Access Memories — Daft Punk"
-    },
-    {
-      "time": "2026-05-16T02:53:45.767Z",
-      "channel": "maps",
-      "label": "Directions",
-      "value": "Bern → Zürich"
-    },
-    {
-      "time": "2026-05-16T02:46:35.112Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Roygbiv — Boards of Canada"
-    },
-    {
-      "time": "2026-05-15T23:14:04.480Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Postgres vs ClickHouse for analytics"
-    },
-    {
-      "time": "2026-05-15T22:51:15.470Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "I Want You — Mitski"
-    },
-    {
-      "time": "2026-05-15T21:13:51.489Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Last Resort — Trentemøller"
-    },
-    {
-      "time": "2026-05-15T20:53:01.622Z",
+      "time": "2026-05-20T10:21:36.414Z",
       "channel": "spotify",
       "label": "Track ended",
       "value": "Teardrop — Massive Attack"
     },
     {
-      "time": "2026-05-15T20:06:03.682Z",
+      "time": "2026-05-20T09:15:22.209Z",
       "channel": "spotify",
       "label": "Now playing",
-      "value": "Midnight City — M83"
+      "value": "I Want You — Mitski"
     },
     {
-      "time": "2026-05-15T19:11:35.144Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "The truth about HTMX"
-    },
-    {
-      "time": "2026-05-15T19:11:26.284Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Generic Lofi Beat 247"
-    },
-    {
-      "time": "2026-05-15T18:52:34.712Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
-    },
-    {
-      "time": "2026-05-15T18:49:15.775Z",
-      "channel": "spotify",
-      "label": "Now playing",
-      "value": "Midnight City — M83"
-    },
-    {
-      "time": "2026-05-15T18:41:25.780Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-15T17:43:38.146Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-15T17:28:43.472Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "D.A.N.C.E. — Justice"
-    },
-    {
-      "time": "2026-05-15T16:22:31.426Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Generic Lofi Beat 247"
-    },
-    {
-      "time": "2026-05-15T16:15:22.441Z",
-      "channel": "maps",
-      "label": "Directions",
-      "value": "airport → home"
-    },
-    {
-      "time": "2026-05-15T15:48:58.301Z",
-      "channel": "spotify",
-      "label": "Liked",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-15T14:04:15.111Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-15T13:58:09.917Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Yet Another Lofi"
-    },
-    {
-      "time": "2026-05-15T13:34:53.752Z",
-      "channel": "spotify",
-      "label": "Track ended",
-      "value": "Untrue — Burial"
-    },
-    {
-      "time": "2026-05-15T13:18:33.261Z",
-      "channel": "youtube",
-      "label": "Watched",
-      "value": "Watch this before refactoring"
-    },
-    {
-      "time": "2026-05-15T13:10:40.886Z",
+      "time": "2026-05-20T08:27:35.566Z",
       "channel": "spotify",
       "label": "Track started",
       "value": "Genesis — Justice"
     },
     {
-      "time": "2026-05-15T10:57:51.151Z",
+      "time": "2026-05-20T08:01:22.541Z",
       "channel": "spotify",
       "label": "Track ended",
-      "value": "Untrue — Burial"
+      "value": "Last Resort — Trentemøller"
     },
     {
-      "time": "2026-05-15T09:29:42.119Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Hideaway — Kiesza"
-    },
-    {
-      "time": "2026-05-15T08:52:45.477Z",
+      "time": "2026-05-20T08:00:49.053Z",
       "channel": "spotify",
       "label": "Track ended",
-      "value": "Untrue — Burial"
+      "value": "Tempo Tantrum — RJD2"
     },
     {
-      "time": "2026-05-15T06:24:47.736Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-15T06:15:51.671Z",
+      "time": "2026-05-20T06:53:10.038Z",
       "channel": "spotify",
       "label": "Skipped",
-      "value": "Yet Another Lofi"
+      "value": "Generic Lofi Beat 247"
     },
     {
-      "time": "2026-05-15T05:33:58.292Z",
-      "channel": "spotify",
-      "label": "Skipped",
-      "value": "Bored ambient #3"
-    },
-    {
-      "time": "2026-05-15T05:18:12.464Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Cosmic Latte — Lone"
-    },
-    {
-      "time": "2026-05-15T04:40:03.892Z",
-      "channel": "spotify",
-      "label": "Playlist queued",
-      "value": "Deep focus · 47 tracks"
-    },
-    {
-      "time": "2026-05-15T04:35:57.608Z",
+      "time": "2026-05-20T05:02:22.934Z",
       "channel": "spotify",
       "label": "Now playing",
       "value": "Midnight City — M83"
     },
     {
-      "time": "2026-05-15T04:20:07.266Z",
+      "time": "2026-05-20T04:55:32.549Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-20T04:41:12.511Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-20T04:08:59.780Z",
       "channel": "spotify",
       "label": "Track started",
-      "value": "Roygbiv — Boards of Canada"
+      "value": "Strobe — Deadmau5"
     },
     {
-      "time": "2026-05-15T03:23:20.392Z",
-      "channel": "maps",
-      "label": "Place visit",
-      "value": "Kaufleuten"
-    },
-    {
-      "time": "2026-05-15T00:21:58.627Z",
+      "time": "2026-05-20T02:01:26.022Z",
       "channel": "youtube",
       "label": "Watched",
-      "value": "Tailwind v4 — what changed"
+      "value": "React 19 the things they didn’t tell you"
     },
     {
-      "time": "2026-05-14T23:36:51.164Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Pyramid Song — Radiohead"
-    },
-    {
-      "time": "2026-05-14T23:25:44.602Z",
+      "time": "2026-05-19T23:03:35.867Z",
       "channel": "spotify",
       "label": "Now playing",
       "value": "Innerbloom — RÜFÜS DU SOL"
     },
     {
-      "time": "2026-05-14T23:19:43.576Z",
-      "channel": "spotify",
-      "label": "Track started",
-      "value": "Wide Open — The Chemical Brothers"
+      "time": "2026-05-19T20:33:17.177Z",
+      "channel": "maps",
+      "label": "Directions",
+      "value": "Zürich HB → home"
     },
     {
-      "time": "2026-05-14T21:41:20.462Z",
+      "time": "2026-05-19T20:27:33.271Z",
       "channel": "spotify",
       "label": "Skipped",
       "value": "Bored ambient #3"
     },
     {
-      "time": "2026-05-14T20:54:26.327Z",
+      "time": "2026-05-19T19:53:33.777Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-19T19:37:29.403Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-19T19:07:03.426Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-19T19:00:27.324Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-19T18:07:36.621Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
+    },
+    {
+      "time": "2026-05-19T17:39:52.003Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-19T17:06:27.636Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Inside the Polestar 4 — review"
+    },
+    {
+      "time": "2026-05-19T16:25:59.102Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-19T16:24:41.568Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-19T16:09:40.553Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-19T14:55:42.848Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Last Resort — Trentemøller"
+    },
+    {
+      "time": "2026-05-19T14:53:27.051Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-19T14:38:51.956Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-19T14:27:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Customer demo · 30 min"
+    },
+    {
+      "time": "2026-05-19T13:58:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Doctor appointment"
+    },
+    {
+      "time": "2026-05-19T13:16:10.860Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-19T12:50:43.688Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-19T12:32:09.115Z",
+      "channel": "spotify",
+      "label": "Playlist queued",
+      "value": "Deep focus · 47 tracks"
+    },
+    {
+      "time": "2026-05-19T11:33:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Hiring loop · 45 min"
+    },
+    {
+      "time": "2026-05-19T10:42:39.711Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
+    },
+    {
+      "time": "2026-05-19T10:11:04.487Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
+    },
+    {
+      "time": "2026-05-19T09:54:15.527Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Genesis — Justice"
+    },
+    {
+      "time": "2026-05-19T09:27:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Retrospective · 60 min"
+    },
+    {
+      "time": "2026-05-19T08:49:37.765Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-19T08:41:58.404Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-19T07:10:03.888Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-19T01:17:55.633Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "How TypeScript has too many ways to type a thing"
+    },
+    {
+      "time": "2026-05-19T00:53:03.423Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Linux on a Framework 13 — one year later"
+    },
+    {
+      "time": "2026-05-19T00:41:32.542Z",
+      "channel": "maps",
+      "label": "Search",
+      "value": "sika headquarters baar"
+    },
+    {
+      "time": "2026-05-18T23:24:06.429Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-18T23:11:07.207Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-18T21:43:31.908Z",
+      "channel": "youtube",
+      "label": "Searched",
+      "value": "Postgres bloat reindex concurrently"
+    },
+    {
+      "time": "2026-05-18T21:02:29.359Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-18T20:12:54.547Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-18T18:53:07.792Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Midnight City — M83"
+    },
+    {
+      "time": "2026-05-18T18:34:52.070Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-18T18:22:41.521Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-18T17:14:34.343Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-18T16:39:04.814Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-18T15:25:48.314Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-18T15:18:39.069Z",
+      "channel": "spotify",
+      "label": "Playlist queued",
+      "value": "Deep focus · 47 tracks"
+    },
+    {
+      "time": "2026-05-18T14:58:55.355Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Midnight City — M83"
+    },
+    {
+      "time": "2026-05-18T14:46:12.972Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-18T14:35:16.228Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-18T14:16:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Roadmap review · 60 min"
+    },
+    {
+      "time": "2026-05-18T14:15:37.348Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-18T14:06:27.028Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Random Access Memories — Daft Punk"
+    },
+    {
+      "time": "2026-05-18T13:26:26.835Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-18T13:03:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Deep work block · 90 min"
+    },
+    {
+      "time": "2026-05-18T11:56:48.570Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-18T11:52:13.433Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-18T11:18:52.604Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-18T11:15:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Family dinner"
+    },
+    {
+      "time": "2026-05-18T10:52:52.891Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-18T10:30:28.732Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Synthwave essentials — 70 min mix"
+    },
+    {
+      "time": "2026-05-18T09:47:58.259Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-18T08:39:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Reading time · 30 min"
+    },
+    {
+      "time": "2026-05-18T08:06:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Run with Marco"
+    },
+    {
+      "time": "2026-05-18T07:50:21.357Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-18T07:26:35.118Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Pyramid Song — Radiohead"
+    },
+    {
+      "time": "2026-05-18T06:26:09.863Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-18T06:13:03.664Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-18T06:05:53.591Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
+    },
+    {
+      "time": "2026-05-18T05:18:35.504Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-18T04:54:03.129Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-18T04:50:56.781Z",
+      "channel": "maps",
+      "label": "Place visit",
+      "value": "Coop Pronto"
+    },
+    {
+      "time": "2026-05-18T03:36:51.966Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "How to design a producer console UI"
+    },
+    {
+      "time": "2026-05-18T01:47:33.655Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Random Access Memories — Daft Punk"
+    },
+    {
+      "time": "2026-05-18T00:08:41.324Z",
+      "channel": "maps",
+      "label": "Directions",
+      "value": "home → Zürich HB"
+    },
+    {
+      "time": "2026-05-17T23:50:29.017Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-17T23:32:20.773Z",
+      "channel": "youtube",
+      "label": "Searched",
+      "value": "Best espresso machines"
+    },
+    {
+      "time": "2026-05-17T21:08:51.581Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-17T20:18:25.001Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-17T19:41:49.163Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-17T17:13:15.138Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-17T16:11:40.233Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Genesis — Justice"
+    },
+    {
+      "time": "2026-05-17T15:40:49.983Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Last Resort — Trentemøller"
+    },
+    {
+      "time": "2026-05-17T13:13:36.913Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-17T13:00:03.247Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-17T11:34:00.000Z",
+      "channel": "calendar",
+      "label": "Event ended",
+      "value": "Concert · 3h"
+    },
+    {
+      "time": "2026-05-17T11:30:13.477Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-17T10:53:45.678Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-17T10:28:44.248Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-17T09:53:33.553Z",
+      "channel": "maps",
+      "label": "Directions",
+      "value": "Bern → Zürich"
+    },
+    {
+      "time": "2026-05-17T08:56:43.292Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Pyramid Song — Radiohead"
+    },
+    {
+      "time": "2026-05-17T08:40:08.125Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-17T06:53:01.463Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-17T06:23:16.702Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Lazerhawk — Visitors"
+    },
+    {
+      "time": "2026-05-17T05:28:27.080Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Berghain documentary — first 15 minutes"
+    },
+    {
+      "time": "2026-05-17T04:01:53.493Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-17T02:22:20.111Z",
+      "channel": "youtube",
+      "label": "Searched",
+      "value": "What is webgpu actually for"
+    },
+    {
+      "time": "2026-05-16T23:46:44.890Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-16T23:41:32.855Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-16T23:22:26.021Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-16T22:49:37.547Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-16T22:15:16.143Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-16T20:50:15.743Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-16T20:48:40.387Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-16T20:38:03.347Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Midnight City — M83"
+    },
+    {
+      "time": "2026-05-16T19:07:34.821Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "How dbt does incremental models"
+    },
+    {
+      "time": "2026-05-16T18:12:01.221Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-16T17:13:15.200Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-16T16:20:20.586Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-16T15:37:16.086Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-16T15:28:58.576Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-16T15:01:06.522Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-16T14:59:51.695Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-16T14:25:18.603Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-16T14:13:20.796Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-16T13:49:42.011Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Lazerhawk — Visitors"
+    },
+    {
+      "time": "2026-05-16T13:31:00.000Z",
+      "channel": "calendar",
+      "label": "Meeting started",
+      "value": "Sales sync · 30 min"
+    },
+    {
+      "time": "2026-05-16T12:38:19.798Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-16T12:28:35.716Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-16T11:35:51.501Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-16T10:56:08.774Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-16T10:47:49.105Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-16T10:33:06.564Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-16T09:40:02.905Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-16T08:54:57.364Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Generic Lofi Beat 247"
+    },
+    {
+      "time": "2026-05-16T08:42:18.348Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-16T07:25:18.994Z",
+      "channel": "spotify",
+      "label": "Playlist queued",
+      "value": "Deep focus · 47 tracks"
+    },
+    {
+      "time": "2026-05-16T05:52:35.999Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-15T23:22:26.170Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
+    },
+    {
+      "time": "2026-05-15T22:16:12.475Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Genesis — Justice"
+    },
+    {
+      "time": "2026-05-15T22:15:43.640Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-15T22:02:58.640Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Pyramid Song — Radiohead"
+    },
+    {
+      "time": "2026-05-15T21:59:59.954Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-15T21:56:48.999Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
+    },
+    {
+      "time": "2026-05-15T21:43:43.826Z",
+      "channel": "maps",
+      "label": "Place visit",
+      "value": "Kaufleuten"
+    },
+    {
+      "time": "2026-05-15T21:30:11.925Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-15T20:48:21.991Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-15T20:11:52.399Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-15T19:50:12.611Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Why I switched from Vue to Solid"
+    },
+    {
+      "time": "2026-05-15T19:37:16.340Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Cloudflare Pages vs Workers — comparison"
+    },
+    {
+      "time": "2026-05-15T19:04:55.629Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-15T19:02:30.338Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-15T19:00:36.757Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-15T18:35:18.227Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-15T18:13:02.717Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Pyramid Song — Radiohead"
+    },
+    {
+      "time": "2026-05-15T18:11:43.760Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Lazerhawk — Visitors"
+    },
+    {
+      "time": "2026-05-15T17:19:23.048Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-15T16:54:28.716Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
+    },
+    {
+      "time": "2026-05-15T16:47:37.656Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-15T16:29:37.846Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Pyramid Song — Radiohead"
+    },
+    {
+      "time": "2026-05-15T15:32:57.448Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Building a CLI in Go — full tutorial"
+    },
+    {
+      "time": "2026-05-15T15:16:48.121Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Lazerhawk — Visitors"
+    },
+    {
+      "time": "2026-05-15T14:15:16.903Z",
+      "channel": "maps",
+      "label": "Search",
+      "value": "dim sum near me"
+    },
+    {
+      "time": "2026-05-15T14:03:52.025Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-15T12:33:23.174Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-15T12:13:24.169Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Lazerhawk — Visitors"
+    },
+    {
+      "time": "2026-05-15T12:03:20.775Z",
+      "channel": "spotify",
+      "label": "Album opened",
+      "value": "In Rainbows — Radiohead"
+    },
+    {
+      "time": "2026-05-15T11:23:25.972Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Teardrop — Massive Attack"
+    },
+    {
+      "time": "2026-05-15T11:07:07.979Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Innerbloom — RÜFÜS DU SOL"
+    },
+    {
+      "time": "2026-05-15T10:51:01.137Z",
+      "channel": "maps",
+      "label": "Directions",
+      "value": "airport → home"
+    },
+    {
+      "time": "2026-05-15T09:17:11.724Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-15T08:48:44.224Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-15T07:40:31.817Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "The truth about HTMX"
+    },
+    {
+      "time": "2026-05-15T07:07:37.914Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-15T06:55:59.683Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Cosmic Latte — Lone"
+    },
+    {
+      "time": "2026-05-15T06:20:44.879Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Random Access Memories — Daft Punk"
+    },
+    {
+      "time": "2026-05-15T05:35:06.011Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-15T04:38:12.489Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-15T04:00:22.773Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Midnight City — M83"
+    },
+    {
+      "time": "2026-05-15T00:37:30.765Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-14T23:16:48.363Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
+    },
+    {
+      "time": "2026-05-14T23:04:44.013Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Avril 14th — Aphex Twin"
+    },
+    {
+      "time": "2026-05-14T23:01:53.304Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Genesis — Justice"
+    },
+    {
+      "time": "2026-05-14T22:59:18.621Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "Midnight City — M83"
+    },
+    {
+      "time": "2026-05-14T22:44:29.830Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-14T22:21:59.924Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-14T22:19:39.246Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Selva — Floating Points"
+    },
+    {
+      "time": "2026-05-14T22:15:28.465Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Tempo Tantrum — RJD2"
+    },
+    {
+      "time": "2026-05-14T21:13:37.479Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Postgres vs ClickHouse for analytics"
+    },
+    {
+      "time": "2026-05-14T20:50:55.258Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Nightcall — Kavinsky"
+    },
+    {
+      "time": "2026-05-14T20:41:42.571Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-14T20:10:13.732Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Strobe — Deadmau5"
+    },
+    {
+      "time": "2026-05-14T18:33:07.951Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-14T17:46:22.236Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Outro — M83"
+    },
+    {
+      "time": "2026-05-14T16:40:34.817Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-14T16:22:57.250Z",
+      "channel": "youtube",
+      "label": "Watched",
+      "value": "Tailwind v4 — what changed"
+    },
+    {
+      "time": "2026-05-14T15:50:42.779Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Wide Open — The Chemical Brothers"
+    },
+    {
+      "time": "2026-05-14T15:42:40.894Z",
+      "channel": "spotify",
+      "label": "Playlist queued",
+      "value": "Deep focus · 47 tracks"
+    },
+    {
+      "time": "2026-05-14T15:38:06.356Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-14T15:15:12.702Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Genesis — Justice"
+    },
+    {
+      "time": "2026-05-14T15:09:25.727Z",
+      "channel": "spotify",
+      "label": "Skipped",
+      "value": "Bored ambient #3"
+    },
+    {
+      "time": "2026-05-14T15:04:58.822Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "Random Access Memories — Daft Punk"
+    },
+    {
+      "time": "2026-05-14T14:57:11.942Z",
+      "channel": "spotify",
+      "label": "Now playing",
+      "value": "I Want You — Mitski"
+    },
+    {
+      "time": "2026-05-14T14:07:18.375Z",
+      "channel": "spotify",
+      "label": "Track started",
+      "value": "Roygbiv — Boards of Canada"
+    },
+    {
+      "time": "2026-05-14T12:59:11.907Z",
+      "channel": "spotify",
+      "label": "Track ended",
+      "value": "D.A.N.C.E. — Justice"
+    },
+    {
+      "time": "2026-05-14T12:35:05.972Z",
+      "channel": "spotify",
+      "label": "Liked",
+      "value": "Untrue — Burial"
+    },
+    {
+      "time": "2026-05-14T12:27:16.777Z",
+      "channel": "spotify",
+      "label": "Playlist queued",
+      "value": "Deep focus · 47 tracks"
+    },
+    {
+      "time": "2026-05-14T11:05:36.228Z",
       "channel": "maps",
       "label": "Search",
       "value": "best burger zurich"

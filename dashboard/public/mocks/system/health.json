@@ -1,14 +1,38 @@
 {
-  "generatedAt": "2026-05-21T14:32:11Z",
+  "generatedAt": "2026-05-21T12:00:00.000Z",
   "overall": {
     "status": "healthy",
-    "summary": "All channels healthy"
+    "summary": "All channels online · last sync 2m ago"
   },
   "channels": [
-    { "channel": "spotify",  "status": "healthy", "lastBatchAgo": "2m ago",  "eventsPerMonth": 4800, "errors24h": 0 },
-    { "channel": "youtube",  "status": "healthy", "lastBatchAgo": "47m ago", "eventsPerMonth": 320,  "errors24h": 0 },
-    { "channel": "maps",     "status": "stale",   "lastBatchAgo": "6h ago",  "eventsPerMonth": 210,  "errors24h": 0 },
-    { "channel": "calendar", "status": "healthy", "lastBatchAgo": "11m ago", "eventsPerMonth": 90,   "errors24h": 0 }
+    {
+      "channel": "spotify",
+      "status": "healthy",
+      "lastBatchAgo": "2m ago",
+      "eventsPerMonth": 4800,
+      "errors24h": 0
+    },
+    {
+      "channel": "youtube",
+      "status": "healthy",
+      "lastBatchAgo": "47m ago",
+      "eventsPerMonth": 320,
+      "errors24h": 0
+    },
+    {
+      "channel": "maps",
+      "status": "stale",
+      "lastBatchAgo": "6h ago",
+      "eventsPerMonth": 210,
+      "errors24h": 0
+    },
+    {
+      "channel": "calendar",
+      "status": "healthy",
+      "lastBatchAgo": "11m ago",
+      "eventsPerMonth": 90,
+      "errors24h": 0
+    }
   ],
   "storage": {
     "name": "ClickHouse",
@@ -16,9 +40,21 @@
     "rowCount": 1234567,
     "diskUsedMb": 412,
     "byDatabase": [
-      { "database": "bronze", "rows": 980000, "diskUsedMb": 300 },
-      { "database": "silver", "rows": 180000, "diskUsedMb": 70 },
-      { "database": "gold",   "rows": 74000,  "diskUsedMb": 38 }
+      {
+        "database": "bronze",
+        "rows": 980000,
+        "diskUsedMb": 300
+      },
+      {
+        "database": "silver",
+        "rows": 180000,
+        "diskUsedMb": 70
+      },
+      {
+        "database": "gold",
+        "rows": 74000,
+        "diskUsedMb": 38
+      }
     ]
   },
   "errors24h": []

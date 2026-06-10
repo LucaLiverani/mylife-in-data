@@ -188,34 +188,18 @@ const recentTracks = Array.from({ length: 10 }, (_, i) => {
     track: pick(TRACK_NAMES),
     artist,
     time: playedAt.toISOString(),
-    relativeTime: `${(i + 1) * 4} min ago`,
     albumArt: `https://picsum.photos/seed/${encodeURIComponent(artist)}/100`,
   };
 });
 write('spotify/recent.json', recentTracks);
 
+// Offline state on purpose: the live card should show "not playing" when the
+// warehouse is unreachable, not a fake currently-playing track.
 write('spotify/current.json', {
-  type: 'current_track',
+  type: 'no_track',
   data: {
-    timestamp: TODAY.toISOString(),
-    track_id: '7qiZfU4dY1lWllzX7mPBI3',
-    track_name: 'Smooth Sailing',
-    track_uri: 'spotify:track:7qiZfU4dY1lWllzX7mPBI3',
-    artists: [
-      { id: '6eUKZXaKkcviH0Ku9w2n3V', name: 'DOPE LEMON', uri: 'spotify:artist:6eUKZXaKkcviH0Ku9w2n3V' },
-    ],
-    album: {
-      id: '3T4tUhGYeRNVUGevb0wThu',
-      name: 'Hounds Tooth',
-      uri: 'spotify:album:3T4tUhGYeRNVUGevb0wThu',
-      images: [
-        { url: 'https://picsum.photos/seed/dopelemon/640', height: 640, width: 640 },
-        { url: 'https://picsum.photos/seed/dopelemon/300', height: 300, width: 300 },
-      ],
-    },
-    is_playing: true,
-    device: { id: 'dev-1', name: 'MacBook Pro', type: 'Computer', volume_percent: 65 },
-    context: { type: 'playlist', uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M' },
+    is_playing: false,
+    timestamp: '2026-01-01T00:00:00.000Z',
   },
 });
 
@@ -297,13 +281,9 @@ write('youtube/data.json', {
   }),
   recentVideos: Array.from({ length: 10 }, (_, i) => {
     const t = new Date(TODAY.getTime() - i * 22 * 60 * 1000);
-    const hour = t.getUTCHours();
-    const timeOfDay = hour < 6 ? 'Night' : hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
     return {
       title: `${pick(['Why', 'How', 'The truth about', 'Inside'])} ${pick(['Rust', 'TypeScript', 'WebGPU', 'Postgres', 'Linux', 'Kubernetes'])} ${pick(['changes everything', 'in 100 seconds', 'explained', 'for beginners'])}`,
       time: t.toISOString(),
-      relativeTime: `${(i + 1) * 22} min ago`,
-      timeOfDay,
       isFromAds: i % 7 === 0,
     };
   }),
@@ -394,13 +374,10 @@ write('travel/data.json', {
     })),
     lastActivities: Array.from({ length: 10 }, (_, i) => {
       const t = new Date(TODAY.getTime() - i * 35 * 60 * 1000);
-      const hour = t.getUTCHours();
-      const timeOfDay = hour < 6 ? 'Night' : hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
       return {
         time: t.toISOString(),
         location: pick(PLACES).name,
         type: pick(ACTIVITY_TYPES),
-        timeOfDay,
       };
     }),
     topDestinations: PLACES.slice(0, 10).map((p) => ({
@@ -493,7 +470,6 @@ write('google/calendar.json', {
       title: pick(EVENT_TITLES),
       category: cat,
       time: t.toISOString(),
-      relativeTime: i === 0 ? 'in 45 min' : `in ${Math.round((i + 1) * 0.75)}h`,
       durationMinutes: between(15, 90),
     };
   }),
@@ -516,17 +492,14 @@ write('home/recent-events.json', {
       activityType: 'watched',
       time: t.toISOString(),
       isFromAds: i === 2,
-      relativeTime: `${(i + 1) * 18} min ago`,
     };
   }),
   maps: Array.from({ length: 5 }, (_, i) => {
     const t = new Date(TODAY.getTime() - i * 45 * 60 * 1000);
-    const hour = t.getUTCHours();
     return {
       location: pick(PLACES).name,
       type: pick(ACTIVITY_TYPES),
       time: t.toISOString(),
-      timeOfDay: hour < 6 ? 'Night' : hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening',
     };
   }),
 });

@@ -33,31 +33,31 @@
   ],
   "youtube": [
     {
-      "title": "Inside Linux in 100 seconds",
+      "title": "The truth about WebGPU explained",
       "activityType": "watched",
       "time": "2026-05-21T12:00:00.000Z",
       "isFromAds": false
     },
     {
-      "title": "Why Rust in 100 seconds",
+      "title": "Why Postgres changes everything",
       "activityType": "watched",
       "time": "2026-05-21T11:42:00.000Z",
       "isFromAds": false
     },
     {
-      "title": "How WebGPU explained",
+      "title": "Why Postgres explained",
       "activityType": "watched",
       "time": "2026-05-21T11:24:00.000Z",
       "isFromAds": true
     },
     {
-      "title": "How Rust explained",
+      "title": "The truth about Postgres explained",
       "activityType": "watched",
       "time": "2026-05-21T11:06:00.000Z",
       "isFromAds": false
     },
     {
-      "title": "Why WebGPU changes everything",
+      "title": "How Linux changes everything",
       "activityType": "watched",
       "time": "2026-05-21T10:48:00.000Z",
       "isFromAds": false
@@ -65,28 +65,28 @@
   ],
   "maps": [
     {
-      "location": "Amsterdam, Netherlands",
-      "type": "place_visit",
+      "location": "Lugano, Switzerland",
+      "type": "search",
       "time": "2026-05-21T12:00:00.000Z"
     },
     {
-      "location": "Copenhagen, Denmark",
-      "type": "search",
+      "location": "Zurich, Switzerland",
+      "type": "place_view",
       "time": "2026-05-21T11:15:00.000Z"
     },
     {
-      "location": "Edinburgh, UK",
+      "location": "Stockholm, Sweden",
       "type": "place_view",
       "time": "2026-05-21T10:30:00.000Z"
     },
     {
-      "location": "Zurich, Switzerland",
-      "type": "place_visit",
+      "location": "Stockholm, Sweden",
+      "type": "directions",
       "time": "2026-05-21T09:45:00.000Z"
     },
     {
-      "location": "Edinburgh, UK",
-      "type": "place_view",
+      "location": "Zurich, Switzerland",
+      "type": "directions",
       "time": "2026-05-21T09:00:00.000Z"
     }
   ]

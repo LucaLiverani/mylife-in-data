@@ -7,6 +7,848 @@
     "avgDaily": 6.8,
     "busiestDay": "Tue"
   },
+  "weekGrid": [
+    {
+      "day": 0,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 7,
+      "intensity": 0.2
+    },
+    {
+      "day": 0,
+      "hour": 8,
+      "intensity": 0.3
+    },
+    {
+      "day": 0,
+      "hour": 9,
+      "intensity": 0.9
+    },
+    {
+      "day": 0,
+      "hour": 10,
+      "intensity": 0.8
+    },
+    {
+      "day": 0,
+      "hour": 11,
+      "intensity": 0.9
+    },
+    {
+      "day": 0,
+      "hour": 12,
+      "intensity": 0.7
+    },
+    {
+      "day": 0,
+      "hour": 13,
+      "intensity": 0.4
+    },
+    {
+      "day": 0,
+      "hour": 14,
+      "intensity": 0.6
+    },
+    {
+      "day": 0,
+      "hour": 15,
+      "intensity": 0.6
+    },
+    {
+      "day": 0,
+      "hour": 16,
+      "intensity": 0.8
+    },
+    {
+      "day": 0,
+      "hour": 17,
+      "intensity": 0.9
+    },
+    {
+      "day": 0,
+      "hour": 18,
+      "intensity": 0.9
+    },
+    {
+      "day": 0,
+      "hour": 19,
+      "intensity": 0.3
+    },
+    {
+      "day": 0,
+      "hour": 20,
+      "intensity": 0.2
+    },
+    {
+      "day": 0,
+      "hour": 21,
+      "intensity": 0.1
+    },
+    {
+      "day": 0,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 0,
+      "hour": 23,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 7,
+      "intensity": 0.2
+    },
+    {
+      "day": 1,
+      "hour": 8,
+      "intensity": 0.3
+    },
+    {
+      "day": 1,
+      "hour": 9,
+      "intensity": 0.7
+    },
+    {
+      "day": 1,
+      "hour": 10,
+      "intensity": 0.7
+    },
+    {
+      "day": 1,
+      "hour": 11,
+      "intensity": 0.9
+    },
+    {
+      "day": 1,
+      "hour": 12,
+      "intensity": 0.8
+    },
+    {
+      "day": 1,
+      "hour": 13,
+      "intensity": 0.4
+    },
+    {
+      "day": 1,
+      "hour": 14,
+      "intensity": 0.9
+    },
+    {
+      "day": 1,
+      "hour": 15,
+      "intensity": 0.8
+    },
+    {
+      "day": 1,
+      "hour": 16,
+      "intensity": 0.8
+    },
+    {
+      "day": 1,
+      "hour": 17,
+      "intensity": 0.9
+    },
+    {
+      "day": 1,
+      "hour": 18,
+      "intensity": 0.7
+    },
+    {
+      "day": 1,
+      "hour": 19,
+      "intensity": 0.4
+    },
+    {
+      "day": 1,
+      "hour": 20,
+      "intensity": 0.3
+    },
+    {
+      "day": 1,
+      "hour": 21,
+      "intensity": 0.2
+    },
+    {
+      "day": 1,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 1,
+      "hour": 23,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 7,
+      "intensity": 0.2
+    },
+    {
+      "day": 2,
+      "hour": 8,
+      "intensity": 0.5
+    },
+    {
+      "day": 2,
+      "hour": 9,
+      "intensity": 0.9
+    },
+    {
+      "day": 2,
+      "hour": 10,
+      "intensity": 0.7
+    },
+    {
+      "day": 2,
+      "hour": 11,
+      "intensity": 0.7
+    },
+    {
+      "day": 2,
+      "hour": 12,
+      "intensity": 0.9
+    },
+    {
+      "day": 2,
+      "hour": 13,
+      "intensity": 0.4
+    },
+    {
+      "day": 2,
+      "hour": 14,
+      "intensity": 0.9
+    },
+    {
+      "day": 2,
+      "hour": 15,
+      "intensity": 0.9
+    },
+    {
+      "day": 2,
+      "hour": 16,
+      "intensity": 0.8
+    },
+    {
+      "day": 2,
+      "hour": 17,
+      "intensity": 0.8
+    },
+    {
+      "day": 2,
+      "hour": 18,
+      "intensity": 0.7
+    },
+    {
+      "day": 2,
+      "hour": 19,
+      "intensity": 0.4
+    },
+    {
+      "day": 2,
+      "hour": 20,
+      "intensity": 0.2
+    },
+    {
+      "day": 2,
+      "hour": 21,
+      "intensity": 0.1
+    },
+    {
+      "day": 2,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 2,
+      "hour": 23,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 7,
+      "intensity": 0.2
+    },
+    {
+      "day": 3,
+      "hour": 8,
+      "intensity": 0.3
+    },
+    {
+      "day": 3,
+      "hour": 9,
+      "intensity": 0.7
+    },
+    {
+      "day": 3,
+      "hour": 10,
+      "intensity": 0.9
+    },
+    {
+      "day": 3,
+      "hour": 11,
+      "intensity": 0.9
+    },
+    {
+      "day": 3,
+      "hour": 12,
+      "intensity": 0.9
+    },
+    {
+      "day": 3,
+      "hour": 13,
+      "intensity": 0.3
+    },
+    {
+      "day": 3,
+      "hour": 14,
+      "intensity": 0.8
+    },
+    {
+      "day": 3,
+      "hour": 15,
+      "intensity": 0.7
+    },
+    {
+      "day": 3,
+      "hour": 16,
+      "intensity": 0.8
+    },
+    {
+      "day": 3,
+      "hour": 17,
+      "intensity": 0.6
+    },
+    {
+      "day": 3,
+      "hour": 18,
+      "intensity": 0.9
+    },
+    {
+      "day": 3,
+      "hour": 19,
+      "intensity": 0.3
+    },
+    {
+      "day": 3,
+      "hour": 20,
+      "intensity": 0.2
+    },
+    {
+      "day": 3,
+      "hour": 21,
+      "intensity": 0.1
+    },
+    {
+      "day": 3,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 3,
+      "hour": 23,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 7,
+      "intensity": 0.2
+    },
+    {
+      "day": 4,
+      "hour": 8,
+      "intensity": 0.4
+    },
+    {
+      "day": 4,
+      "hour": 9,
+      "intensity": 0.7
+    },
+    {
+      "day": 4,
+      "hour": 10,
+      "intensity": 0.8
+    },
+    {
+      "day": 4,
+      "hour": 11,
+      "intensity": 0.9
+    },
+    {
+      "day": 4,
+      "hour": 12,
+      "intensity": 0.7
+    },
+    {
+      "day": 4,
+      "hour": 13,
+      "intensity": 0.4
+    },
+    {
+      "day": 4,
+      "hour": 14,
+      "intensity": 0.6
+    },
+    {
+      "day": 4,
+      "hour": 15,
+      "intensity": 0.7
+    },
+    {
+      "day": 4,
+      "hour": 16,
+      "intensity": 0.8
+    },
+    {
+      "day": 4,
+      "hour": 17,
+      "intensity": 0.6
+    },
+    {
+      "day": 4,
+      "hour": 18,
+      "intensity": 0.9
+    },
+    {
+      "day": 4,
+      "hour": 19,
+      "intensity": 0.3
+    },
+    {
+      "day": 4,
+      "hour": 20,
+      "intensity": 0.2
+    },
+    {
+      "day": 4,
+      "hour": 21,
+      "intensity": 0.1
+    },
+    {
+      "day": 4,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 4,
+      "hour": 23,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 7,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 8,
+      "intensity": 0.1
+    },
+    {
+      "day": 5,
+      "hour": 9,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 10,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 11,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 12,
+      "intensity": 0.4
+    },
+    {
+      "day": 5,
+      "hour": 13,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 14,
+      "intensity": 0.4
+    },
+    {
+      "day": 5,
+      "hour": 15,
+      "intensity": 0.3
+    },
+    {
+      "day": 5,
+      "hour": 16,
+      "intensity": 0.3
+    },
+    {
+      "day": 5,
+      "hour": 17,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 18,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 19,
+      "intensity": 0.1
+    },
+    {
+      "day": 5,
+      "hour": 20,
+      "intensity": 0.2
+    },
+    {
+      "day": 5,
+      "hour": 21,
+      "intensity": 0.1
+    },
+    {
+      "day": 5,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 5,
+      "hour": 23,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 0,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 1,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 2,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 3,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 4,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 5,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 6,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 7,
+      "intensity": 0.1
+    },
+    {
+      "day": 6,
+      "hour": 8,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 9,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 10,
+      "intensity": 0.4
+    },
+    {
+      "day": 6,
+      "hour": 11,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 12,
+      "intensity": 0.4
+    },
+    {
+      "day": 6,
+      "hour": 13,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 14,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 15,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 16,
+      "intensity": 0.2
+    },
+    {
+      "day": 6,
+      "hour": 17,
+      "intensity": 0.4
+    },
+    {
+      "day": 6,
+      "hour": 18,
+      "intensity": 0.3
+    },
+    {
+      "day": 6,
+      "hour": 19,
+      "intensity": 0.1
+    },
+    {
+      "day": 6,
+      "hour": 20,
+      "intensity": 0.1
+    },
+    {
+      "day": 6,
+      "hour": 21,
+      "intensity": 0.1
+    },
+    {
+      "day": 6,
+      "hour": 22,
+      "intensity": 0
+    },
+    {
+      "day": 6,
+      "hour": 23,
+      "intensity": 0
+    }
+  ],
   "busyHours": [
     {
       "hour": "00:00",
@@ -38,43 +880,43 @@
     },
     {
       "hour": "07:00",
-      "events": 4
+      "events": 5
     },
     {
       "hour": "08:00",
-      "events": 3
-    },
-    {
-      "hour": "09:00",
-      "events": 17
-    },
-    {
-      "hour": "10:00",
-      "events": 14
-    },
-    {
-      "hour": "11:00",
-      "events": 15
-    },
-    {
-      "hour": "12:00",
-      "events": 2
-    },
-    {
-      "hour": "13:00",
       "events": 4
     },
     {
-      "hour": "14:00",
+      "hour": "09:00",
       "events": 10
     },
     {
+      "hour": "10:00",
+      "events": 15
+    },
+    {
+      "hour": "11:00",
+      "events": 14
+    },
+    {
+      "hour": "12:00",
+      "events": 5
+    },
+    {
+      "hour": "13:00",
+      "events": 6
+    },
+    {
+      "hour": "14:00",
+      "events": 20
+    },
+    {
       "hour": "15:00",
-      "events": 11
+      "events": 19
     },
     {
       "hour": "16:00",
-      "events": 18
+      "events": 16
     },
     {
       "hour": "17:00",
@@ -86,11 +928,11 @@
     },
     {
       "hour": "19:00",
-      "events": 7
+      "events": 5
     },
     {
       "hour": "20:00",
-      "events": 2
+      "events": 6
     },
     {
       "hour": "21:00",
@@ -135,81 +977,81 @@
   "weekdayBreakdown": [
     {
       "day": "Mon",
-      "events": 19
+      "events": 32
     },
     {
       "day": "Tue",
-      "events": 28
+      "events": 26
     },
     {
       "day": "Wed",
-      "events": 18
+      "events": 19
     },
     {
       "day": "Thu",
-      "events": 22
+      "events": 30
     },
     {
       "day": "Fri",
-      "events": 21
+      "events": 28
     },
     {
       "day": "Sat",
-      "events": 7
+      "events": 3
     },
     {
       "day": "Sun",
-      "events": 5
+      "events": 7
     }
   ],
   "upcomingEvents": [
     {
-      "title": "Deep work",
-      "category": "Social",
-      "time": "2026-05-21T12:45:00.000Z",
-      "durationMinutes": 48
-    },
-    {
-      "title": "Deep work",
-      "category": "Personal",
-      "time": "2026-05-21T13:30:00.000Z",
-      "durationMinutes": 38
-    },
-    {
       "title": "Concert",
+      "category": "Personal",
+      "time": "2026-05-21T12:45:00.000Z",
+      "durationMinutes": 45
+    },
+    {
+      "title": "1:1 with manager",
+      "category": "Work",
+      "time": "2026-05-21T13:30:00.000Z",
+      "durationMinutes": 43
+    },
+    {
+      "title": "Tax appointment",
       "category": "Travel",
       "time": "2026-05-21T14:15:00.000Z",
-      "durationMinutes": 69
+      "durationMinutes": 22
     },
     {
-      "title": "Reading time",
-      "category": "Personal",
+      "title": "Deep work",
+      "category": "Travel",
       "time": "2026-05-21T15:00:00.000Z",
-      "durationMinutes": 73
+      "durationMinutes": 42
+    },
+    {
+      "title": "Sprint planning",
+      "category": "Work",
+      "time": "2026-05-21T15:45:00.000Z",
+      "durationMinutes": 61
+    },
+    {
+      "title": "Coffee with Ana",
+      "category": "Health",
+      "time": "2026-05-21T16:30:00.000Z",
+      "durationMinutes": 76
     },
     {
       "title": "Design review",
-      "category": "Health",
-      "time": "2026-05-21T15:45:00.000Z",
-      "durationMinutes": 70
-    },
-    {
-      "title": "Reading time",
-      "category": "Social",
-      "time": "2026-05-21T16:30:00.000Z",
-      "durationMinutes": 83
-    },
-    {
-      "title": "Run with Marco",
       "category": "Social",
       "time": "2026-05-21T17:15:00.000Z",
-      "durationMinutes": 37
+      "durationMinutes": 78
     },
     {
-      "title": "Standup",
-      "category": "Travel",
+      "title": "Doctor",
+      "category": "Work",
       "time": "2026-05-21T18:00:00.000Z",
-      "durationMinutes": 26
+      "durationMinutes": 34
     }
   ],
   "dailyEvents": [
@@ -219,39 +1061,39 @@
     },
     {
       "date": "2026-02-22",
-      "events": 0
-    },
-    {
-      "date": "2026-02-23",
-      "events": 6
-    },
-    {
-      "date": "2026-02-24",
-      "events": 12
-    },
-    {
-      "date": "2026-02-25",
-      "events": 10
-    },
-    {
-      "date": "2026-02-26",
-      "events": 12
-    },
-    {
-      "date": "2026-02-27",
       "events": 5
     },
     {
+      "date": "2026-02-23",
+      "events": 9
+    },
+    {
+      "date": "2026-02-24",
+      "events": 6
+    },
+    {
+      "date": "2026-02-25",
+      "events": 11
+    },
+    {
+      "date": "2026-02-26",
+      "events": 10
+    },
+    {
+      "date": "2026-02-27",
+      "events": 4
+    },
+    {
       "date": "2026-02-28",
-      "events": 3
+      "events": 5
     },
     {
       "date": "2026-03-01",
-      "events": 1
+      "events": 4
     },
     {
       "date": "2026-03-02",
-      "events": 8
+      "events": 10
     },
     {
       "date": "2026-03-03",
@@ -259,31 +1101,31 @@
     },
     {
       "date": "2026-03-04",
-      "events": 11
+      "events": 6
     },
     {
       "date": "2026-03-05",
-      "events": 7
+      "events": 10
     },
     {
       "date": "2026-03-06",
-      "events": 4
+      "events": 12
     },
     {
       "date": "2026-03-07",
-      "events": 1
+      "events": 5
     },
     {
       "date": "2026-03-08",
-      "events": 3
+      "events": 4
     },
     {
       "date": "2026-03-09",
-      "events": 8
+      "events": 9
     },
     {
       "date": "2026-03-10",
-      "events": 5
+      "events": 12
     },
     {
       "date": "2026-03-11",
@@ -291,35 +1133,35 @@
     },
     {
       "date": "2026-03-12",
-      "events": 12
+      "events": 7
     },
     {
       "date": "2026-03-13",
-      "events": 6
+      "events": 7
     },
     {
       "date": "2026-03-14",
-      "events": 3
-    },
-    {
-      "date": "2026-03-15",
-      "events": 0
-    },
-    {
-      "date": "2026-03-16",
-      "events": 5
-    },
-    {
-      "date": "2026-03-17",
-      "events": 9
-    },
-    {
-      "date": "2026-03-18",
       "events": 4
     },
     {
+      "date": "2026-03-15",
+      "events": 3
+    },
+    {
+      "date": "2026-03-16",
+      "events": 7
+    },
+    {
+      "date": "2026-03-17",
+      "events": 7
+    },
+    {
+      "date": "2026-03-18",
+      "events": 9
+    },
+    {
       "date": "2026-03-19",
-      "events": 12
+      "events": 5
     },
     {
       "date": "2026-03-20",
@@ -327,143 +1169,143 @@
     },
     {
       "date": "2026-03-21",
-      "events": 0
+      "events": 4
     },
     {
       "date": "2026-03-22",
-      "events": 1
+      "events": 2
     },
     {
       "date": "2026-03-23",
-      "events": 10
+      "events": 12
     },
     {
       "date": "2026-03-24",
-      "events": 9
+      "events": 7
     },
     {
       "date": "2026-03-25",
-      "events": 10
+      "events": 11
     },
     {
       "date": "2026-03-26",
-      "events": 4
+      "events": 5
     },
     {
       "date": "2026-03-27",
-      "events": 5
-    },
-    {
-      "date": "2026-03-28",
-      "events": 5
-    },
-    {
-      "date": "2026-03-29",
-      "events": 2
-    },
-    {
-      "date": "2026-03-30",
-      "events": 12
-    },
-    {
-      "date": "2026-03-31",
-      "events": 10
-    },
-    {
-      "date": "2026-04-01",
-      "events": 10
-    },
-    {
-      "date": "2026-04-02",
-      "events": 6
-    },
-    {
-      "date": "2026-04-03",
-      "events": 7
-    },
-    {
-      "date": "2026-04-04",
-      "events": 2
-    },
-    {
-      "date": "2026-04-05",
-      "events": 4
-    },
-    {
-      "date": "2026-04-06",
-      "events": 7
-    },
-    {
-      "date": "2026-04-07",
-      "events": 7
-    },
-    {
-      "date": "2026-04-08",
-      "events": 12
-    },
-    {
-      "date": "2026-04-09",
-      "events": 11
-    },
-    {
-      "date": "2026-04-10",
-      "events": 11
-    },
-    {
-      "date": "2026-04-11",
-      "events": 1
-    },
-    {
-      "date": "2026-04-12",
-      "events": 5
-    },
-    {
-      "date": "2026-04-13",
-      "events": 5
-    },
-    {
-      "date": "2026-04-14",
-      "events": 4
-    },
-    {
-      "date": "2026-04-15",
-      "events": 5
-    },
-    {
-      "date": "2026-04-16",
-      "events": 5
-    },
-    {
-      "date": "2026-04-17",
-      "events": 11
-    },
-    {
-      "date": "2026-04-18",
-      "events": 2
-    },
-    {
-      "date": "2026-04-19",
-      "events": 2
-    },
-    {
-      "date": "2026-04-20",
-      "events": 9
-    },
-    {
-      "date": "2026-04-21",
-      "events": 5
-    },
-    {
-      "date": "2026-04-22",
-      "events": 9
-    },
-    {
-      "date": "2026-04-23",
       "events": 8
     },
     {
-      "date": "2026-04-24",
+      "date": "2026-03-28",
+      "events": 3
+    },
+    {
+      "date": "2026-03-29",
+      "events": 1
+    },
+    {
+      "date": "2026-03-30",
+      "events": 9
+    },
+    {
+      "date": "2026-03-31",
+      "events": 11
+    },
+    {
+      "date": "2026-04-01",
+      "events": 9
+    },
+    {
+      "date": "2026-04-02",
+      "events": 12
+    },
+    {
+      "date": "2026-04-03",
+      "events": 8
+    },
+    {
+      "date": "2026-04-04",
+      "events": 3
+    },
+    {
+      "date": "2026-04-05",
+      "events": 3
+    },
+    {
+      "date": "2026-04-06",
+      "events": 4
+    },
+    {
+      "date": "2026-04-07",
       "events": 5
+    },
+    {
+      "date": "2026-04-08",
+      "events": 8
+    },
+    {
+      "date": "2026-04-09",
+      "events": 6
+    },
+    {
+      "date": "2026-04-10",
+      "events": 7
+    },
+    {
+      "date": "2026-04-11",
+      "events": 2
+    },
+    {
+      "date": "2026-04-12",
+      "events": 3
+    },
+    {
+      "date": "2026-04-13",
+      "events": 4
+    },
+    {
+      "date": "2026-04-14",
+      "events": 7
+    },
+    {
+      "date": "2026-04-15",
+      "events": 9
+    },
+    {
+      "date": "2026-04-16",
+      "events": 12
+    },
+    {
+      "date": "2026-04-17",
+      "events": 7
+    },
+    {
+      "date": "2026-04-18",
+      "events": 0
+    },
+    {
+      "date": "2026-04-19",
+      "events": 0
+    },
+    {
+      "date": "2026-04-20",
+      "events": 4
+    },
+    {
+      "date": "2026-04-21",
+      "events": 8
+    },
+    {
+      "date": "2026-04-22",
+      "events": 12
+    },
+    {
+      "date": "2026-04-23",
+      "events": 11
+    },
+    {
+      "date": "2026-04-24",
+      "events": 11
     },
     {
       "date": "2026-04-25",
@@ -471,23 +1313,23 @@
     },
     {
       "date": "2026-04-26",
-      "events": 3
+      "events": 5
     },
     {
       "date": "2026-04-27",
-      "events": 10
+      "events": 7
     },
     {
       "date": "2026-04-28",
-      "events": 12
+      "events": 8
     },
     {
       "date": "2026-04-29",
-      "events": 11
+      "events": 8
     },
     {
       "date": "2026-04-30",
-      "events": 10
+      "events": 7
     },
     {
       "date": "2026-05-01",
@@ -507,31 +1349,31 @@
     },
     {
       "date": "2026-05-05",
-      "events": 9
+      "events": 8
     },
     {
       "date": "2026-05-06",
-      "events": 12
+      "events": 7
     },
     {
       "date": "2026-05-07",
-      "events": 9
+      "events": 4
     },
     {
       "date": "2026-05-08",
-      "events": 5
+      "events": 11
     },
     {
       "date": "2026-05-09",
-      "events": 4
+      "events": 2
     },
     {
       "date": "2026-05-10",
-      "events": 4
+      "events": 0
     },
     {
       "date": "2026-05-11",
-      "events": 5
+      "events": 10
     },
     {
       "date": "2026-05-12",
@@ -539,881 +1381,39 @@
     },
     {
       "date": "2026-05-13",
-      "events": 11
+      "events": 9
     },
     {
       "date": "2026-05-14",
-      "events": 9
+      "events": 8
     },
     {
       "date": "2026-05-15",
-      "events": 7
+      "events": 12
     },
     {
       "date": "2026-05-16",
-      "events": 1
+      "events": 4
     },
     {
       "date": "2026-05-17",
-      "events": 0
+      "events": 3
     },
     {
       "date": "2026-05-18",
-      "events": 7
+      "events": 8
     },
     {
       "date": "2026-05-19",
-      "events": 11
+      "events": 4
     },
     {
       "date": "2026-05-20",
-      "events": 9
+      "events": 6
     },
     {
       "date": "2026-05-21",
-      "events": 4
-    }
-  ],
-  "weekGrid": [
-    {
-      "day": 0,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 7,
-      "intensity": 0.21
-    },
-    {
-      "day": 0,
-      "hour": 8,
-      "intensity": 0.43
-    },
-    {
-      "day": 0,
-      "hour": 9,
-      "intensity": 0.76
-    },
-    {
-      "day": 0,
-      "hour": 10,
-      "intensity": 0.88
-    },
-    {
-      "day": 0,
-      "hour": 11,
-      "intensity": 0.76
-    },
-    {
-      "day": 0,
-      "hour": 12,
-      "intensity": 0.87
-    },
-    {
-      "day": 0,
-      "hour": 13,
-      "intensity": 0.48
-    },
-    {
-      "day": 0,
-      "hour": 14,
-      "intensity": 0.67
-    },
-    {
-      "day": 0,
-      "hour": 15,
-      "intensity": 0.79
-    },
-    {
-      "day": 0,
-      "hour": 16,
-      "intensity": 0.73
-    },
-    {
-      "day": 0,
-      "hour": 17,
-      "intensity": 0.74
-    },
-    {
-      "day": 0,
-      "hour": 18,
-      "intensity": 0.74
-    },
-    {
-      "day": 0,
-      "hour": 19,
-      "intensity": 0.35
-    },
-    {
-      "day": 0,
-      "hour": 20,
-      "intensity": 0.3
-    },
-    {
-      "day": 0,
-      "hour": 21,
-      "intensity": 0.16
-    },
-    {
-      "day": 0,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 0,
-      "hour": 23,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 7,
-      "intensity": 0.13
-    },
-    {
-      "day": 1,
-      "hour": 8,
-      "intensity": 0.41
-    },
-    {
-      "day": 1,
-      "hour": 9,
-      "intensity": 0.85
-    },
-    {
-      "day": 1,
-      "hour": 10,
-      "intensity": 0.73
-    },
-    {
-      "day": 1,
-      "hour": 11,
-      "intensity": 0.84
-    },
-    {
-      "day": 1,
-      "hour": 12,
-      "intensity": 0.95
-    },
-    {
-      "day": 1,
-      "hour": 13,
-      "intensity": 0.33
-    },
-    {
-      "day": 1,
-      "hour": 14,
-      "intensity": 0.77
-    },
-    {
-      "day": 1,
-      "hour": 15,
-      "intensity": 0.7
-    },
-    {
-      "day": 1,
-      "hour": 16,
-      "intensity": 0.84
-    },
-    {
-      "day": 1,
-      "hour": 17,
-      "intensity": 0.87
-    },
-    {
-      "day": 1,
-      "hour": 18,
-      "intensity": 0.68
-    },
-    {
-      "day": 1,
-      "hour": 19,
-      "intensity": 0.3
-    },
-    {
-      "day": 1,
-      "hour": 20,
-      "intensity": 0.24
-    },
-    {
-      "day": 1,
-      "hour": 21,
-      "intensity": 0.23
-    },
-    {
-      "day": 1,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 1,
-      "hour": 23,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 7,
-      "intensity": 0.22
-    },
-    {
-      "day": 2,
-      "hour": 8,
-      "intensity": 0.34
-    },
-    {
-      "day": 2,
-      "hour": 9,
-      "intensity": 0.67
-    },
-    {
-      "day": 2,
-      "hour": 10,
-      "intensity": 0.73
-    },
-    {
-      "day": 2,
-      "hour": 11,
-      "intensity": 0.9
-    },
-    {
-      "day": 2,
-      "hour": 12,
-      "intensity": 0.92
-    },
-    {
-      "day": 2,
-      "hour": 13,
-      "intensity": 0.33
-    },
-    {
-      "day": 2,
-      "hour": 14,
-      "intensity": 0.71
-    },
-    {
-      "day": 2,
-      "hour": 15,
-      "intensity": 0.82
-    },
-    {
-      "day": 2,
-      "hour": 16,
-      "intensity": 0.77
-    },
-    {
-      "day": 2,
-      "hour": 17,
-      "intensity": 0.84
-    },
-    {
-      "day": 2,
-      "hour": 18,
-      "intensity": 0.65
-    },
-    {
-      "day": 2,
-      "hour": 19,
-      "intensity": 0.25
-    },
-    {
-      "day": 2,
-      "hour": 20,
-      "intensity": 0.23
-    },
-    {
-      "day": 2,
-      "hour": 21,
-      "intensity": 0.22
-    },
-    {
-      "day": 2,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 2,
-      "hour": 23,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 7,
-      "intensity": 0.11
-    },
-    {
-      "day": 3,
-      "hour": 8,
-      "intensity": 0.47
-    },
-    {
-      "day": 3,
-      "hour": 9,
-      "intensity": 0.8
-    },
-    {
-      "day": 3,
-      "hour": 10,
-      "intensity": 0.75
-    },
-    {
-      "day": 3,
-      "hour": 11,
-      "intensity": 0.69
-    },
-    {
-      "day": 3,
-      "hour": 12,
-      "intensity": 0.89
-    },
-    {
-      "day": 3,
-      "hour": 13,
-      "intensity": 0.36
-    },
-    {
-      "day": 3,
-      "hour": 14,
-      "intensity": 0.84
-    },
-    {
-      "day": 3,
-      "hour": 15,
-      "intensity": 0.88
-    },
-    {
-      "day": 3,
-      "hour": 16,
-      "intensity": 0.85
-    },
-    {
-      "day": 3,
-      "hour": 17,
-      "intensity": 0.93
-    },
-    {
-      "day": 3,
-      "hour": 18,
-      "intensity": 0.9
-    },
-    {
-      "day": 3,
-      "hour": 19,
-      "intensity": 0.28
-    },
-    {
-      "day": 3,
-      "hour": 20,
-      "intensity": 0.29
-    },
-    {
-      "day": 3,
-      "hour": 21,
-      "intensity": 0.12
-    },
-    {
-      "day": 3,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 3,
-      "hour": 23,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 7,
-      "intensity": 0.24
-    },
-    {
-      "day": 4,
-      "hour": 8,
-      "intensity": 0.33
-    },
-    {
-      "day": 4,
-      "hour": 9,
-      "intensity": 0.68
-    },
-    {
-      "day": 4,
-      "hour": 10,
-      "intensity": 0.85
-    },
-    {
-      "day": 4,
-      "hour": 11,
-      "intensity": 0.93
-    },
-    {
-      "day": 4,
-      "hour": 12,
-      "intensity": 0.77
-    },
-    {
-      "day": 4,
-      "hour": 13,
-      "intensity": 0.26
-    },
-    {
-      "day": 4,
-      "hour": 14,
-      "intensity": 0.81
-    },
-    {
-      "day": 4,
-      "hour": 15,
-      "intensity": 0.68
-    },
-    {
-      "day": 4,
-      "hour": 16,
-      "intensity": 0.79
-    },
-    {
-      "day": 4,
-      "hour": 17,
-      "intensity": 0.8
-    },
-    {
-      "day": 4,
-      "hour": 18,
-      "intensity": 0.85
-    },
-    {
-      "day": 4,
-      "hour": 19,
-      "intensity": 0.19
-    },
-    {
-      "day": 4,
-      "hour": 20,
-      "intensity": 0.31
-    },
-    {
-      "day": 4,
-      "hour": 21,
-      "intensity": 0.25
-    },
-    {
-      "day": 4,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 4,
-      "hour": 23,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 7,
-      "intensity": 0.13
-    },
-    {
-      "day": 5,
-      "hour": 8,
-      "intensity": 0.18
-    },
-    {
-      "day": 5,
-      "hour": 9,
-      "intensity": 0.08
-    },
-    {
-      "day": 5,
-      "hour": 10,
-      "intensity": 0.36
-    },
-    {
-      "day": 5,
-      "hour": 11,
-      "intensity": 0.23
-    },
-    {
-      "day": 5,
-      "hour": 12,
-      "intensity": 0.32
-    },
-    {
-      "day": 5,
-      "hour": 13,
-      "intensity": 0.28
-    },
-    {
-      "day": 5,
-      "hour": 14,
-      "intensity": 0.34
-    },
-    {
-      "day": 5,
-      "hour": 15,
-      "intensity": 0.38
-    },
-    {
-      "day": 5,
-      "hour": 16,
-      "intensity": 0.34
-    },
-    {
-      "day": 5,
-      "hour": 17,
-      "intensity": 0.23
-    },
-    {
-      "day": 5,
-      "hour": 18,
-      "intensity": 0.21
-    },
-    {
-      "day": 5,
-      "hour": 19,
-      "intensity": 0.13
-    },
-    {
-      "day": 5,
-      "hour": 20,
-      "intensity": 0.14
-    },
-    {
-      "day": 5,
-      "hour": 21,
-      "intensity": 0.1
-    },
-    {
-      "day": 5,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 5,
-      "hour": 23,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 0,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 1,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 2,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 3,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 4,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 5,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 6,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 7,
-      "intensity": 0.11
-    },
-    {
-      "day": 6,
-      "hour": 8,
-      "intensity": 0.1
-    },
-    {
-      "day": 6,
-      "hour": 9,
-      "intensity": 0.15
-    },
-    {
-      "day": 6,
-      "hour": 10,
-      "intensity": 0.15
-    },
-    {
-      "day": 6,
-      "hour": 11,
-      "intensity": 0.15
-    },
-    {
-      "day": 6,
-      "hour": 12,
-      "intensity": 0.21
-    },
-    {
-      "day": 6,
-      "hour": 13,
-      "intensity": 0.26
-    },
-    {
-      "day": 6,
-      "hour": 14,
-      "intensity": 0.27
-    },
-    {
-      "day": 6,
-      "hour": 15,
-      "intensity": 0.19
-    },
-    {
-      "day": 6,
-      "hour": 16,
-      "intensity": 0.28
-    },
-    {
-      "day": 6,
-      "hour": 17,
-      "intensity": 0.32
-    },
-    {
-      "day": 6,
-      "hour": 18,
-      "intensity": 0.31
-    },
-    {
-      "day": 6,
-      "hour": 19,
-      "intensity": 0.14
-    },
-    {
-      "day": 6,
-      "hour": 20,
-      "intensity": 0.08
-    },
-    {
-      "day": 6,
-      "hour": 21,
-      "intensity": 0.13
-    },
-    {
-      "day": 6,
-      "hour": 22,
-      "intensity": 0
-    },
-    {
-      "day": 6,
-      "hour": 23,
-      "intensity": 0
+      "events": 6
     }
   ]
 }
