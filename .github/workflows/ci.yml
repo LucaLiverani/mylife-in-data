@@ -109,6 +109,11 @@ jobs:
     services:
       clickhouse:
         image: clickhouse/clickhouse-server:24.8-alpine # same pin as prod
+        env:
+          # The image's passwordless `default` user refuses remote connections
+          # (the published port counts as remote); mint an explicit CI user.
+          CLICKHOUSE_USER: ci
+          CLICKHOUSE_PASSWORD: ci
         ports:
           - 8123:8123
     steps:
@@ -125,10 +130,10 @@ jobs:
 
       # Twice on purpose: proves every DDL file stays CREATE-only/idempotent.
       - name: Apply DDL (first pass)
-        run: CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh
+        run: CLICKHOUSE_DDL_HOST=localhost CLICKHOUSE_USER=ci CLICKHOUSE_PASSWORD=ci bash warehouse/ddl/apply.sh
 
       - name: Apply DDL (second pass, must also succeed)
-        run: CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh
+        run: CLICKHOUSE_DDL_HOST=localhost CLICKHOUSE_USER=ci CLICKHOUSE_PASSWORD=ci bash warehouse/ddl/apply.sh
 
   # Explicit deployable marker the deploy tooling gates on. A classic commit
   # status (not a check run): raw check-runs queries pass vacuously in the

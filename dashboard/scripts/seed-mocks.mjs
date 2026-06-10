@@ -7,6 +7,12 @@
  *
  * Shapes match the Cloudflare Functions response — keep in sync when adding endpoints.
  */
+// Pin the timezone BEFORE any Date math: parts of the generator use
+// local-time methods, so without this the output differs between machines
+// (laptop vs the UTC CI runner) and the CI mock-drift gate flags phantom
+// changes. Node picks up process.env.TZ at runtime.
+process.env.TZ = 'UTC';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
