@@ -61,3 +61,6 @@ private/
 TODO.md
 TODO_*.md
 MAPS_HANDOFF.md
+
+# Deploy state (VM-side, written by infrastructure/deploy.sh on success)
+.last_deploy_rev

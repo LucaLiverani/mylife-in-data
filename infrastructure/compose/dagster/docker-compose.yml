@@ -71,6 +71,12 @@ services:
       DAGSTER_SCHEDULES_ENABLED: ${DAGSTER_SCHEDULES_ENABLED:-0}
     volumes:
       - dagster-home:/opt/dagster/dagster_home
+      # Bind-mount instance/workspace config over the image-baked copies: the
+      # dagster-home named volume only seeds from the image on first creation,
+      # so without these mounts a dagster.yaml change never reaches a running
+      # deployment (rebuilds don't refresh named volumes).
+      - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml:ro
+      - ./workspace.yaml:/opt/dagster/workspace.yaml:ro
       - ../../..:/opt/dagster/repo:ro
       - ../../../tokens:/opt/dagster/tokens:ro
       # dbt needs to write target/ and logs/ inside the project; RW required.
@@ -94,6 +100,8 @@ services:
     environment: *dagster-env
     volumes:
       - dagster-home:/opt/dagster/dagster_home
+      - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml:ro
+      - ./workspace.yaml:/opt/dagster/workspace.yaml:ro
       - ../../..:/opt/dagster/repo:ro
       - ../../../tokens:/opt/dagster/tokens:ro
       # dbt needs to write target/ and logs/ inside the project; RW required.

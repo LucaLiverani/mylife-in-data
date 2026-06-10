@@ -32,7 +32,8 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   `archive/warehouse/dt=*`; restore via `scripts/restore_warehouse_from_r2.py`),
   **not** a conveyor in the live pipeline.
 - **Orchestration**: Dagster runs producers, sensors, the daily Data Portability ingest,
-  and `dbt build` via `dagster-dbt` (~09:00 UTC). **dbt does not run during deploy.**
+  and `dbt build` via `dagster-dbt` (~09:00 UTC daily safety net). Deploys that touch
+  `transformations/` or `warehouse/ddl/` also launch `dbt_build_job` right away.
 - **Dashboard**: Cloudflare Pages (static React) + Pages Functions (`dashboard/functions/api/**`)
   query gold over a Cloudflare Tunnel. **Every `/api/*` endpoint falls back to
   `dashboard/public/mocks/*.json`** when the warehouse is down, that's why the UI runs
@@ -68,11 +69,14 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   screenshot as blank otherwise). Test mobile at 390px width; `scrollWidth > clientWidth`
   on `documentElement` means a horizontal-overflow regression.
 - **The laptop has no dbt/dagster CLIs.** `uv run dbt|dagster` fails by design: transforms
-  and orchestration only run inside the Dagster container (local stack or VM). dbt views
-  rebuild at the ~09:00 UTC Dagster build, **not** on deploy, so a changed gold model goes
-  live on the warehouse only at the next build.
-- Gotcha: `deploy.sh` git-pulls itself, so a change to *deploy.sh's own logic* only takes
-  effect on the next deploy.
+  and orchestration only run inside the Dagster container (local stack or VM). Deploys
+  touching `transformations/` or `warehouse/ddl/` trigger `dbt_build_job` on the VM, so
+  deployed models go live within minutes; the ~09:00 UTC build remains the daily net.
+- `deploy.sh` re-execs its freshly pulled copy and validates (`dbt parse` +
+  `dagster definitions validate` in a throwaway container) before recreating
+  anything; on failure it rolls the VM worktree back. A failed deploy is retried
+  by just re-running it (`.last_deploy_rev` tracks the last good rev). Design:
+  `docs/DEPLOY.md`.
 
 ## Conventions
 

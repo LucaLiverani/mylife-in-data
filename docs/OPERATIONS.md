@@ -161,15 +161,21 @@ make deploy-vm
 ```
 
 Runs `git push origin dev` then `ssh <VM> 'cd ~/mylife-in-data && ./infrastructure/deploy.sh'`.
-`deploy.sh` pulls, reapplies DDL (idempotent), and recreates only the compose
-services whose backing files actually changed. Pure docs/scripts/dashboard
-edits don't touch any container.
+`deploy.sh` (full design: `docs/DEPLOY.md`) refuses a dirty worktree, pulls and
+re-execs its freshly pulled self, validates the new commit in a throwaway
+container (`dbt parse` + `dagster definitions validate`) BEFORE touching
+anything, reapplies DDL (idempotent), recreates only the compose services
+whose backing files actually changed, and rebuilds the Dagster image only when
+the dependency surface changed (the code is bind-mounted).
 
-> **dbt is NOT rebuilt by `deploy.sh`.** It applies DDL and reloads the Dagster
-> code, but the silver/gold *views* only refresh on the 09:00 UTC
-> `dbt_build_schedule` or a manual rebuild. After changing a dbt model, rebuild
-> on the VM right away — Dagster UI → Materialize `mylife_dbt_assets`, or
-> `ssh <VM> 'docker exec dagster-webserver bash -lc "cd /opt/dagster/repo/transformations && DBT_TARGET_PATH=/tmp/t DBT_LOG_PATH=/tmp/dbt-logs dbt run --profiles-dir ."'` — **after** the pull lands, or the live views silently lag the deployed code. Run the rebuild only once the VM repo is at the new commit (a rebuild against a not-yet-pulled repo builds the old models). Both `DBT_*_PATH` vars redirect dbt's `target/` and `logs/` to writable `/tmp`: the repo is bind-mounted read-only into the container, so without `DBT_LOG_PATH` dbt aborts trying to write `logs/dbt.log`.
+dbt: when `transformations/` or `warehouse/ddl/` changed, `deploy.sh` launches
+`dbt_build_job` automatically, so deployed models are live within minutes. The
+09:00 UTC `dbt_build_schedule` remains the daily safety net. Manual fallback:
+Dagster UI → Materialize `mylife_dbt_assets`.
+
+A mid-deploy failure is retried by simply re-running `make deploy-vm`:
+`.last_deploy_rev` (VM-side, gitignored) records the last successful deploy
+and is the default diff base, so the failed range is re-deployed in full.
 
 `VM_SSH` / `VM_REPO_PATH` come from `infrastructure/.env` (gitignored — see
 `ACCESS.md` for real values). `VM_SSH` is anything `ssh` can resolve: a
