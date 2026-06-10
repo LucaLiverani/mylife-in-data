@@ -160,7 +160,10 @@ auto-ticks anything; the VM does it all.
 make deploy-vm
 ```
 
-Runs `git push origin dev` then `ssh <VM> 'cd ~/mylife-in-data && ./infrastructure/deploy.sh'`.
+Runs `git push origin dev`, waits for the `ci/deployable` commit status
+(`SKIP_CI=1` to skip), fast-forwards `main` to the same SHA (the VM deploys
+`main`; branch protection requires the CI checks, which already passed), then
+`ssh <VM> 'cd ~/mylife-in-data && ./infrastructure/deploy.sh'`.
 `deploy.sh` (full design: `docs/DEPLOY.md`) refuses a dirty worktree, pulls and
 re-execs its freshly pulled self, validates the new commit in a throwaway
 container (`dbt parse` + `dagster definitions validate`) BEFORE touching

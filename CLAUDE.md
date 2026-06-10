@@ -53,10 +53,14 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 
 ## Workflow
 
-- **Branch**: work on `dev`; merge to `main` only when clean; never commit directly to `main`.
-- **Deploy backend (VM)**: `make deploy-vm` (pushes `dev`, then runs `infrastructure/deploy.sh`
-  on the VM: git pull → apply DDL → prune orphaned views → selective container rebuild).
-  Then validate: `dagster definitions validate -f orchestration/dagster/definitions.py`.
+- **Branch**: work on `dev`; never commit directly to `main`. The VM deploys `main`;
+  `make deploy-vm` promotes dev→main (fast-forward push) only after CI is green, so
+  "merged to main" and "deployable" are the same thing. `main` has required checks
+  (`backend-validate`, `dashboard-smoke`, `ddl-idempotency` from `.github/workflows/ci.yml`).
+- **Deploy backend (VM)**: `make deploy-vm` (pushes `dev`, waits for the `ci/deployable`
+  status, ff-pushes `main`, then runs `infrastructure/deploy.sh` on the VM: validation
+  gate → apply DDL → prune orphaned views → selective container recreate → dbt build
+  trigger → health checks). `SKIP_CI=1` skips the gate. Design: `docs/DEPLOY.md`.
 - **Deploy dashboard**: `cd dashboard && ./scripts/deploy-to-pages.sh` (from the laptop).
 - **Local stack**: `cd infrastructure && ./start-all.sh` / `./stop-all.sh` (each walks every
   compose stack: redpanda, clickhouse, dagster, monitoring, umami).

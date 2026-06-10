@@ -33,7 +33,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_DIR="$SCRIPT_DIR/compose"
 STATE_FILE="$REPO_ROOT/.last_deploy_rev"
-DEPLOY_BRANCH="${DEPLOY_BRANCH:-dev}"
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 cd "$REPO_ROOT"
 
 # ── Dirty-worktree guard ──────────────────────────────────────────────────
