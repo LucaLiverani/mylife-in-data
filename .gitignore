@@ -60,6 +60,7 @@ private/
 # Scratch / TODO files for next-day sessions — never committed.
 TODO.md
 TODO_*.md
+STATUS.md
 MAPS_HANDOFF.md
 
 # Deploy state (VM-side, written by infrastructure/deploy.sh on success)
