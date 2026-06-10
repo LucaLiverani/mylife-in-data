@@ -135,6 +135,68 @@ jobs:
       - name: Apply DDL (second pass, must also succeed)
         run: CLICKHOUSE_DDL_HOST=localhost CLICKHOUSE_USER=ci CLICKHOUSE_PASSWORD=ci bash warehouse/ddl/apply.sh
 
+  # Ships the dashboard on push to main once every gate passed, so one
+  # promotion deploys BOTH halves (the backend deploy is the VM's pull).
+  # The only secrets in the system: a Pages-scoped Cloudflare API token +
+  # account id — neither can reach the VM. Manual/emergency fallback:
+  # dashboard/scripts/deploy-to-pages.sh.
+  deploy-dashboard:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend-validate, dashboard-smoke, ddl-idempotency]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # the pushed range can span many commits (ff from dev)
+
+      # Deploy only when dashboard/ changed anywhere in the pushed range
+      # (github.event.before..sha), not just the head commit.
+      - name: Detect dashboard changes
+        id: changed
+        working-directory: .
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "changed=true" >> "$GITHUB_OUTPUT" # unknown base: deploy to be safe
+          elif git diff --quiet "$BEFORE" "${{ github.sha }}" -- dashboard/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "dashboard/ untouched in this push — skipping deploy."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        if: steps.changed.outputs.changed == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: npm ci
+        if: steps.changed.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Build
+        if: steps.changed.outputs.changed == 'true'
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages (production)
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy dist --branch=main --commit-hash="${{ github.sha }}"
+
+      # Informational only: X-Data-Source live = warehouse reachable, cache =
+      # serving mocks (tunnel/CH issue, not a deploy failure).
+      - name: Post-deploy probe
+        if: steps.changed.outputs.changed == 'true'
+        run: curl -sI https://mylife-in-data.com/api/system/health | grep -i 'x-data-source' || true
+
   # Explicit deployable marker the deploy tooling gates on. A classic commit
   # status (not a check run): raw check-runs queries pass vacuously in the
   # seconds after a push, before any runs are created; this status exists only
