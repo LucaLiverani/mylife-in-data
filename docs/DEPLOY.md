@@ -165,21 +165,26 @@ headroom.
 
 ## Migration checklist
 
-- [ ] Step 1: pin wrangler exactly, harden `deploy-to-pages.sh` (`npm ci`,
+- [x] Step 1: pin wrangler exactly, harden `deploy-to-pages.sh` (`npm ci`,
       clean-tree check, `--secrets` flag, `--preview` mode), fix OPERATIONS.md.
-- [ ] Step 2: harden `infrastructure/deploy.sh` (state file, re-exec,
+- [x] Step 2: harden `infrastructure/deploy.sh` (state file, re-exec,
       validation gate, rebuild split, dbt trigger, health checks) +
       `dagster.yaml` bind-mount.
-- [ ] Step 3: `.github/workflows/ci.yml` (backend-validate, dashboard-smoke,
+- [x] Step 3: `.github/workflows/ci.yml` (backend-validate, dashboard-smoke,
       ddl-idempotency, `ci/deployable` status) + `dashboard/scripts/smoke.mjs`;
-      iterate to green.
-- [ ] Step 4: flip deploys to `main` (deploy.sh + Makefile gate + ff-push),
-      branch protection requiring the three checks.
-- [ ] Step 5: dev dbt target + `dbt_dev` user + `dev_silver`/`dev_gold` DDL +
-      `make dbt-dev` / `dev-clean` / `dev-hydrate`.
-- [ ] Step 6: Pages CD job (needs `CLOUDFLARE_API_TOKEN` /
-      `CLOUDFLARE_ACCOUNT_ID` repo secrets).
-- [ ] VM execution: deploy, bootstrap `dbt_dev`, verify gate + dbt trigger +
+      green on dev and main.
+- [x] Step 4: flip deploys to `main` (deploy.sh + Makefile gate + ff-push),
+      branch protection requiring the three checks (live, verified by the
+      first protected ff-push).
+- [x] Step 5: dev dbt target + `dbt_dev` user + `dev_silver`/`dev_gold` DDL +
+      `make dbt-dev` / `dev-clean` / `dev-hydrate`. Verified against the local
+      stack: full dev build as `dbt_dev`, prod writes and `auth.*` reads
+      ACCESS_DENIED.
+- [x] Step 6: Pages CD job (warn-skips until `CLOUDFLARE_API_TOKEN` /
+      `CLOUDFLARE_ACCOUNT_ID` repo secrets exist).
+- [ ] Add the two Cloudflare repo secrets so Pages CD goes live.
+- [ ] VM execution: deploy, bootstrap `dbt_dev` (password generated on the VM,
+      `CLICKHOUSE_DBT_DEV_*` in the VM's `.env`), verify gate + dbt trigger +
       bind-mount + dev builds end to end.
 - [ ] Watch the first post-rename 09:00 UTC build land unprefixed (mandatory).
 
