@@ -225,6 +225,50 @@ once per host — Spotify issues independent refresh tokens per grant).
 | Spotify (VM)   | `ssh <VM> 'cd ~/mylife-in-data && .venv/bin/python ingestion/spotify/authenticate_local.py'` — one-time browser auth; refresh tokens last ~60 days. Run `uv sync` first if `.venv` doesn't exist yet (e.g., right after a fresh bootstrap or before the host venv was added to the provisioning flow). |
 | Spotify (laptop) | Same script on the laptop. Cache files don't sync. |
 
+### Dev environment (two tiers)
+
+Full design + rationale: `docs/DEPLOY.md`. The short version:
+
+**Tier 1 — new models / gold / dashboard pages** (the common case). Build into
+the dev sandbox on the production warehouse: `dbt build --target dev` lands
+every view in `dev_silver` / `dev_gold` (the `generate_schema_name` macro
+prefixes non-prod targets) while `source()` keeps resolving to the real
+`bronze`, so dev reads the already-ingested data with zero copying:
+
+```bash
+make dbt-dev                          # full dev build on the VM
+make dbt-dev SELECT='gold_maps_kpis_dashboard+'   # narrow it
+make dev-clean                        # drop + recreate dev_silver/dev_gold
+```
+
+Safety: the `dbt_dev` ClickHouse user (created once per warehouse by
+`warehouse/ddl/bootstrap_dev_user.sh`, password in `infrastructure/.env` as
+`CLICKHOUSE_DBT_DEV_PASSWORD`) has SELECT on the prod layers and full control
+only inside `dev_*`, nothing on `auth.*`. A wrong-target run cannot touch prod.
+Note it can still *read* everything; it is a write-safety boundary, not a
+confidentiality one.
+
+**Tier 2 — new ingestion sources.** Use the laptop stack (identical compose,
+inert via `DAGSTER_SCHEDULES_ENABLED=0` / `MYLIFE_TOKEN_WRITER=0`), hydrated
+from the nightly R2 Parquet snapshot with only R2 keys (no provider OAuth):
+
+```bash
+cd infrastructure && ./start-all.sh && cd ..
+make dev-hydrate    # DDL → restore bronze + silver state → dbt build
+```
+
+Provider auth when actually exercising APIs: `make pull-tokens` for Google
+(read-only borrow over the tunnel), `authenticate_local.py` for Spotify
+(per-host grant; give a long-running dev poller its own Spotify app). Never
+run the calendar watch assets outside prod: channel registrations point at the
+production webhook and would fight over sync tokens.
+
+**Dashboard previews**: `cd dashboard && ./scripts/deploy-to-pages.sh --preview`
+deploys to the Pages preview environment (stable `dev.<project>.pages.dev`
+alias). Preview has no ClickHouse vars, so it serves the deterministic mocks;
+do not add real warehouse vars to preview without putting Cloudflare Access in
+front of preview URLs first.
+
 ---
 
 ## VM operations

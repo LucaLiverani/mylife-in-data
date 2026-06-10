@@ -139,10 +139,10 @@ fi
 # validate` exits 0 with a broken dbt model (the import-time bootstrap in
 # orchestration/dagster/assets/dbt.py swallows the parse failure and silently
 # drops all dbt assets). transformations/ is mounted RW on purpose so the
-# parse refreshes the real manifest the recreated containers will load.
-[ -f "$REPO_ROOT/transformations/profiles.yml" ] \
-    || cp "$REPO_ROOT/transformations/profiles.yml.example" "$REPO_ROOT/transformations/profiles.yml"
-
+# parse refreshes the real manifest the recreated containers will load. The
+# profiles.yml refresh happens INSIDE the container: the long-lived copy is
+# root-owned on the host (written through the RW bind mount), so a host-side
+# cp would fail for the unprivileged deploy user.
 echo "→ Validation gate (dbt parse + dagster definitions validate)..."
 if ! docker run --rm --network none \
     -v "$REPO_ROOT":/opt/dagster/repo:ro \
@@ -152,6 +152,9 @@ if ! docker run --rm --network none \
     -w /opt/dagster/repo \
     mylife-dagster:latest \
     bash -c 'mkdir -p /tmp/dagster_home \
+        && cd /opt/dagster/transformations \
+        && if [ ! -f profiles.yml ] || [ profiles.yml.example -nt profiles.yml ]; then cp profiles.yml.example profiles.yml; fi \
+        && cd /opt/dagster/repo \
         && dbt parse --project-dir /opt/dagster/transformations --profiles-dir /opt/dagster/transformations \
         && dagster definitions validate -f orchestration/dagster/definitions.py'
 then

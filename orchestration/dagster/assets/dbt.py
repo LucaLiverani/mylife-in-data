@@ -40,13 +40,24 @@ MANIFEST_PATH = DBT_PROJECT_DIR / "target" / "manifest.json"
 
 
 def _ensure_profiles_yml() -> None:
-    """Copy profiles.yml.example → profiles.yml if missing."""
-    if PROFILES_YML.exists():
-        return
+    """Copy profiles.yml.example → profiles.yml if missing OR stale.
+
+    profiles.yml is generated (fully env_var() interpolated, no secrets), so
+    the committed example is the source of truth: refresh whenever the example
+    is newer, or a profiles change (e.g. a new target) shipped by git pull
+    would never reach the long-lived copy.
+    """
     if not PROFILES_EXAMPLE.exists():
+        if PROFILES_YML.exists():
+            return
         raise RuntimeError(
             f"Neither {PROFILES_YML} nor {PROFILES_EXAMPLE} exists — dbt cannot run."
         )
+    if (
+        PROFILES_YML.exists()
+        and PROFILES_YML.stat().st_mtime >= PROFILES_EXAMPLE.stat().st_mtime
+    ):
+        return
     shutil.copy(PROFILES_EXAMPLE, PROFILES_YML)
 
 

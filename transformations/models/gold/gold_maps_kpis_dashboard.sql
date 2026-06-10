@@ -74,5 +74,5 @@ SELECT
     ))                                                                            AS new_places_this_year,
     -- Inferred home base (for the dashboard's home-base strip). Read through
     -- this gold view so the Worker never SELECTs silver directly.
-    coalesce((SELECT home_locality FROM silver.silver_home_base LIMIT 1), '')      AS home_locality,
-    coalesce((SELECT home_country  FROM silver.silver_home_base LIMIT 1), '')      AS home_country
+    coalesce((SELECT home_locality FROM {{ ref('silver_home_base') }} LIMIT 1), '') AS home_locality,
+    coalesce((SELECT home_country  FROM {{ ref('silver_home_base') }} LIMIT 1), '') AS home_country

@@ -1,17 +1,38 @@
-# Copy this to ~/.dbt/profiles.yml or to transformations/profiles.yml.
-# Auto-mode generates a real profiles.yml at first dbt run by substituting
-# env values from infrastructure/.env. Keep this example committed.
+# Copied to transformations/profiles.yml automatically (the dbt bootstrap in
+# orchestration/dagster/assets/dbt.py refreshes the copy whenever this example
+# is newer). All values are env_var() interpolated; keep this example
+# committed and secret-free.
+#
+# Targets:
+#   prod — what Dagster runs; models land in the real silver/gold databases.
+#   dev  — same warehouse, same bronze sources, but generate_schema_name
+#          prefixes the layer databases (dev_silver/dev_gold), and the scoped
+#          dbt_dev user (warehouse/ddl/bootstrap_dev_user.sh) cannot write
+#          outside dev_*. Run via: make dbt-dev
 
 mylife:
-  target: dev
+  target: prod
   outputs:
-    dev:
+    prod:
       type: clickhouse
       schema: default            # dbt's default schema; models override per layer
       host: "{{ env_var('CLICKHOUSE_HOST', 'clickhouse') }}"
       port: "{{ env_var('CLICKHOUSE_HTTP_PORT', '8123') | int }}"
       user: "{{ env_var('CLICKHOUSE_USER', 'default') }}"
       password: "{{ env_var('CLICKHOUSE_PASSWORD', '') }}"
+      secure: False
+      driver: http
+      threads: 4
+    dev:
+      # Connection schema points INSIDE the sandbox: dbt-clickhouse runs
+      # CREATE DATABASE IF NOT EXISTS <schema> at connect time, and dbt_dev
+      # only holds CREATE DATABASE on the dev_* databases.
+      type: clickhouse
+      schema: dev_silver
+      host: "{{ env_var('CLICKHOUSE_HOST', 'clickhouse') }}"
+      port: "{{ env_var('CLICKHOUSE_HTTP_PORT', '8123') | int }}"
+      user: "{{ env_var('CLICKHOUSE_DBT_DEV_USER', 'dbt_dev') }}"
+      password: "{{ env_var('CLICKHOUSE_DBT_DEV_PASSWORD', '') }}"
       secure: False
       driver: http
       threads: 4

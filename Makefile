@@ -15,7 +15,7 @@ VM_REPO_PATH ?= $(shell grep -E '^VM_REPO_PATH=' $(ENV_FILE) 2>/dev/null | head 
 VM_REPO_PATH := $(if $(VM_REPO_PATH),$(VM_REPO_PATH),~/mylife-in-data)
 GH_REPO      ?= $(shell git remote get-url origin | sed -E 's#.*github.com[:/]##; s#\.git$$##')
 
-.PHONY: help deploy-vm ci-gate deploy-dashboard pull-tokens vm-status vm-logs-dagster
+.PHONY: help deploy-vm ci-gate deploy-dashboard dbt-dev dev-clean dev-hydrate pull-tokens vm-status vm-logs-dagster
 
 help:
 	@echo "mylife-in-data — workflow targets"
@@ -23,6 +23,10 @@ help:
 	@echo "  make deploy-vm        Push dev, wait for CI, ff-push main, deploy on the VM."
 	@echo "                        (SKIP_CI=1 skips the gate; admin push bypasses protection.)"
 	@echo "  make deploy-dashboard Manual dashboard deploy from the laptop (CI does it on main)."
+	@echo "  make dbt-dev          Build dbt models into dev_silver/dev_gold on the VM"
+	@echo "                        (reads prod bronze; SELECT='model+' narrows the build)."
+	@echo "  make dev-clean        Drop + recreate dev_silver/dev_gold on the VM."
+	@echo "  make dev-hydrate      Laptop: DDL + restore bronze from the R2 snapshot + dbt build."
 	@echo "  make pull-tokens      Copy Google OAuth tokens from VM → laptop ClickHouse."
 	@echo "  make vm-status        Show docker ps on the VM."
 	@echo "  make vm-logs-dagster  Tail dagster-webserver logs on the VM."
@@ -65,6 +69,35 @@ deploy-vm:
 
 deploy-dashboard:
 	cd dashboard && ./scripts/deploy-to-pages.sh
+
+# Build dbt models into the dev sandbox (dev_silver/dev_gold) on the VM.
+# Same warehouse, same bronze; the dev target + scoped dbt_dev user make a
+# wrong-target run physically unable to touch prod silver/gold. DBT_*_PATH
+# redirect target/ and logs/ so dev runs never clobber the prod build's
+# manifest in the shared transformations/ mount.
+# Narrow the build: make dbt-dev SELECT='gold_maps_kpis_dashboard+'
+dbt-dev:
+	@if [ -z "$(VM_SSH)" ]; then echo "ERROR: VM_SSH must be set in $(ENV_FILE)."; exit 1; fi
+	ssh $(VM_SSH) "docker exec -e DBT_TARGET_PATH=/tmp/dbt-dev-target -e DBT_LOG_PATH=/tmp/dbt-dev-logs dagster-webserver \
+	    bash -c 'cd /opt/dagster/transformations \
+	        && if [ ! -f profiles.yml ] || [ profiles.yml.example -nt profiles.yml ]; then cp profiles.yml.example profiles.yml; fi \
+	        && dbt build --target dev $(if $(SELECT),--select \"$(SELECT)\",) \
+	        --project-dir /opt/dagster/transformations --profiles-dir /opt/dagster/transformations'"
+
+dev-clean:
+	@if [ -z "$(VM_SSH)" ]; then echo "ERROR: VM_SSH must be set in $(ENV_FILE)."; exit 1; fi
+	ssh $(VM_SSH) 'cd $(VM_REPO_PATH) && ./scripts/dev_clean.sh'
+
+# Hydrate the LOCAL stack from the nightly R2 snapshot: DDL → restore bronze +
+# silver state (R2 keys only, no provider OAuth) → dbt build in the local
+# Dagster container. Auth-free dev data for new-ingestion/model work.
+dev-hydrate:
+	CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh
+	docker exec dagster-webserver python /opt/dagster/repo/scripts/restore_warehouse_from_r2.py
+	docker exec -e DBT_TARGET_PATH=/tmp/dbt-dev-target -e DBT_LOG_PATH=/tmp/dbt-dev-logs dagster-webserver \
+	    bash -c 'cd /opt/dagster/transformations \
+	        && if [ ! -f profiles.yml ] || [ profiles.yml.example -nt profiles.yml ]; then cp profiles.yml.example profiles.yml; fi \
+	        && dbt build --project-dir /opt/dagster/transformations --profiles-dir /opt/dagster/transformations'
 
 pull-tokens:
 	./scripts/sync_tokens_from_vm.sh

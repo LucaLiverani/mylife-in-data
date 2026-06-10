@@ -95,10 +95,13 @@ defs = Definitions(
         # dbt project lives at /opt/dagster/transformations in the container
         # (bind-mounted from the host). profiles.yml is auto-created from
         # profiles.yml.example by orchestration/dagster/assets/dbt.py on
-        # first code-location load.
+        # code-location load. Target pinned to `prod`: the `dev` output writes
+        # to dev_silver/dev_gold (generate_schema_name prefixes non-prod
+        # targets) and must never be what the scheduled build runs.
         "dbt": DbtCliResource(
             project_dir="/opt/dagster/transformations",
             profiles_dir="/opt/dagster/transformations",
+            target="prod",
         ),
     },
 )

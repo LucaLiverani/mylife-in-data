@@ -64,6 +64,10 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 - **Deploy dashboard**: `cd dashboard && ./scripts/deploy-to-pages.sh` (from the laptop).
 - **Local stack**: `cd infrastructure && ./start-all.sh` / `./stop-all.sh` (each walks every
   compose stack: redpanda, clickhouse, dagster, monitoring, umami).
+- **dbt targets**: `prod` (what Dagster runs; real silver/gold) and `dev` (same warehouse,
+  same bronze, views land in `dev_silver`/`dev_gold` via the target-aware
+  `generate_schema_name` macro; scoped `dbt_dev` user can't write prod). `make dbt-dev`
+  builds dev on the VM; `make dev-hydrate` fills the laptop stack from the R2 snapshot.
 - **Dashboard on mocks** (no backend needed): `cd dashboard && npm install && npm run build
   && npm run pages:dev` → http://localhost:8788 serves `dist/` + Pages Functions, which fall
   back to `public/mocks/`. If 8788 reports "address in use", a previous runtime leaked:
