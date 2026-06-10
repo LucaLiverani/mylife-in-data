@@ -1,0 +1,151 @@
+# CI gates — zero secrets by design (public repo; fork PRs are safe because
+# there is nothing to steal and nothing here can reach the VM).
+# Design doc: docs/DEPLOY.md.
+#
+# Invariant worth repeating: `dagster definitions validate` exits 0 even when
+# a dbt model is broken (the import-time bootstrap in
+# orchestration/dagster/assets/dbt.py swallows the parse failure and silently
+# drops all dbt assets). The separate failing `dbt parse` step IS the dbt gate.
+
+name: ci
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: infrastructure/compose/dagster/Dockerfile
+
+      # Mirror the (unpinned) dependency list from the Dagster image so CI
+      # fails on the same upstream breakage a VM image rebuild would hit.
+      - name: Install Dagster image dependencies
+        run: |
+          pip install --quiet \
+            dagster dagster-webserver dagster-postgres dagster-dbt dagster-aws \
+            dbt-core dbt-clickhouse clickhouse-connect kafka-python spotipy \
+            google-auth google-auth-oauthlib google-api-python-client \
+            pendulum python-dotenv requests boto3
+
+      # DbtCliResource pydantic-validates this exact absolute path at
+      # Definitions construction time.
+      - name: Recreate container paths
+        run: |
+          sudo mkdir -p /opt/dagster
+          sudo ln -s "$GITHUB_WORKSPACE/transformations" /opt/dagster/transformations
+          cp transformations/profiles.yml.example transformations/profiles.yml
+
+      # MUST stay a separate failing step (see header comment).
+      - name: dbt parse
+        run: |
+          dbt parse \
+            --project-dir /opt/dagster/transformations \
+            --profiles-dir /opt/dagster/transformations
+
+      - name: dagster definitions validate
+        env:
+          DAGSTER_SCHEDULES_ENABLED: "1" # exercise schedule/job registration
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          export DAGSTER_HOME="$RUNNER_TEMP/dagster_home"
+          mkdir -p "$DAGSTER_HOME"
+          dagster definitions validate -f orchestration/dagster/definitions.py
+
+  dashboard-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # The committed mocks must match what the generator produces (seeded
+      # PRNG + frozen date, so this is deterministic).
+      - name: Mock-generator drift check
+        run: |
+          npm run seed
+          git diff --exit-code -- public/mocks
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      # Boots wrangler pages dev against dist/ (no Cloudflare auth needed),
+      # asserts every mock-backed /api/* endpoint serves the mocks fallback,
+      # and screens all routes for horizontal overflow at mobile width.
+      - name: Smoke test (mocks-backed)
+        run: npm run smoke
+
+  ddl-idempotency:
+    runs-on: ubuntu-latest
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server:24.8-alpine # same pin as prod
+        ports:
+          - 8123:8123
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Wait for ClickHouse
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8123/ping && exit 0
+            sleep 2
+          done
+          echo "ClickHouse never became ready" >&2
+          exit 1
+
+      # Twice on purpose: proves every DDL file stays CREATE-only/idempotent.
+      - name: Apply DDL (first pass)
+        run: CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh
+
+      - name: Apply DDL (second pass, must also succeed)
+        run: CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh
+
+  # Explicit deployable marker the deploy tooling gates on. A classic commit
+  # status (not a check run): raw check-runs queries pass vacuously in the
+  # seconds after a push, before any runs are created; this status exists only
+  # after every gate above succeeded.
+  deployable:
+    if: github.event_name == 'push'
+    needs: [backend-validate, dashboard-smoke, ddl-idempotency]
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Post ci/deployable commit status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state=success \
+            -f context=ci/deployable \
+            -f description="All CI gates passed"

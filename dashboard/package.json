@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "seed": "node scripts/seed-mocks.mjs",
+    "smoke": "node scripts/smoke.mjs",
     "pages:dev": "wrangler pages dev dist --compatibility-date=2024-11-16",
     "pages:deploy": "vite build && wrangler pages deploy dist"
   },
