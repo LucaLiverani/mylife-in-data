@@ -69,21 +69,36 @@ If `:3000` is held by another process, uncomment `DAGSTER_PORT=3030` in `infrast
 
 ## Deploying the dashboard
 
-The Pages project is **manual deploy** (no GitHub auto-build). Every change ships through `dashboard/scripts/deploy-to-pages.sh`, which (1) builds with vite, (2) uploads every line of `dashboard/.env.production` as a Cloudflare Pages encrypted secret, and (3) `wrangler pages deploy dist`.
+The normal path is CI: a push to `main` that passes all gates deploys the
+dashboard automatically (`.github/workflows/ci.yml`, `wrangler pages deploy`
+with a Pages-scoped API token). The Pages project itself stays **manual
+deploy** (no Pages Git integration; CI does a direct upload).
+
+For emergency deploys, previews, and secret rotation there is the laptop
+script:
 
 ```bash
 cd dashboard
-nvm use 22                   # wrangler 4.x requires Node 22+
-./scripts/deploy-to-pages.sh # opens browser for auth if first time
+nvm use 22                             # wrangler 4.x requires Node 22+
+./scripts/deploy-to-pages.sh           # npm ci + build + deploy to production
+./scripts/deploy-to-pages.sh --preview # deploy to the preview environment
+                                       # (mocks-backed, no production secrets)
+./scripts/deploy-to-pages.sh --secrets # also re-upload .env.production secrets
 ```
 
-`wrangler` is pinned to `4.47.0` because 4.94.0 silently swallows `FunctionsBuildError` messages. If you ever bump it, re-test the deploy in a real terminal.
-
-If you'd rather have pushes to `main` auto-deploy: Cloudflare Pages dashboard → project → **Settings → Builds & deployments → Connect to Git**. Build command `cd dashboard && npm install && npm run build`, output `dashboard/dist`. Then add the same secrets manually under **Environment variables → Production**.
+`wrangler` is pinned **exactly** to `4.47.0` in `dashboard/package.json`
+(4.94.0+ silently swallows `FunctionsBuildError` messages), and the script runs
+`npm ci` first so the lockfile decides the version that executes. If you ever
+bump it, verify a deliberately broken Function fails loudly before trusting it,
+and re-lock.
 
 ### Production env vars
 
-Eight lines, uploaded automatically from `dashboard/.env.production` (gitignored, 600 perms) — six runtime Function secrets plus the two `VITE_UMAMI_*` (build-time, inlined into the client bundle as the analytics tracker):
+Eight lines in `dashboard/.env.production` (gitignored, 600 perms), uploaded to
+the Pages encrypted store only on `deploy-to-pages.sh --secrets` (Pages keeps
+previously uploaded secrets, so normal deploys never re-send them). Six runtime
+Function secrets plus the two `VITE_UMAMI_*` (build-time, inlined into the
+client bundle as the analytics tracker):
 
 ```
 CLICKHOUSE_HOST=https://clickhouse.<DOMAIN>
@@ -265,14 +280,15 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 1. Zero Trust → Access → Service Auth → Service Tokens → `dashboard-clickhouse` → **Rotate**.
 2. Save new Client Secret to password manager.
 3. Update `dashboard/.env.production` with the new value.
-4. Re-deploy: `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh`.
+4. Re-deploy with the secret upload: `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh --secrets`.
 
 ### Rotating the ClickHouse password
 
-1. Edit `infrastructure/.env` on the VM (`CH_ADMIN_PASSWORD=...`).
+1. Edit `infrastructure/.env` on the VM (`CLICKHOUSE_PASSWORD=...`).
 2. `cd ~/mylife-in-data/infrastructure && ./stop-all.sh && ./start-all.sh`.
 3. Update the laptop's `infrastructure/.env` to match (for local-dev parity).
-4. Update `dashboard/.env.production`'s `CLICKHOUSE_PASSWORD` and re-deploy.
+4. Update `dashboard/.env.production`'s `CLICKHOUSE_PASSWORD` and re-deploy
+   with `./scripts/deploy-to-pages.sh --secrets`.
 
 ---
 
