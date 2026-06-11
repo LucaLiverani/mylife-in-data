@@ -63,9 +63,22 @@ fi
 if [ -z "${1:-}" ]; then
     echo "→ git pull origin ${DEPLOY_BRANCH}..."
     git fetch origin "$DEPLOY_BRANCH"
-    git checkout "$DEPLOY_BRANCH" 2>/dev/null \
-        || git checkout -b "$DEPLOY_BRANCH" --track "origin/$DEPLOY_BRANCH"
-    git pull --ff-only origin "$DEPLOY_BRANCH"
+    if git show-ref --verify --quiet "refs/heads/$DEPLOY_BRANCH"; then
+        # A local deploy branch with commits NOT on origin is either a stale
+        # leftover (e.g. pre-force-push provisioning history) or an unpushed
+        # hotfix; both need a human, not a silent reset.
+        if [ "$(git rev-list --count "origin/$DEPLOY_BRANCH..$DEPLOY_BRANCH")" -gt 0 ]; then
+            echo "✗ Local '$DEPLOY_BRANCH' has commits that are not on origin/$DEPLOY_BRANCH:"
+            git log --oneline "origin/$DEPLOY_BRANCH..$DEPLOY_BRANCH" | head -5 | sed 's/^/    /'
+            echo "  Stale leftovers → git checkout $DEPLOY_BRANCH && git reset --hard origin/$DEPLOY_BRANCH, then re-run."
+            echo "  A real hotfix   → push it to origin first."
+            exit 1
+        fi
+        git checkout "$DEPLOY_BRANCH"
+        git merge --ff-only "origin/$DEPLOY_BRANCH"
+    else
+        git checkout -b "$DEPLOY_BRANCH" --track "origin/$DEPLOY_BRANCH"
+    fi
     exec "$REPO_ROOT/infrastructure/deploy.sh" "$BEFORE"
 fi
 
