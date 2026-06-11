@@ -5,9 +5,10 @@ Exposes every dbt model in `transformations/` as a Dagster asset via
 the dashboard's `gold.*` queries get real data once these run.
 
 Self-bootstrap behaviour on import:
-  1. If `transformations/profiles.yml` is missing, copy it from
-     `profiles.yml.example` (all values are env_var() interpolated — no
-     secrets in the example, so it's safe to use verbatim).
+  1. If `transformations/profiles.yml` is missing OR older than
+     `profiles.yml.example`, copy the example over it (all values are
+     env_var() interpolated — no secrets in the example, so it's safe to use
+     verbatim; the committed example is the source of truth).
   2. If `transformations/target/manifest.json` is missing OR older than any
      of the dbt source files (models, dbt_project.yml, sources/schema yml,
      macros), run `dbt parse` to regenerate it.

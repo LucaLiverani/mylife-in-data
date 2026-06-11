@@ -70,9 +70,11 @@ If `:3000` is held by another process, uncomment `DAGSTER_PORT=3030` in `infrast
 ## Deploying the dashboard
 
 The normal path is CI: a push to `main` that passes all gates deploys the
-dashboard automatically (`.github/workflows/ci.yml`, `wrangler pages deploy`
-with a Pages-scoped API token). The Pages project itself stays **manual
-deploy** (no Pages Git integration; CI does a direct upload).
+dashboard automatically when `dashboard/` changed anywhere in the pushed range
+(`.github/workflows/ci.yml`, `wrangler pages deploy` with a Pages-scoped API
+token; backend-only pushes skip the upload, and the job warn-skips if the
+`CLOUDFLARE_*` repo secrets are absent). The Pages project itself stays
+**manual deploy** (no Pages Git integration; CI does a direct upload).
 
 For emergency deploys, previews, and secret rotation there is the laptop
 script:
@@ -81,6 +83,7 @@ script:
 cd dashboard
 nvm use 22                             # wrangler 4.x requires Node 22+
 ./scripts/deploy-to-pages.sh           # npm ci + build + deploy to production
+                                       # (or: make deploy-dashboard from the repo root)
 ./scripts/deploy-to-pages.sh --preview # deploy to the preview environment
                                        # (mocks-backed, no production secrets)
 ./scripts/deploy-to-pages.sh --secrets # also re-upload .env.production secrets
@@ -280,8 +283,14 @@ ssh <VM_USER>@<VM_IP>
 cd ~/mylife-in-data/infrastructure
 ./start-all.sh            # idempotent — brings everything up
 ./stop-all.sh             # everything down
-docker ps                 # 11 containers expected (redpanda + console, clickhouse + keeper, dagster trio, grafana, prometheus, umami + postgres)
+docker ps                 # 12 containers expected (redpanda + console, clickhouse + keeper, dagster trio, spotify-current-producer, grafana, prometheus, umami + postgres)
 ```
+
+Dagster instance/workspace config (`infrastructure/compose/dagster/dagster.yaml`
+and `workspace.yaml`) is bind-mounted over the image-baked copies, so a config
+change applies through a normal deploy + container recreate. (The old "docker cp
+into the dagster-home volume" ritual is obsolete; the named volume used to
+shadow the baked file.)
 
 The cloudflared tunnel is a systemd service:
 
@@ -353,7 +362,7 @@ See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`,
 | `wrangler pages deploy` exits 1 with empty output | wrangler 4.94+ swallows route-build errors | Use `wrangler@4.47.0` (the pinned version); never `npm update wrangler` blindly |
 | `cloudflared` runs locally instead of on VM | An old laptop-side daemon is alive | `pkill -f cloudflared` on laptop; the VM systemd service stays up |
 | Cloudflare Access app save fails with "allow_authenticate_via_warp cannot be set" | Account-level WARP Session Duration not configured | Zero Trust → Settings → WARP Client → set any duration; retry |
-| ClickHouse 4xx error contains "Database gold does not exist" | Phase 2 leftover — no data on VM yet | Expected until pipelines are built. Dashboard falls back to mocks transparently |
+| ClickHouse 4xx error contains "Database gold does not exist" | Fresh/rebuilt warehouse: DDL not applied yet | `CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh`, then a dbt build. Dashboard falls back to mocks transparently meanwhile |
 | Pages Function returns 200 but `_meta.cached` is `true` | CH is unreachable from the Function OR the query failed | Check `_meta.error` field for the upstream error message |
 | Every service's env empty / Postgres `you must specify POSTGRES_PASSWORD` | `infrastructure/.env` got replaced by a broken symlink — it must stay a **regular file** (the `compose/*/.env` symlink *to* it, never the reverse) | Restore it: `scp` the laptop's `infrastructure/.env` to the VM, then re-set `MYLIFE_TOKEN_WRITER=1` + `DAGSTER_SCHEDULES_ENABLED=1` |
 
@@ -381,12 +390,12 @@ The original cutover procedure is preserved in **`SYNC_TO_VM.md`** as a referenc
 
 `orchestration/dagster/assets/dbt.py` exposes every silver + gold dbt model as a Dagster asset via `dagster-dbt`. The asset module self-bootstraps on Dagster startup:
 
-1. If `transformations/profiles.yml` is missing, copy it from `profiles.yml.example` (all values are env_var()-interpolated, no secrets in the example).
+1. If `transformations/profiles.yml` is missing **or older than the example**, copy it from `profiles.yml.example` (all values are env_var()-interpolated, no secrets in the example; the committed example is the source of truth, so a git-pulled profiles change is picked up automatically).
 2. If `transformations/target/manifest.json` is missing or older than any `.sql`/`.yml` in `models/` or `macros/`, run `dbt parse` to regenerate.
 
 `dbt_build_schedule` runs `dbt build` daily at 09:00 UTC — after every bronze ingest schedule has run, so silver + gold reflect the freshest data. Default status is `RUNNING`; the toggle persists in Dagster Postgres so a manual stop survives restarts.
 
-Run `dbt build` manually whenever you change a model: in Dagster UI → Lineage → `mylife_dbt_assets` → Materialize. Logs stream into the run page.
+Deployed model changes build automatically: `deploy.sh` launches `dbt_build_job` whenever `transformations/` or `warehouse/ddl/` changed, so the 09:00 UTC run is the safety net, not the only path. Manual fallback (non-deploy situations, e.g. after a restore): Dagster UI → Lineage → `mylife_dbt_assets` → Materialize. Logs stream into the run page.
 
 ### Schedule + sensor defaults
 

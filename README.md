@@ -126,7 +126,7 @@ cp .env.example .env     # then: chmod 600 .env and fill in real values
 ./start-all.sh
 ```
 
-Spins up Redpanda, ClickHouse, Dagster, Prometheus, and Grafana via Docker Compose. Full setup, OAuth bootstrap, secret rotation, and the deploy story live in [`OPERATIONS.md`](docs/OPERATIONS.md).
+Spins up Redpanda, ClickHouse, Dagster, Prometheus, Grafana, and Umami via Docker Compose. Full setup, OAuth bootstrap, secret rotation, and the deploy story live in [`OPERATIONS.md`](docs/OPERATIONS.md); the deploy/CI design rationale lives in [`DEPLOY.md`](docs/DEPLOY.md).
 
 ## Repo layout
 
@@ -149,6 +149,7 @@ docs/             Operations, data-model, and sync docs + dashboard screenshots
 | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Bronze / silver / gold schemas, and the gold→dashboard contract. |
 | [`dashboard/DESIGN.md`](dashboard/DESIGN.md) | The "Producer's Console" design system. |
 | [`dashboard/PRODUCT.md`](dashboard/PRODUCT.md) | Product brief, audiences, and brand voice. |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Deploy + CI + dev-environment design: pains, target flow, migration record. |
 | [`docs/SYNC_TO_VM.md`](docs/SYNC_TO_VM.md) | The laptop ↔ VM split and the original cutover. |
 
 ## Roadmap

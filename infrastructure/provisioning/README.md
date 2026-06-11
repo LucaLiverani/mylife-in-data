@@ -138,4 +138,4 @@ ssh $VM_USER@$VM_IP "
 
 - Running `.venv/bin/python ingestion/spotify/authenticate_local.py` once on the VM (and once on the laptop) to mint per-host Spotify OAuth caches. Spotify issues independent refresh tokens per OAuth grant, so each environment keeps its own `tokens/.spotify_cache` — do NOT share via SCP (the running producer container rewrites it on every 401, so copying mid-flight corrupts the cache).
 - Putting Cloudflare Access in front of admin UIs (`dagster`, `grafana`, `redpanda`) with an email policy; `clickhouse.<DOMAIN>` gets a Service Token policy so the dashboard Pages Functions can authenticate.
-- Setting up `clickhouse-backup` → R2 (separate follow-up).
+- ~~Setting up `clickhouse-backup` → R2~~ superseded: the nightly `warehouse_r2_archive` Dagster job snapshots bronze + non-derivable silver state as Parquet to `archive/warehouse/dt=*`; restore via `scripts/restore_warehouse_from_r2.py`.

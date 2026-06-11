@@ -7,8 +7,9 @@
 # split each file on `;` and POST each statement separately.
 #
 # Reads CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_HTTP_PORT from env
-# (defaulted to the docker-compose values). If invoked from outside compose,
-# point CLICKHOUSE_URL at the host's HTTP endpoint.
+# (defaulted to the docker-compose values). Target host: CLICKHOUSE_DDL_HOST
+# (default localhost — what deploy.sh, start-all.sh, CI and make dev-hydrate
+# all set), or point CLICKHOUSE_URL at a full HTTP endpoint to override both.
 
 set -euo pipefail
 

@@ -8,7 +8,8 @@ repo, keep it clean and secret-free.
 This file is the only doc auto-loaded each session; keep it short. For depth:
 - `docs/DATA_MODEL.md` — every bronze/silver/gold table + each gold table → `/api` endpoint.
 - `docs/OPERATIONS.md` — run, deploy, debug, credential rotation, common failures.
-- `docs/SYNC_TO_VM.md` — laptop ↔ VM sync.
+- `docs/DEPLOY.md` — deploy/CI/dev-env design: pains, target flow, migration record.
+- `docs/SYNC_TO_VM.md` — laptop ↔ VM sync (historical cutover record).
 
 ## Architecture — the non-obvious invariants
 
@@ -61,13 +62,18 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   status, ff-pushes `main`, then runs `infrastructure/deploy.sh` on the VM: validation
   gate → apply DDL → prune orphaned views → selective container recreate → dbt build
   trigger → health checks). `SKIP_CI=1` skips the gate. Design: `docs/DEPLOY.md`.
-- **Deploy dashboard**: `cd dashboard && ./scripts/deploy-to-pages.sh` (from the laptop).
+- **Deploy dashboard**: CI does it automatically on push to `main` when `dashboard/`
+  changed (the `deploy-dashboard` job in ci.yml; warn-skips if the `CLOUDFLARE_*` repo
+  secrets are absent), so `make deploy-vm` already ships both halves. Manual fallback:
+  `make deploy-dashboard` (`--secrets` re-uploads Function secrets, `--preview` targets
+  the mocks-backed Pages preview environment).
 - **Local stack**: `cd infrastructure && ./start-all.sh` / `./stop-all.sh` (each walks every
   compose stack: redpanda, clickhouse, dagster, monitoring, umami).
 - **dbt targets**: `prod` (what Dagster runs; real silver/gold) and `dev` (same warehouse,
   same bronze, views land in `dev_silver`/`dev_gold` via the target-aware
   `generate_schema_name` macro; scoped `dbt_dev` user can't write prod). `make dbt-dev`
-  builds dev on the VM; `make dev-hydrate` fills the laptop stack from the R2 snapshot.
+  builds dev on the VM (`SELECT='model+'` narrows it); `make dev-clean` resets the
+  sandbox; `make dev-hydrate` fills the laptop stack from the R2 snapshot.
 - **Dashboard on mocks** (no backend needed): `cd dashboard && npm install && npm run build
   && npm run pages:dev` → http://localhost:8788 serves `dist/` + Pages Functions, which fall
   back to `public/mocks/`. If 8788 reports "address in use", a previous runtime leaked:

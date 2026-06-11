@@ -41,8 +41,11 @@ All verified against code before changing anything:
 
 ### CI (GitHub-hosted runners, zero secrets)
 
-`.github/workflows/ci.yml`, on push to `dev`/`main` and PRs to `main`. No
-secrets exist in CI at all, so fork PRs are safe by construction. Three gates:
+`.github/workflows/ci.yml`, on push to `dev`/`main` and PRs to `main`. The
+three gate jobs use no secrets at all, so fork PRs are safe by construction
+(GitHub additionally withholds secrets from fork runs). The only secrets in
+the workflow live in the `deploy-dashboard` job (Pages-scoped, push-to-main
+only, step-scoped env). Three gates:
 
 - **backend-validate**: `dbt parse` (its own failing step), then
   `dagster definitions validate`. Both proven to run offline with no services
@@ -79,12 +82,16 @@ script's order:
    HEAD. The state file is written only as the final step of a *successful*
    deploy, so a failed deploy retries from the last good rev instead of
    no-opping.
-3. Fetch + checkout + `pull --ff-only origin main`; if HEAD moved, re-exec the
-   freshly pulled script (`DEPLOY_REEXEC` guard) so new deploy logic applies to
-   the deploy that ships it.
+3. Fetch origin/main; abort loudly (with recovery instructions) if the local
+   `main` has commits that are not on origin (stale provisioning leftovers or
+   an unpushed hotfix); otherwise checkout + fast-forward, then re-exec the
+   freshly pulled copy of the script so new deploy logic applies to the deploy
+   that ships it. The anti-loop guard is passing `$BEFORE` as `$1` to the
+   re-exec: a `$1` invocation skips the whole pull block.
 4. Build the Dagster image only if dependencies changed (Dockerfile,
-   `pyproject.toml`, `uv.lock`, `requirements*`); code-only changes are
-   bind-mounted and need recreation, not a rebuild.
+   `pyproject.toml`, `uv.lock`, `requirements*`) or the image is missing
+   entirely (fresh VM, pruned images); code-only changes are bind-mounted and
+   need recreation, not a rebuild.
 5. **Validation gate** in a throwaway `--network none` container from the
    image about to be deployed: `dbt parse`, then `dagster definitions
    validate`. On failure: `git reset --hard $BEFORE` (the bind mount means
@@ -99,9 +106,10 @@ script's order:
 9. Health checks (ClickHouse ping, Dagster server info), remind about the
    dashboard half if `dashboard/` changed, write `.last_deploy_rev`.
 
-`dagster.yaml` is bind-mounted over the named-volume path in the compose file,
-so instance-config changes deploy normally (previously the `dagster-home`
-volume shadowed the image-baked copy and required a manual `docker cp`).
+`dagster.yaml` and `workspace.yaml` are bind-mounted over the image-baked
+copies in the compose file, so instance/workspace-config changes deploy
+normally (previously the `dagster-home` volume shadowed the baked `dagster.yaml`
+and required a manual `docker cp`).
 
 Deliberate non-goals: no self-hosted runner (GitHub advises against them on
 public repos and the VM holds personal data), no k8s/GitOps, and the VM-side
@@ -111,9 +119,11 @@ triggering.
 ### CD, dashboard (GitHub Actions)
 
 A deploy job in the same workflow ships `dashboard/` on push to `main` once all
-three gates pass, via `wrangler pages deploy` with a Pages-scoped
-`CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (the only secrets in the
-system, and they cannot reach the VM). Runtime Function secrets live in the
+three gates pass, but only when `dashboard/` actually changed somewhere in the
+pushed range (`github.event.before..sha`; an unknown base deploys to be safe),
+so backend-only pushes skip the upload. Deploys via `wrangler pages deploy`
+with a Pages-scoped `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (the only
+secrets in the system, and they cannot reach the VM). Runtime Function secrets live in the
 Pages project settings and are no longer re-uploaded per deploy.
 `dashboard/scripts/deploy-to-pages.sh` remains the documented emergency manual
 path (with the wrangler version actually pinned, `npm ci` first, and a
@@ -194,7 +204,7 @@ headroom.
       `--target prod` invocation the 09:00 UTC schedule uses) rebuilt 30 gold
       + 24 silver views unprefixed; `dev_*` untouched by the prod run.
 
-## Known gaps (accepted, tracked in TODO)
+## Known gaps (accepted, tracked privately)
 
 - No disk-full story on the VM (image GC after repeated `--build`, ENOSPC
   behavior of the nightly archive).

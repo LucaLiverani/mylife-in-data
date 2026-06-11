@@ -1,6 +1,6 @@
 # Laptop → VM sync plan
 
-> **Status: completed 2026-05-26.** The VM is now the canonical production environment — bronze ingest, OAuth refresh, dbt build, the spotify-current-producer all run there. The laptop is dev-only. This doc is preserved as a reference for the procedure if the VM ever needs to be rebuilt from scratch. For day-to-day operation see `OPERATIONS.md` → "Daily dev cycle".
+> **Status: completed 2026-05-26, HISTORICAL.** The VM is now the canonical production environment — bronze ingest, OAuth refresh, dbt build, the spotify-current-producer all run there. The laptop is dev-only. This doc is preserved as a reference for the procedure if the VM ever needs to be rebuilt from scratch; commands below reflect the 2026-05 state. Where this doc and the current flow diverge, trust `docs/DEPLOY.md` + `OPERATIONS.md`: production now deploys the **main** branch (not dev), the dashboard ships via CI on push to main (the laptop script is a fallback and only uploads secrets with `--secrets`), and the warehouse can be rehydrated from the nightly R2 snapshots (`scripts/restore_warehouse_from_r2.py`) instead of re-running backfills.
 
 The data platform has two homes: your laptop (current dev environment) and the ARM64 VM behind Cloudflare Tunnel + Access (the public dashboard's backend). This doc captures the original cutover path: laptop-only bronze + tokens → VM as the canonical source of truth.
 
@@ -34,17 +34,17 @@ are already wired through the code (they are — see `OPERATIONS.md` "Daily dev 
    sed -i 's/^MYLIFE_TOKEN_WRITER=.*/MYLIFE_TOKEN_WRITER=1/'        infrastructure/.env
    sed -i 's/^DAGSTER_SCHEDULES_ENABLED=.*/DAGSTER_SCHEDULES_ENABLED=1/' infrastructure/.env
    ```
-3. On VM: `git pull origin dev` (picks up the gating code + `deploy.sh` + the `producer` compose profile).
+3. On VM: `git pull origin main` (production deploys main since 2026-06; picks up the gating code + `deploy.sh` + the `producer` compose profile).
 4. On VM: `./infrastructure/start-all.sh` — idempotent. With `DAGSTER_SCHEDULES_ENABLED=1` it activates the `producer` profile so `spotify-current-producer` boots.
 5. On VM: `set -a; source infrastructure/.env; set +a; CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh` (idempotent).
 6. Copy Google token rows from laptop to VM (the OAuth bootstrap script wants a browser on the host that ran it; copying rows is simpler):
    ```bash
    # On laptop:
-   docker exec clickhouse clickhouse-client --user <REDACTED> --password <REDACTED> \
+   docker exec clickhouse clickhouse-client --user <CH_ADMIN_USER> --password <CH_ADMIN_PASSWORD> \
      --query "SELECT * FROM auth.google_tokens FINAL FORMAT JSONEachRow" > /tmp/google_tokens.jsonl
    scp /tmp/google_tokens.jsonl <VM_USER>@<VM_IP>:/tmp/
    # On VM:
-   docker exec -i clickhouse clickhouse-client --user <REDACTED> --password <REDACTED> \
+   docker exec -i clickhouse clickhouse-client --user <CH_ADMIN_USER> --password <CH_ADMIN_PASSWORD> \
      --query "INSERT INTO auth.google_tokens FORMAT JSONEachRow" < /tmp/google_tokens.jsonl
    ```
 7. On VM, bootstrap a VM-local Spotify cache (one-time browser auth on the VM; Spotify allows independent grants per host, so the laptop's cache stays valid too):
@@ -53,7 +53,7 @@ are already wired through the code (they are — see `OPERATIONS.md` "Daily dev 
    ```
 8. On VM, re-run the historical backfills (Calendar pull, YouTube DP, Maps activity ingest) using the same direct-Python scripts you used on the laptop. **Don't** `rsync` bronze data — re-running gives clean dedup state.
 9. On VM, kick off Maps Places API enrichment (will eat ~$45 of the $200 monthly free credit).
-10. **On laptop**, `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh` to ship the Pages Functions + secrets.
+10. **On laptop**, `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh --secrets` to ship the Pages Functions + secrets (`--secrets` is required on a fresh Pages project; normal deploys never re-upload them, and day to day CI deploys the dashboard on push to main anyway).
 11. From the Dagster UI on the VM, trigger `calendar_channels_setup` to switch Calendar from polling → webhook-driven (the webhook URL `https://<PAGES_HOST>/api/internal/calendar-webhook` is now live).
 
 From now on, day-to-day code changes ship via `make deploy-vm` on the laptop
@@ -63,7 +63,7 @@ From now on, day-to-day code changes ship via `make deploy-vm` on the laptop
 
 Best when you specifically want the re-auth link working *before* doing the full sync (e.g., to renew tokens from anywhere while you're not at your laptop). Dashboard tiles will keep showing mocks until Path A is done.
 
-1. `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh`
+1. `cd dashboard && nvm use 22 && ./scripts/deploy-to-pages.sh --secrets` (a fresh Pages project has no Function secrets without `--secrets`)
 2. Test: visit `https://<PAGES_HOST>/api/internal/google-auth-redirect?group=standard` in a browser → walks OAuth → token lands in **VM** ClickHouse (which is what `CLICKHOUSE_HOST` in `dashboard/.env.production` points at).
 
 The calendar webhook would technically also work end-to-end after deploy (Google → Pages → VM ClickHouse → idle Dagster on VM), but until you do Path A the Dagster sensor on the VM can't drain notifications into events because there's no `auth.calendar_channels` row to look up calendar IDs from.

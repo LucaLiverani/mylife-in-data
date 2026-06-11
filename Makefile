@@ -23,6 +23,7 @@ help:
 	@echo "  make deploy-vm        Push dev, wait for CI, ff-push main, deploy on the VM."
 	@echo "                        (SKIP_CI=1 skips the gate; admin push bypasses protection.)"
 	@echo "  make deploy-dashboard Manual dashboard deploy from the laptop (CI does it on main)."
+	@echo "  make ci-gate          Wait for the ci/deployable status on dev's HEAD (standalone)."
 	@echo "  make dbt-dev          Build dbt models into dev_silver/dev_gold on the VM"
 	@echo "                        (reads prod bronze; SELECT='model+' narrows the build)."
 	@echo "  make dev-clean        Drop + recreate dev_silver/dev_gold on the VM."
