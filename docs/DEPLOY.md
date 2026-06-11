@@ -182,11 +182,17 @@ headroom.
       ACCESS_DENIED.
 - [x] Step 6: Pages CD job (warn-skips until `CLOUDFLARE_API_TOKEN` /
       `CLOUDFLARE_ACCOUNT_ID` repo secrets exist).
-- [ ] Add the two Cloudflare repo secrets so Pages CD goes live.
-- [ ] VM execution: deploy, bootstrap `dbt_dev` (password generated on the VM,
-      `CLICKHOUSE_DBT_DEV_*` in the VM's `.env`), verify gate + dbt trigger +
-      bind-mount + dev builds end to end.
-- [ ] Watch the first post-rename 09:00 UTC build land unprefixed (mandatory).
+- [x] Cloudflare repo secrets added; Pages CD verified live (CI deploy,
+      production serving `X-Data-Source: live`).
+- [x] VM execution: deployed, `dbt_dev` bootstrapped (password generated on
+      the VM), validation gate + deploy-triggered `dbt_build_job` + config
+      bind-mounts + `make dbt-dev` (49/49 into `dev_silver`/`dev_gold`) all
+      verified. Found + fixed in the process: a stale pre-force-push local
+      `main` on the VM made the first branch checkout land on ancient code;
+      deploy.sh now aborts loudly on a diverged local deploy branch.
+- [x] Post-rename prod build verified: `dbt_build_job` (the same
+      `--target prod` invocation the 09:00 UTC schedule uses) rebuilt 30 gold
+      + 24 silver views unprefixed; `dev_*` untouched by the prod run.
 
 ## Known gaps (accepted, tracked in TODO)
 
