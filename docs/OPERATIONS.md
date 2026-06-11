@@ -384,7 +384,7 @@ Two architectural pivots happened during integration, both forced by Google cons
 
 The **VM is the canonical production environment** (cutover 2026-05-26). Bronze ingest, OAuth token refresh, and the spotify-current-producer all run there. The laptop is dev-only (`MYLIFE_TOKEN_WRITER=0`, `DAGSTER_SCHEDULES_ENABLED=0`); use `scripts/sync_tokens_from_vm.sh` if you need to borrow VM tokens for a one-shot local run.
 
-The original cutover procedure is preserved in **`SYNC_TO_VM.md`** as a reference for future fresh-VM builds.
+For a fresh-VM rebuild: provision per `infrastructure/provisioning/README.md`, deploy (`docs/DEPLOY.md`), rehydrate the warehouse from the nightly R2 snapshot (`scripts/restore_warehouse_from_r2.py`), then re-auth Google (re-auth table above) and Spotify (per-host grant).
 
 ### dbt + the daily auto-loop
 

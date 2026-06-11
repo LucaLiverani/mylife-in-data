@@ -9,7 +9,6 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 - `docs/DATA_MODEL.md` — every bronze/silver/gold table + each gold table → `/api` endpoint.
 - `docs/OPERATIONS.md` — run, deploy, debug, credential rotation, common failures.
 - `docs/DEPLOY.md` — deploy/CI/dev-env design: pains, target flow, migration record.
-- `docs/SYNC_TO_VM.md` — laptop ↔ VM sync (historical cutover record).
 
 ## Architecture — the non-obvious invariants
 

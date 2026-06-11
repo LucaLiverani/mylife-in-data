@@ -150,7 +150,6 @@ docs/             Operations, data-model, and sync docs + dashboard screenshots
 | [`dashboard/DESIGN.md`](dashboard/DESIGN.md) | The "Producer's Console" design system. |
 | [`dashboard/PRODUCT.md`](dashboard/PRODUCT.md) | Product brief, audiences, and brand voice. |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Deploy + CI + dev-environment design: pains, target flow, migration record. |
-| [`docs/SYNC_TO_VM.md`](docs/SYNC_TO_VM.md) | The laptop ↔ VM split and the original cutover. |
 
 ## Roadmap
 
