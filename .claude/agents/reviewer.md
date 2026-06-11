@@ -12,9 +12,12 @@ suggested fix`, ranked by severity. Don't rubber-stamp; if a change is clean, sa
 Repo invariants to enforce (see CLAUDE.md for the full picture):
 
 - **Redpanda scope.** Only the Spotify "now playing" stream flows through Redpanda
-  (`spotify.player.current`); everything else is a batch INSERT into bronze. Flag any
-  code/doc/diagram that treats Redpanda as a general ingestion layer, or that adds a second
-  topic without a genuine real-time need.
+  (`spotify.player.current`, plus its dead-letter sibling `spotify.player.current.dlq`
+  for producer-side schema rejects); everything else is a batch INSERT into bronze. Flag
+  any code/doc/diagram that treats Redpanda as a general ingestion layer, or that adds
+  another topic without a genuine real-time need. The producer, the JSON Schema contract
+  (`ingestion/spotify/schemas/`), and the Kafka-engine DDL must change together
+  (`scripts/check_stream_contract.py` is the CI gate).
 - **dbt vs DDL.** dbt models are pure SQL views. Raw landing, imperatively-populated,
   app-mutable, and pre-dbt-shared objects belong in `warehouse/ddl/`. Flag a new "dbt model"
   that isn't a clean SELECT, or a new DDL view that's actually a derivation that should be dbt.

@@ -40,8 +40,8 @@ jobs:
         run: |
           pip install --quiet \
             dagster dagster-webserver dagster-postgres dagster-dbt dagster-aws \
-            dbt-core dbt-clickhouse clickhouse-connect kafka-python spotipy \
-            google-auth google-auth-oauthlib google-api-python-client \
+            dbt-core dbt-clickhouse clickhouse-connect kafka-python jsonschema \
+            spotipy google-auth google-auth-oauthlib google-api-python-client \
             pendulum python-dotenv requests boto3
 
       # DbtCliResource pydantic-validates this exact absolute path at
@@ -67,6 +67,11 @@ jobs:
           export DAGSTER_HOME="$RUNNER_TEMP/dagster_home"
           mkdir -p "$DAGSTER_HOME"
           dagster definitions validate -f orchestration/dagster/definitions.py
+
+      # Stream contract gate: the now-playing producer, its JSON Schema, and
+      # the ClickHouse Kafka-engine DDL must describe the same wire format.
+      - name: Stream contract check (spotify.player.current)
+        run: python scripts/check_stream_contract.py
 
   dashboard-smoke:
     runs-on: ubuntu-latest

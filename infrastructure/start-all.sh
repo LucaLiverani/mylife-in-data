@@ -30,14 +30,19 @@ echo "[1/5] Streaming (Redpanda)..."
 sleep 15
 echo "      Ensuring topics exist..."
 # Redpanda transports exactly one signal: the real-time Spotify "now playing"
-# stream (producer → spotify.player.current → ClickHouse Kafka engine). Every
-# other source is a direct batch INSERT into bronze, so no other topic is
-# needed. Do NOT re-add the legacy spotify.tracks.raw / spotify.artist_ids /
+# stream (producer → spotify.player.current → ClickHouse Kafka engine), plus
+# its dead-letter sibling for events that fail the producer-side JSON Schema
+# contract (spotify.player.current.dlq → bronze.spotify_player_current_dlq).
+# Every other source is a direct batch INSERT into bronze, so no other topic
+# is needed. Do NOT re-add the legacy spotify.tracks.raw / spotify.artist_ids /
 # spotify.artists.raw / google.*.raw topics — they were never consumed and
 # only reappeared on each redeploy.
 docker exec redpanda rpk topic create \
     spotify.player.current \
     -p 3 -r 1 -c retention.ms=604800000 2>/dev/null || true
+docker exec redpanda rpk topic create \
+    spotify.player.current.dlq \
+    -p 1 -r 1 -c retention.ms=604800000 2>/dev/null || true
 
 echo
 echo "[2/5] Warehouse (ClickHouse)..."

@@ -2,9 +2,17 @@
 
 Loop:
   - poll Spotify every POLL_INTERVAL_SECONDS
-  - on track change or is_playing flip, publish one JSON message to topic
-    `spotify.player.current`
+  - on track change or is_playing flip, validate the event against the topic's
+    JSON Schema contract and publish it to `spotify.player.current`
+  - events that violate the contract are wrapped in an envelope and routed to
+    `spotify.player.current.dlq` (→ bronze.spotify_player_current_dlq) instead
+    of being silently dropped by the ClickHouse Kafka engine
   - back off on HTTP 429 (Retry-After), retry once on 401 with token refresh
+
+The contract (schemas/spotify_player_current.v1.json) is also registered in
+the Redpanda Schema Registry at startup, best-effort: the registry stores and
+compatibility-checks the contract, but enforcement is local — the ClickHouse
+consumer reads plain JSONEachRow, so the registry wire format can't be used.
 
 Run as a Docker service (spotify-current-producer) — `command: python
 ingestion/spotify/producer_current.py`.
@@ -12,11 +20,13 @@ ingestion/spotify/producer_current.py`.
 Environment:
   SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI
   KAFKA_BOOTSTRAP_SERVERS (defaults to redpanda:9092)
+  SCHEMA_REGISTRY_URL (defaults to http://redpanda:8081)
   Token cache at /opt/dagster/tokens/.spotify_cache (bind-mounted in)
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import signal
@@ -26,6 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import jsonschema
 import spotipy
 from spotipy.cache_handler import CacheFileHandler
 from spotipy.exceptions import SpotifyException
@@ -37,7 +48,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from ingestion._shared.redpanda import get_producer  # noqa: E402
+from ingestion._shared.json_utils import dumps  # noqa: E402
+from ingestion._shared.redpanda import ensure_topic, get_producer  # noqa: E402
+from ingestion._shared.schema_registry import ensure_registered  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +59,10 @@ logging.basicConfig(
 log = logging.getLogger("spotify-current-producer")
 
 TOPIC = "spotify.player.current"
+DLQ_TOPIC = f"{TOPIC}.dlq"
+DLQ_RETENTION_MS = 7 * 24 * 3600 * 1000
+SCHEMA_SUBJECT = f"{TOPIC}-value"
+SCHEMA_PATH = Path(__file__).resolve().parent / "schemas" / "spotify_player_current.v1.json"
 SCOPES = (
     "user-read-currently-playing "
     "user-read-playback-state "
@@ -131,11 +148,60 @@ def _events_differ(prev: dict[str, Any] | None, new: dict[str, Any]) -> bool:
     return False
 
 
+def load_schema() -> dict[str, Any]:
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.Draft7Validator.check_schema(schema)
+    return schema
+
+
+def serialize_event(
+    validator: jsonschema.Draft7Validator, event: dict[str, Any]
+) -> tuple[str, list[str]]:
+    """Serialize the event to its wire form and validate that exact form.
+
+    dumps() is what the producer's value_serializer applies (datetime → the
+    ClickHouse-basic string form), so round-tripping through it is the honest
+    contract check — validating the in-memory dict would miss serializer
+    regressions like the ISO-'T'/'Z' one that once emptied the table.
+
+    Returns (payload, errors). Never raises: an event that won't even
+    serialize comes back as (repr(event), [the TypeError]) so it still routes
+    to the DLQ instead of crash-looping the producer."""
+    try:
+        payload = dumps(event)
+    except (TypeError, ValueError) as exc:
+        return repr(event), [f"<root>: event is not JSON-serializable: {exc}"]
+    errors = [
+        f"{'/'.join(str(p) for p in e.absolute_path) or '<root>'}: {e.message}"
+        for e in sorted(validator.iter_errors(json.loads(payload)), key=str)
+    ]
+    return payload, errors
+
+
+def dlq_envelope(payload: str, errors: list[str]) -> dict[str, Any]:
+    """Wrap a rejected event for the dead-letter topic. Keys mirror the
+    columns of bronze.kafka_spotify_player_current_dlq."""
+    return {
+        "rejected_at": datetime.now(tz=timezone.utc),
+        "topic": TOPIC,
+        "error": "; ".join(errors),
+        "payload": payload,
+    }
+
+
 def main() -> int:
     cache_path = os.environ.get("SPOTIFY_CACHE_PATH", DEFAULT_CACHE_PATH)
     if not Path(cache_path).exists():
         log.error("Spotify token cache not found at %s — run authenticate_local.py", cache_path)
         return 1
+
+    schema = load_schema()
+    validator = jsonschema.Draft7Validator(schema)
+    ensure_registered(SCHEMA_SUBJECT, schema)  # best-effort; see schema_registry.py
+    try:
+        ensure_topic(DLQ_TOPIC, retention_ms=DLQ_RETENTION_MS)
+    except Exception:
+        log.exception("Could not ensure DLQ topic %s exists", DLQ_TOPIC)
 
     sp = _build_spotify_client(cache_path)
     producer = get_producer()
@@ -175,15 +241,26 @@ def main() -> int:
             continue
 
         if event is not None and _events_differ(prev, event):
+            wire, errors = serialize_event(validator, event)
             try:
-                producer.send(TOPIC, value=event, key=event.get("track_id") or None)
+                if errors:
+                    log.error(
+                        "Contract violation — routing to %s (track_id=%s): %s",
+                        DLQ_TOPIC, event.get("track_id"), "; ".join(errors),
+                    )
+                    producer.send(DLQ_TOPIC, value=dlq_envelope(wire, errors))
+                else:
+                    producer.send(TOPIC, value=event, key=event.get("track_id") or None)
                 producer.flush(timeout=5)
-                log.info(
-                    "→ %s — %s (playing=%s)",
-                    event.get("track_name"),
-                    ", ".join(event.get("artists_names") or []),
-                    event.get("is_playing"),
-                )
+                if not errors:
+                    log.info(
+                        "→ %s — %s (playing=%s)",
+                        event.get("track_name"),
+                        ", ".join(event.get("artists_names") or []),
+                        event.get("is_playing"),
+                    )
+                # Either way this transition is handled — advancing prev keeps
+                # a bad state from re-rejecting on every poll.
                 prev = event
             except Exception:
                 log.exception("Kafka publish failed")

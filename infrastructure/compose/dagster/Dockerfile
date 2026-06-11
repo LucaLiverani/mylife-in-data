@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir \
       dbt-clickhouse \
       clickhouse-connect \
       kafka-python \
+      jsonschema \
       spotipy \
       google-auth google-auth-oauthlib google-api-python-client \
       pendulum python-dotenv requests boto3

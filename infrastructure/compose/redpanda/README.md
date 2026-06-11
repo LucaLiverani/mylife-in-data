@@ -38,6 +38,22 @@ docker exec redpanda rpk topic create spotify.player.current --partitions 3
 
 # Tail messages
 docker exec redpanda rpk topic consume spotify.player.current
+
+# Tail schema-contract rejects (dead-letter topic)
+docker exec redpanda rpk topic consume spotify.player.current.dlq
+```
+
+## Schema Registry
+
+The bundled registry holds the JSON Schema contract for `spotify.player.current`
+(subject `spotify.player.current-value`, source file `ingestion/spotify/schemas/`).
+The producer registers it at startup and validates every event before producing;
+rejects route to `spotify.player.current.dlq`. Browse schemas in the Console
+(`localhost:8090`) or:
+
+```bash
+curl -s localhost:18081/subjects
+curl -s localhost:18081/subjects/spotify.player.current-value/versions/latest
 ```
 
 ## Migration notes

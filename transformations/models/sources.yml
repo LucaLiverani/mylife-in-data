@@ -10,6 +10,8 @@ sources:
     schema: bronze
     tables:
       - name: spotify_player_current
+      - name: spotify_player_current_dlq
+        description: "Producer-side schema-contract rejects for spotify.player.current (envelope: rejected_at/topic/error/payload). No dbt model reads it; listed to keep sources in lockstep with bronze DDL."
       - name: spotify_plays_raw
       - name: spotify_tracks
       - name: spotify_artists

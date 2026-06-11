@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "spotify.player.current value",
+  "description": "Wire contract for the now-playing stream: the exact JSON the producer (ingestion/spotify/producer_current.py) emits and the ClickHouse Kafka-engine table (warehouse/ddl/10_spotify_current_track.sql, bronze.kafka_spotify_player_current) ingests. Registered in the Redpanda Schema Registry under subject 'spotify.player.current-value'; enforced producer-side before produce (rejects go to spotify.player.current.dlq). Closed and fully required on purpose: a renamed, added, or retyped field is a contract violation, not a silent drop. Integer bounds are Int32 because that is what the ClickHouse columns hold. CI parity check: scripts/check_stream_contract.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "captured_at",
+    "track_id",
+    "track_name",
+    "track_uri",
+    "track_duration_ms",
+    "progress_ms",
+    "is_playing",
+    "album_id",
+    "album_name",
+    "album_uri",
+    "album_images",
+    "artists_ids",
+    "artists_names",
+    "device_id",
+    "device_name",
+    "device_type",
+    "device_volume_percent",
+    "context_type",
+    "context_uri"
+  ],
+  "properties": {
+    "captured_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}$",
+      "description": "UTC, ClickHouse 'basic' DateTime64(3) form (YYYY-MM-DD HH:MM:SS.mmm). ISO-8601 'T'/'Z' forms are rejected by the Kafka-engine parser and once silently emptied the table; this pattern makes that a loud DLQ event instead."
+    },
+    "track_id": {
+      "type": "string",
+      "description": "Empty string for local files (Spotify returns null ids for them)."
+    },
+    "track_name": { "type": "string" },
+    "track_uri": { "type": "string" },
+    "track_duration_ms": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "progress_ms": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "is_playing": { "type": "boolean" },
+    "album_id": { "type": "string" },
+    "album_name": { "type": "string" },
+    "album_uri": { "type": "string" },
+    "album_images": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Image URLs, largest-first."
+    },
+    "artists_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "artists_names": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "device_id": { "type": "string" },
+    "device_name": { "type": "string" },
+    "device_type": { "type": "string" },
+    "device_volume_percent": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "context_type": {
+      "type": "string",
+      "description": "'', 'playlist', 'album', 'artist'."
+    },
+    "context_uri": { "type": "string" }
+  }
+}

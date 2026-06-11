@@ -31,7 +31,7 @@ batch jobs — KPIs are live by construction.
 
 | Source | Bronze table(s) | Refresh | Ingest path |
 |---|---|---|---|
-| **Spotify currently-playing** | `bronze.spotify_player_current` | 5–10s | producer container (`spotify-current-producer`) → Redpanda topic `spotify.player.current` → ClickHouse Kafka engine. **The only streamed source** — everything below is a direct batch INSERT |
+| **Spotify currently-playing** | `bronze.spotify_player_current` (+ `bronze.spotify_player_current_dlq` rejects) | 5–10s | producer container (`spotify-current-producer`) → Redpanda topic `spotify.player.current` → ClickHouse Kafka engine. Events are validated against a JSON Schema contract before produce (`ingestion/spotify/schemas/`); violations land in the `.dlq` topic/table instead of being dropped. **The only streamed source**, everything below is a direct batch INSERT |
 | **Spotify recently-played** | `bronze.spotify_plays_raw` | 60s | Dagster `@schedule`, direct INSERT, dedupe on `played_at` |
 | **Spotify entity catalogs** | `bronze.spotify_tracks`, `bronze.spotify_artists` | enrichment | Dagster sensor on unknown IDs in bronze, direct INSERT |
 | **Spotify saved tracks** | `bronze.spotify_saved_tracks` | 5 min | Dagster `@schedule` polls `me/tracks`; dedup on `added_at`. Powers the "Liked" rows in `/api/now/timeline` |
@@ -130,6 +130,18 @@ CREATE TABLE bronze.spotify_player_current (
 ) ENGINE = ReplacingMergeTree(_ingested_at)
 ORDER BY (track_id, captured_at);
 
+-- Dead-letter landing for now-playing events that fail the producer-side
+-- JSON Schema contract (ingestion/spotify/schemas/). payload holds the
+-- rejected event verbatim; error holds the validation message(s).
+CREATE TABLE bronze.spotify_player_current_dlq (
+    rejected_at    DateTime64(3),
+    topic          LowCardinality(String),
+    error          String,
+    payload        String,
+    _ingested_at   DateTime DEFAULT now()
+) ENGINE = ReplacingMergeTree(_ingested_at)
+ORDER BY (rejected_at, error, payload);
+
 -- Plays from /me/player/recently-played. Deduped on (track_id, played_at).
 CREATE TABLE bronze.spotify_plays_raw (
     played_at          DateTime64(3),       -- Spotify's authoritative timestamp
@@ -189,10 +201,18 @@ CREATE TABLE bronze.spotify_saved_tracks (
 ORDER BY (track_id, added_at);
 ```
 
-Stream path: only `spotify.player.current` is a Redpanda topic. It has a
-matching ClickHouse Kafka-engine consumer table
-(`bronze.kafka_spotify_player_current`) and a 1:1 MV that pumps each row into
-`bronze.spotify_player_current`. Everything else on this page, including
+Stream path: only `spotify.player.current` (and its dead-letter sibling
+`spotify.player.current.dlq`) are Redpanda topics. Each has a matching
+ClickHouse Kafka-engine consumer table (`bronze.kafka_spotify_player_current`,
+`bronze.kafka_spotify_player_current_dlq`) and a 1:1 MV that pumps each row
+into `bronze.spotify_player_current` / `bronze.spotify_player_current_dlq`.
+The producer enforces a JSON Schema contract on the main topic
+(`ingestion/spotify/schemas/spotify_player_current.v1.json`, registered in
+Redpanda's Schema Registry under subject `spotify.player.current-value`):
+events that violate it are wrapped in a `{rejected_at, topic, error, payload}`
+envelope and produced to the `.dlq` topic instead of being silently discarded
+by `kafka_skip_broken_messages`. Producer ↔ schema ↔ DDL parity is CI-checked
+by `scripts/check_stream_contract.py`. Everything else on this page, including
 `spotify_plays_raw` and the tracks/artists catalogs, is a plain batch INSERT
 from Dagster (recently-played, saved tracks, enrichment) or the one-time
 history import. These are low-volume API responses with natural dedup keys:

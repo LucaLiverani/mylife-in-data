@@ -16,9 +16,14 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   `gold` (dashboard-ready). The dashboard reads **gold only**.
 - **Redpanda streams exactly ONE thing**: the real-time Spotify "now playing" signal
   (`producer → topic spotify.player.current → ClickHouse Kafka-engine table → bronze`).
+  The producer validates each event against a JSON Schema contract
+  (`ingestion/spotify/schemas/`, registered in Redpanda's Schema Registry); violations
+  route to the dead-letter sibling `spotify.player.current.dlq` →
+  `bronze.spotify_player_current_dlq`, never silently dropped. Producer ↔ schema ↔ DDL
+  parity is CI-enforced (`scripts/check_stream_contract.py`).
   **Everything else** (Spotify history, YouTube, Maps, Calendar) is a **scheduled batch
   INSERT** into bronze by Dagster. Redpanda is **not** a general ingestion layer, and
-  `start-all.sh` creates only that one topic.
+  `start-all.sh` creates only that topic and its DLQ.
 - **dbt vs DDL boundary** (a frequent point of confusion):
   - **dbt models** (`transformations/models/{silver,gold}/*.sql`) are pure SQL **views**.
   - **DDL** (`warehouse/ddl/*.sql`) owns what dbt can't: raw bronze landing tables (dbt
