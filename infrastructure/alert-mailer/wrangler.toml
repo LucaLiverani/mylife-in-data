@@ -1,0 +1,19 @@
+# alert-mailer — Alertmanager webhook → email, as a Cloudflare Worker.
+#
+# Receives Alertmanager webhook POSTs (Bearer-token auth) and sends them as
+# email through Cloudflare Email Service. No SMTP server, no third-party
+# provider: the only moving parts are this Worker and the send_email binding.
+#
+# Secrets (set with `npx wrangler secret put <NAME>` from this directory):
+#   ALERT_WEBHOOK_TOKEN  shared secret; same value as infrastructure/.env
+#   ALERT_EMAIL_TO       recipient address
+#   ALERT_EMAIL_FROM     sender, an address on the zone (e.g. alerts@<DOMAIN>)
+#
+# Deploy: see README.md (or `make deploy-alert-mailer` from the repo root).
+
+name = "alert-mailer"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+[[send_email]]
+name = "EMAIL"

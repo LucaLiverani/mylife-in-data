@@ -90,10 +90,13 @@
     <!-- Disable built-in security (for development) -->
     <access_control_path>/var/lib/clickhouse/access/</access_control_path>
 
-    <!-- Enable Prometheus metrics endpoint -->
+    <!-- Prometheus metrics endpoint. Dedicated listener: sharing 8123 with
+         the HTTP interface silently loses the handler (scrapes 404), so
+         metrics get their own port. Container-network only; nothing
+         publishes 9363 to the host. -->
     <prometheus>
         <endpoint>/metrics</endpoint>
-        <port>8123</port>
+        <port>9363</port>
         <metrics>true</metrics>
         <events>true</events>
         <asynchronous_metrics>true</asynchronous_metrics>

@@ -43,6 +43,11 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   query gold over a Cloudflare Tunnel. **Every `/api/*` endpoint falls back to
   `dashboard/public/mocks/*.json`** when the warehouse is down, that's why the UI runs
   offline with no backend, and why mock shapes must track the gold schema.
+- **Alerting has exactly one email egress**: Prometheus rules
+  (`infrastructure/compose/monitoring/alerts/`) and the Dagster failure sensor both
+  deliver via Alertmanager (VM-only, compose profile `alerting`) → the `alert-mailer`
+  Worker (`infrastructure/alert-mailer/`) → email. Don't add per-component senders.
+  Runbook: `docs/OPERATIONS.md` "Monitoring & alerting".
 
 ## Invariants to preserve
 

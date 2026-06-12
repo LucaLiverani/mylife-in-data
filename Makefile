@@ -116,3 +116,6 @@ vm-logs-dagster:
 	    exit 1; \
 	fi
 	ssh $(VM_SSH) 'docker logs --tail 100 -f dagster-webserver'
+
+deploy-alert-mailer:
+	cd infrastructure/alert-mailer && ../../dashboard/node_modules/.bin/wrangler deploy

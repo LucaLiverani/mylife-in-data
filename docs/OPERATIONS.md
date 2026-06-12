@@ -283,7 +283,7 @@ ssh <VM_USER>@<VM_IP>
 cd ~/mylife-in-data/infrastructure
 ./start-all.sh            # idempotent — brings everything up
 ./stop-all.sh             # everything down
-docker ps                 # 12 containers expected (redpanda + console, clickhouse + keeper, dagster trio, spotify-current-producer, grafana, prometheus, umami + postgres)
+docker ps                 # 16 containers expected (redpanda + console, clickhouse + keeper, dagster trio, spotify-current-producer, grafana, prometheus, alertmanager, node-exporter, cadvisor, blackbox-exporter, umami + postgres)
 ```
 
 Dagster instance/workspace config (`infrastructure/compose/dagster/dagster.yaml`
@@ -323,6 +323,76 @@ ssh -t <VM_USER>@<VM_IP> 'bash ~/install-cloudflared.sh'
 ### Bootstrapping a brand-new VM
 
 See `infrastructure/provisioning/README.md`. Short version: copy `.env.example`, fill in, `source` it, run `bootstrap.sh` on the VM (SSH hardening + Docker), clone the repo, scp `infrastructure/.env`, `./start-all.sh`, then the cloudflared steps above.
+
+---
+
+## Monitoring & alerting
+
+Everything that can break either exposes Prometheus metrics or posts into
+Alertmanager; Alertmanager delivers email through the `alert-mailer` Cloudflare
+Worker (`infrastructure/alert-mailer/`). There is no SMTP server and no
+third-party alerting service.
+
+```
+Prometheus (rules: compose/monitoring/alerts/*.yml) ─┐
+                                                     ├─> Alertmanager ──POST──> alert-mailer Worker ──> email
+Dagster run_failure_alert_sensor ────────────────────┘    (VM only)             (Cloudflare Email Service)
+```
+
+### What is watched
+
+| Signal | Source | Alerts |
+|---|---|---|
+| Producer heartbeat | `producer_current.py` metrics on `:9110` (last successful poll, publishes by outcome, publish failures) | `SpotifyProducerSilent`, `SpotifyProducerCrashLooping`, `SpotifyProducerPublishFailures`, `SpotifyStreamSchemaRejects` |
+| Consumer group `clickhouse_spotify_current` | Redpanda `/public_metrics` | `SpotifyConsumerGone`, `SpotifyConsumerGroupMissing`, `SpotifyConsumerLag`, `SpotifyStreamSilent24h` |
+| Kafka-engine skips | ClickHouse `/metrics` on `:9363` | `ClickHouseKafkaSkippedMessages` |
+| Every scrape target | Prometheus `up` | `TargetDown` |
+| dagster-daemon / webserver | cAdvisor `container_last_seen` | `DagsterDaemonDown`, `DagsterWebserverDown` |
+| VM disk / memory | node-exporter | `HostDiskAlmostFull` (<15%), `HostDiskCritical` (<8%), `HostLowMemory` |
+| Public dashboard | blackbox-exporter probing `https://<DOMAIN>/api/system/health` through Cloudflare | `DashboardUnreachable`, `DashboardServingMocks` (`X-Data-Source != live` → tunnel/warehouse down behind a green site) |
+| Dagster run failures | `run_failure_alert_sensor` → `auth.alerts` row **and** Alertmanager post | `DagsterRunFailure` (one email per failure, no resolved-noise) |
+
+Cadence: critical alerts re-nag every 12h while firing, warnings every 48h;
+resolution emails are sent for everything except `DagsterRunFailure`.
+Inhibitions keep cause-and-symptom emails from stacking (broker down doesn't
+also page consumer lag, site-down doesn't also page serving-mocks).
+
+### Pieces and where they live
+
+| Piece | Where |
+|---|---|
+| Scrape + rules config | `infrastructure/compose/monitoring/prometheus.yml` + `alerts/*.yml` |
+| Alertmanager routing | `infrastructure/compose/monitoring/alertmanager.yml` (webhook URL/token injected from `.env` at container start; never committed) |
+| Email Worker | `infrastructure/alert-mailer/` (deploy/test instructions in its README) |
+| Grafana dashboards | `infrastructure/compose/monitoring/grafana/dashboards/*.json`, file-provisioned. **UI edits do not persist**; edit the JSON in git |
+| Env switches | `PLATFORM_ENV`, `ALERTING_ENABLED`, `ALERT_WEBHOOK_URL`, `ALERT_WEBHOOK_TOKEN` in `infrastructure/.env` |
+
+Laptop behavior: the same rules evaluate locally (visible in Grafana /
+Prometheus → Alerts), but Alertmanager is profile-gated to the VM
+(`ALERTING_ENABLED=1`), so nothing delivers from the laptop. The
+`spotify-producer` and `alertmanager` targets are down locally by design.
+
+### Test the channel end to end
+
+```bash
+# On the VM: synthetic alert through Alertmanager → Worker → inbox.
+docker exec alertmanager amtool alert add TestAlert severity=critical \
+  --annotation=summary="Synthetic test" --alertmanager.url=http://localhost:9093
+# Or POST straight to the Worker (see infrastructure/alert-mailer/README.md).
+```
+
+A real-fire drill: `docker stop spotify-current-producer` → `TargetDown`
+fires after ~10m and emails; `docker start` it → resolved email. Silence
+during planned work: `docker exec alertmanager amtool silence add
+alertname=TargetDown --duration=2h --comment="maintenance"
+--alertmanager.url=http://localhost:9093`.
+
+### Rotating the alert webhook token
+
+`openssl rand -hex 32`, then update both sides: `wrangler secret put
+ALERT_WEBHOOK_TOKEN` in `infrastructure/alert-mailer/` and
+`ALERT_WEBHOOK_TOKEN` in the VM `.env`, then `docker compose --profile
+alerting up -d alertmanager` from `infrastructure/compose/monitoring/`.
 
 ---
 

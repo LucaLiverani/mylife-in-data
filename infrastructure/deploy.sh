@@ -209,8 +209,12 @@ if [ "$RESTART_DAGSTER" = "1" ]; then
     (cd "$COMPOSE_DIR/dagster" && docker compose "${DAGSTER_PROFILES[@]}" up -d --force-recreate)
 fi
 if [ "$RESTART_MONITORING" = "1" ]; then
-    echo "→ Recreating monitoring (Prometheus + Grafana)..."
-    (cd "$COMPOSE_DIR/monitoring" && docker compose up -d --force-recreate)
+    MONITORING_PROFILES=()
+    if [ "${ALERTING_ENABLED:-0}" = "1" ]; then
+        MONITORING_PROFILES+=(--profile alerting)
+    fi
+    echo "→ Recreating monitoring (Prometheus + Grafana + alerting)..."
+    (cd "$COMPOSE_DIR/monitoring" && docker compose "${MONITORING_PROFILES[@]}" up -d --force-recreate)
 fi
 if [ "$RESTART_UMAMI" = "1" ]; then
     # Isolated compose project — plain `up -d` only creates/updates the umami +

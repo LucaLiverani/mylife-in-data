@@ -38,6 +38,7 @@ from typing import Any
 
 import jsonschema
 import spotipy
+from prometheus_client import Counter, Gauge, start_http_server
 from spotipy.cache_handler import CacheFileHandler
 from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyOAuth
@@ -72,6 +73,36 @@ SCOPES = (
 )
 DEFAULT_CACHE_PATH = "/opt/dagster/tokens/.spotify_cache"
 POLL_INTERVAL_SECONDS = 5
+METRICS_PORT = int(os.environ.get("PRODUCER_METRICS_PORT", "9110"))
+
+# Heartbeat for the monitoring stack (this container is not a Dagster run, so
+# run_failure_alert_sensor can't see it — Prometheus scrapes these instead;
+# alert rules live in infrastructure/compose/monitoring/alerts/).
+POLLS = Counter(
+    "spotify_producer_polls_total", "Successful Spotify API poll cycles"
+)
+POLL_ERRORS = Counter(
+    "spotify_producer_poll_errors_total", "Failed Spotify API poll cycles", ["kind"]
+)
+EVENTS_PUBLISHED = Counter(
+    "spotify_producer_events_published_total",
+    "State-transition events published to Redpanda",
+    ["outcome"],  # ok → spotify.player.current, dlq → its dead-letter sibling
+)
+PUBLISH_FAILURES = Counter(
+    "spotify_producer_kafka_publish_failures_total",
+    "Events that failed to publish to Redpanda entirely",
+)
+LAST_OK_POLL = Gauge(
+    "spotify_producer_last_successful_poll_timestamp_seconds",
+    "Unix time of the last successful Spotify API poll",
+)
+# Pre-seed every label combination so increase()/rate() see 0 instead of an
+# absent series before the first occurrence.
+for _kind in ("rate_limited", "auth", "spotify_error", "unexpected"):
+    POLL_ERRORS.labels(kind=_kind)
+for _outcome in ("ok", "dlq"):
+    EVENTS_PUBLISHED.labels(outcome=_outcome)
 
 _running = True
 
@@ -209,6 +240,9 @@ def main() -> int:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
+    start_http_server(METRICS_PORT)
+    LAST_OK_POLL.set_to_current_time()  # grace until the first real poll lands
+    log.info("Metrics on :%s/metrics", METRICS_PORT)
     log.info("Producer started — polling %s every %ss → topic %s", "currently-playing", POLL_INTERVAL_SECONDS, TOPIC)
     prev: dict[str, Any] | None = None
 
@@ -223,22 +257,29 @@ def main() -> int:
             event = _normalize_event(payload) if payload else None
         except SpotifyException as exc:
             if exc.http_status == 429:
+                POLL_ERRORS.labels(kind="rate_limited").inc()
                 retry_after = int(exc.headers.get("Retry-After", "10")) if exc.headers else 10
                 log.warning("429 — backing off %ss", retry_after)
                 time.sleep(retry_after)
                 continue
             if exc.http_status == 401:
+                POLL_ERRORS.labels(kind="auth").inc()
                 log.info("401 — refreshing token")
                 # spotipy refreshes on next call when token expired; just retry.
                 time.sleep(2)
                 continue
+            POLL_ERRORS.labels(kind="spotify_error").inc()
             log.exception("Spotify error: %s", exc)
             time.sleep(POLL_INTERVAL_SECONDS * 2)
             continue
         except Exception:
+            POLL_ERRORS.labels(kind="unexpected").inc()
             log.exception("Unexpected error polling Spotify")
             time.sleep(POLL_INTERVAL_SECONDS * 2)
             continue
+
+        POLLS.inc()
+        LAST_OK_POLL.set_to_current_time()
 
         if event is not None and _events_differ(prev, event):
             wire, errors = serialize_event(validator, event)
@@ -252,6 +293,7 @@ def main() -> int:
                 else:
                     producer.send(TOPIC, value=event, key=event.get("track_id") or None)
                 producer.flush(timeout=5)
+                EVENTS_PUBLISHED.labels(outcome="dlq" if errors else "ok").inc()
                 if not errors:
                     log.info(
                         "→ %s — %s (playing=%s)",
@@ -263,6 +305,7 @@ def main() -> int:
                 # a bad state from re-rejecting on every poll.
                 prev = event
             except Exception:
+                PUBLISH_FAILURES.inc()
                 log.exception("Kafka publish failed")
         time.sleep(POLL_INTERVAL_SECONDS)
 

@@ -114,7 +114,9 @@ and required a manual `docker cp`).
 Deliberate non-goals: no self-hosted runner (GitHub advises against them on
 public repos and the VM holds personal data), no k8s/GitOps, and the VM-side
 auto-deploy poller is deferred until the gates have soaked under manual
-triggering.
+triggering. (Its stated prerequisite, re-exported failure visibility, now
+exists: Prometheus alert rules + Alertmanager email via the alert-mailer
+Worker, see `docs/OPERATIONS.md` → "Monitoring & alerting".)
 
 ### CD, dashboard (GitHub Actions)
 
@@ -206,11 +208,13 @@ headroom.
 
 ## Known gaps (accepted, tracked privately)
 
-- No disk-full story on the VM (image GC after repeated `--build`, ENOSPC
-  behavior of the nightly archive).
+- ~~No disk-full story on the VM~~ partially closed: `HostDiskAlmostFull` /
+  `HostDiskCritical` alerts email before ENOSPC (no automated image GC yet).
 - No rollback runbook for validated-but-runtime-bad deploys; DDL is
   forward-only by design.
 - Workers free-tier budget (~100k req/day) is shared by prod and previews;
   on exhaustion the mocks fallback dies too (it runs inside the Function).
-- No continuous "is prod serving live, not silently mocks" probe; the
-  `X-Data-Source` header is the ready-made oracle for the monitoring stack.
+- ~~No continuous "is prod serving live, not silently mocks" probe~~ closed:
+  blackbox-exporter probes `/api/system/health` through Cloudflare every 60s
+  and `DashboardServingMocks` fires on `X-Data-Source != live`
+  (`docs/OPERATIONS.md` → "Monitoring & alerting").

@@ -1,0 +1,58 @@
+# Alertmanager → alert-mailer Worker → email. One receiver; grouping, dedup
+# and repeat cadence are decided here, the Worker only formats and sends.
+#
+# The webhook URL and Bearer token are NOT in this file (public repo): the
+# container entrypoint writes them to /tmp from ALERT_WEBHOOK_URL /
+# ALERT_WEBHOOK_TOKEN in infrastructure/.env (see docker-compose.yml).
+
+route:
+  receiver: email
+  group_by: ['alertname', 'severity']
+  group_wait: 1m          # collect a burst into one email
+  group_interval: 10m
+  repeat_interval: 12h    # re-nag cadence for still-firing criticals
+  routes:
+    # One-shot events: a Dagster run failure "resolves" itself 5 minutes
+    # after the sensor posts it, so a resolved email would be noise.
+    - matchers: ['alertname="DagsterRunFailure"']
+      receiver: email-events
+      group_by: ['alertname', 'dagster_job']
+      repeat_interval: 1h   # distinct failures of the same job still email
+    - matchers: ['severity="warning"']
+      repeat_interval: 48h
+
+receivers:
+  - name: email
+    webhook_configs:
+      - url_file: /tmp/alert_webhook_url
+        send_resolved: true
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /tmp/alert_webhook_token
+  - name: email-events
+    webhook_configs:
+      - url_file: /tmp/alert_webhook_url
+        send_resolved: false
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /tmp/alert_webhook_token
+
+inhibit_rules:
+  # Broker down → every stream-level symptom fires too; email the cause only.
+  - source_matchers: ['alertname="TargetDown"', 'job="redpanda"']
+    target_matchers: ['alertname=~"SpotifyConsumer.*|SpotifyStreamSilent24h|SpotifyConsumerLag"']
+  # ClickHouse down → its consumer group naturally disappears.
+  - source_matchers: ['alertname="TargetDown"', 'job="clickhouse"']
+    target_matchers: ['alertname=~"SpotifyConsumerGone|SpotifyConsumerGroupMissing|SpotifyConsumerLag"']
+  # Producer container down → don't also page about its silence/restarts.
+  - source_matchers: ['alertname="TargetDown"', 'job="spotify-producer"']
+    target_matchers: ['alertname=~"SpotifyProducer.*"']
+  # Site unreachable → the live-source probe necessarily fails as well.
+  - source_matchers: ['alertname="DashboardUnreachable"']
+    target_matchers: ['alertname="DashboardServingMocks"']
+  # cadvisor down → container_last_seen disappears for every container and
+  # the absent()-based Dagster alerts would fire on healthy containers.
+  - source_matchers: ['alertname="TargetDown"', 'job="cadvisor"']
+    target_matchers: ['alertname=~"DagsterDaemonDown|DagsterWebserverDown|DagsterDaemonCrashLooping"']

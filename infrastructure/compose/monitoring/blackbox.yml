@@ -1,0 +1,21 @@
+# Blackbox exporter modules for probing the public dashboard.
+modules:
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      preferred_ip_protocol: ip4
+
+  # Same probe, but additionally fail when the API answered from bundled
+  # mocks: every /api/* response carries X-Data-Source: live|cache
+  # (dashboard/functions/_shared/fallback.ts), and 'cache' means the
+  # warehouse/tunnel is unreachable behind a green site.
+  http_2xx_live_source:
+    prober: http
+    timeout: 10s
+    http:
+      preferred_ip_protocol: ip4
+      fail_if_header_not_matches:
+        - header: X-Data-Source
+          regexp: '^live$'
+          allow_missing: false

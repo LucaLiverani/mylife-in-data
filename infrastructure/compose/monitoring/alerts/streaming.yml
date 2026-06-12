@@ -1,0 +1,102 @@
+# Alerts for the one streaming path in the platform:
+#   spotify-current-producer → Redpanda topic spotify.player.current
+#   → ClickHouse Kafka engine (consumer group clickhouse_spotify_current)
+#   → bronze.spotify_player_current
+# Runbook: docs/OPERATIONS.md → "Monitoring & alerting".
+
+groups:
+  - name: streaming-pipeline
+    rules:
+      # The producer container is alive but its Spotify polls stopped
+      # succeeding (dead token, API outage, lockout). 429 backoffs longer
+      # than ~10 minutes also land here, which is exactly when we want eyes.
+      - alert: SpotifyProducerSilent
+        expr: time() - spotify_producer_last_successful_poll_timestamp_seconds{job="spotify-producer"} > 300
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Spotify producer has not completed a successful poll in 10+ minutes"
+          description: "The now-playing stream is silent while the container is up: token or Spotify API problem. Check: docker logs spotify-current-producer."
+
+      - alert: SpotifyProducerCrashLooping
+        expr: changes(process_start_time_seconds{job="spotify-producer"}[30m]) > 3
+        labels:
+          severity: critical
+        annotations:
+          summary: "Spotify producer restarted {{ $value }} times in 30 minutes"
+          description: "restart: unless-stopped is masking a crash loop. Check: docker logs spotify-current-producer."
+
+      - alert: SpotifyProducerPublishFailures
+        expr: increase(spotify_producer_kafka_publish_failures_total{job="spotify-producer"}[15m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Spotify producer failed to publish events to Redpanda"
+          description: "Events are being lost at the producer → broker hop ({{ $value }} in 15m)."
+
+      # Contract rejects are not data loss (the DLQ keeps them) but they mean
+      # producer and schema drifted, the thing the contract exists to catch.
+      - alert: SpotifyStreamSchemaRejects
+        expr: increase(spotify_producer_events_published_total{job="spotify-producer",outcome="dlq"}[15m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Events rejected by the stream schema contract ({{ $value }} in 15m)"
+          description: "Inspect bronze.spotify_player_current_dlq and reconcile producer vs ingestion/spotify/schemas/."
+
+      # ClickHouse stopped consuming the topic (table detached, Kafka engine
+      # stuck). Group membership is the direct signal.
+      - alert: SpotifyConsumerGone
+        expr: redpanda_kafka_consumer_group_consumers{redpanda_group="clickhouse_spotify_current"} < 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No ClickHouse consumer in group clickhouse_spotify_current"
+          description: "bronze.spotify_player_current is no longer being fed. Check the Kafka engine table and ClickHouse logs."
+
+      - alert: SpotifyConsumerGroupMissing
+        expr: absent(redpanda_kafka_consumer_group_consumers{redpanda_group="clickhouse_spotify_current"})
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consumer group clickhouse_spotify_current vanished from Redpanda"
+          description: "The group no longer exists on the broker: Kafka engine table dropped or broker state lost."
+
+      - alert: SpotifyConsumerLag
+        expr: >
+          sum(redpanda_kafka_max_offset{redpanda_topic="spotify.player.current"})
+          - sum(redpanda_kafka_consumer_group_committed_offset{redpanda_group="clickhouse_spotify_current",redpanda_topic="spotify.player.current"})
+          > 50
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ClickHouse is {{ $value }} messages behind on spotify.player.current"
+          description: "At this volume any sustained lag means the consumer is stalled, not slow."
+
+      # The literal "no messages for N minutes" alert is a false positive
+      # every night, so the honest version is a full day of silence: the
+      # producer is healthy and polling, yet nothing got produced for 24h.
+      - alert: SpotifyStreamSilent24h
+        expr: >
+          sum(increase(redpanda_kafka_max_offset{redpanda_topic="spotify.player.current"}[24h])) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No events on spotify.player.current for 24h"
+          description: "Either genuinely no listening for a day, or the chain is broken somewhere the other alerts don't see."
+
+      # kafka_skip_broken_messages=1 is the last-resort guard for messages
+      # that bypass the producer-side contract; it must stay silent in
+      # normal operation. (Series appears only after the first skip.)
+      - alert: ClickHouseKafkaSkippedMessages
+        expr: increase(ClickHouseProfileEvents_KafkaMessagesFailed[15m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "ClickHouse Kafka engine skipped broken messages"
+          description: "Messages reached the topic that ClickHouse could not parse; the producer-side contract was bypassed."

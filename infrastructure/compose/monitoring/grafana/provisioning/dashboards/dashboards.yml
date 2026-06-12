@@ -1,0 +1,14 @@
+# Dashboards are provisioned from git (../dashboards mounted read-only at
+# /var/lib/grafana/dashboards). UI edits to these dashboards do NOT persist;
+# change the JSON in the repo instead.
+apiVersion: 1
+
+providers:
+  - name: platform
+    folder: My Life in Data
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

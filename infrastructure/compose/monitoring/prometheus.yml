@@ -3,18 +3,32 @@ global:
   evaluation_interval: 15s
   external_labels:
     cluster: 'data-platform'
-    environment: 'local'
+    # Expanded from the container env (PLATFORM_ENV: local|vm) via
+    # --enable-feature=expand-external-labels; rides into every alert so
+    # email subjects say which environment fired.
+    environment: '${PLATFORM_ENV}'
+
+# Alert rules live next to this file; alertmanager only runs where
+# ALERTING_ENABLED=1 (the VM). Elsewhere rules still evaluate and show in
+# Grafana, the send just has nowhere to go.
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
+  # ClickHouse native Prometheus listener (config/config.xml <prometheus>).
   - job_name: 'clickhouse'
     metrics_path: /metrics
-    scheme: http
     static_configs:
-      - targets: ['clickhouse:8123']
+      - targets: ['clickhouse:9363']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
@@ -23,9 +37,58 @@ scrape_configs:
   # Redpanda exposes Prometheus metrics on its admin port.
   - job_name: 'redpanda'
     metrics_path: /public_metrics
-    scheme: http
     static_configs:
       - targets: ['redpanda:9644']
+
+  # Heartbeat of the long-running now-playing producer (not a Dagster run, so
+  # this scrape is its only liveness signal). Down on the laptop by design:
+  # the container is profile-gated to the VM.
+  - job_name: 'spotify-producer'
+    static_configs:
+      - targets: ['spotify-current-producer:9110']
+
+  # Host metrics (disk headroom is the one that pages).
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Per-container metrics; covers liveness of containers nothing scrapes
+  # directly (dagster-daemon, dagster-webserver).
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+
+  # End-to-end probe of the public dashboard through Cloudflare. The
+  # live-source module additionally fails when /api answers from mocks
+  # (X-Data-Source != live), i.e. warehouse or tunnel down behind a green
+  # site. 60s cadence keeps the Pages Functions request budget negligible.
+  - job_name: 'blackbox-dashboard'
+    metrics_path: /probe
+    scrape_interval: 60s
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['https://mylife-in-data.com/api/system/health']
+    relabel_configs: &blackbox_relabel
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'blackbox-exporter:9115'
+
+  - job_name: 'blackbox-live-source'
+    metrics_path: /probe
+    scrape_interval: 60s
+    params:
+      module: [http_2xx_live_source]
+    static_configs:
+      - targets: ['https://mylife-in-data.com/api/system/health']
+    relabel_configs: *blackbox_relabel
 
   # Dagster metrics (when DAGSTER_PROMETHEUS_METRICS_ENABLED=true is set).
   # - job_name: 'dagster'

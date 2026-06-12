@@ -74,8 +74,18 @@ fi
 sleep 10
 
 echo
-echo "[4/5] Monitoring (Prometheus + Grafana)..."
-(cd "$COMPOSE_DIR/monitoring" && docker compose up -d)
+echo "[4/5] Monitoring (Prometheus + Grafana + exporters)..."
+# Alertmanager is gated behind the `alerting` compose profile — only started
+# where ALERTING_ENABLED=1 (the VM). On the laptop, alert rules still
+# evaluate and render in Grafana; there is just no delivery channel.
+MONITORING_COMPOSE_PROFILES=()
+if [ "${ALERTING_ENABLED:-0}" = "1" ]; then
+    MONITORING_COMPOSE_PROFILES+=(--profile alerting)
+    echo "      Alerting enabled — starting Alertmanager."
+else
+    echo "      Alerting disabled (ALERTING_ENABLED!=1) — skipping Alertmanager."
+fi
+(cd "$COMPOSE_DIR/monitoring" && docker compose "${MONITORING_COMPOSE_PROFILES[@]}" up -d)
 sleep 5
 
 echo

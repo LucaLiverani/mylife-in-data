@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
       jsonschema \
       spotipy \
       google-auth google-auth-oauthlib google-api-python-client \
-      pendulum python-dotenv requests boto3
+      pendulum python-dotenv requests boto3 prometheus-client
 
 # Dagster instance config (where it stores runs/event logs)
 ENV DAGSTER_HOME=/opt/dagster/dagster_home

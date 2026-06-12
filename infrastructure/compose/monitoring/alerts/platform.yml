@@ -1,0 +1,105 @@
+# Platform-level alerts: scrape targets, critical containers, host
+# resources, and the public dashboard probe.
+# Runbook: docs/OPERATIONS.md → "Monitoring & alerting".
+
+groups:
+  - name: platform
+    rules:
+      # One rule covers every scraped service (clickhouse, redpanda,
+      # spotify-producer, exporters, alertmanager). On the laptop
+      # spotify-producer and alertmanager are down by design; alerts there
+      # render in Grafana only, nothing delivers them.
+      - alert: TargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} target is down"
+          description: "Prometheus cannot scrape {{ $labels.job }} ({{ $labels.instance }})."
+
+      # The Dagster daemon launches every schedule and sensor; when it dies
+      # the platform goes quiet with zero failed runs to alert on. absent()
+      # is the whole signal: cadvisor drops a dead container's series within
+      # one scrape (a time()-based staleness arm can never outlive the 5m
+      # lookback, so none is used).
+      - alert: DagsterDaemonDown
+        expr: absent(container_last_seen{name="dagster-daemon"})
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "dagster-daemon container is gone"
+          description: "No schedules or sensors are running, ingestion has stopped. Check: docker logs dagster-daemon."
+
+      - alert: DagsterWebserverDown
+        expr: absent(container_last_seen{name="dagster-webserver"})
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "dagster-webserver container is gone"
+          description: "The Dagster UI (and deploy-triggered dbt builds via the CLI) are unavailable."
+
+      # restart: unless-stopped masks crash loops: the container is always
+      # "there", it just keeps being reborn.
+      - alert: DagsterDaemonCrashLooping
+        expr: changes(container_start_time_seconds{name="dagster-daemon"}[30m]) > 3
+        labels:
+          severity: critical
+        annotations:
+          summary: "dagster-daemon restarted {{ $value }} times in 30 minutes"
+          description: "Crash loop behind restart: unless-stopped. Check: docker logs dagster-daemon."
+
+      - alert: HostDiskAlmostFull
+        expr: >
+          node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}
+          / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < 0.15
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Root filesystem under 15% free"
+          description: "Repeated image builds are the usual culprit; docker system prune. {{ $value | humanizePercentage }} left."
+
+      - alert: HostDiskCritical
+        expr: >
+          node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}
+          / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < 0.08
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Root filesystem under 8% free"
+          description: "ClickHouse and Redpanda will start failing writes soon. Free space now."
+
+      - alert: HostLowMemory
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory under 5% available"
+          description: "The OOM killer picks next; ClickHouse is the likely victim."
+
+      # End-to-end: the public site itself, probed through Cloudflare.
+      - alert: DashboardUnreachable
+        expr: probe_success{job="blackbox-dashboard"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Public dashboard is unreachable"
+          description: "https://mylife-in-data.com/api/system/health is not answering 2xx through Cloudflare."
+
+      # Site is green but answers come from bundled mocks: warehouse, tunnel
+      # or CH auth is broken behind a healthy-looking dashboard. This is the
+      # X-Data-Source probe sketched in docs/DEPLOY.md known gaps.
+      - alert: DashboardServingMocks
+        expr: probe_success{job="blackbox-live-source"} == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Dashboard is serving mock data, not the warehouse"
+          description: "/api/system/health responds but X-Data-Source != live. Check the cloudflared tunnel and ClickHouse."

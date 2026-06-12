@@ -76,6 +76,9 @@ services:
       # schedule + sensor registration in definitions.py.
       MYLIFE_TOKEN_WRITER: ${MYLIFE_TOKEN_WRITER:-0}
       DAGSTER_SCHEDULES_ENABLED: ${DAGSTER_SCHEDULES_ENABLED:-0}
+      # Topology, not a secret: run_failure_alert_sensor posts here for the
+      # email leg. Harmless on the laptop — sensors don't run there.
+      ALERTMANAGER_URL: http://alertmanager:9093
     volumes:
       - dagster-home:/opt/dagster/dagster_home
       # Bind-mount instance/workspace config over the image-baked copies: the
