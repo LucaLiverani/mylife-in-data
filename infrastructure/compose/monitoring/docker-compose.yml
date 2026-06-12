@@ -87,9 +87,15 @@ services:
     restart: unless-stopped
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    # v0.55+: required for Docker 28+/containerd image store ("overlayfs"
+    # driver) — v0.49 fails the rw-layer lookup and registers zero docker
+    # containers, so the name="..." series the Dagster alerts match never
+    # exist. --docker_only keeps the raw per-cgroup noise out.
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
     privileged: true
+    command:
+      - '--docker_only=true'
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
