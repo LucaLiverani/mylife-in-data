@@ -22,5 +22,5 @@ SELECT
         )
     )                                                  AS metadata,
     generateUUIDv4()                                   AS event_id
-FROM {{ ref('silver_spotify_plays') }}
+FROM {{ ref('silver_spotify_plays_merged') }}
 WHERE track_id != ''

@@ -12,6 +12,8 @@ SELECT
 FROM {{ ref('silver_events_unified') }}
 -- Upper bound excludes future-dated rows (e.g. subscribed-holiday calendar
 -- events run years ahead) that otherwise appear as phantom points on the chart.
-WHERE event_ts >= today() - 90 AND event_ts <= now()
+-- now64(3) (not now()) so the merged speed layer's still-playing track, stamped
+-- at ms precision, isn't clipped by a second-precision bound.
+WHERE event_ts >= today() - 90 AND event_ts <= now64(3)
 GROUP BY date
 ORDER BY date

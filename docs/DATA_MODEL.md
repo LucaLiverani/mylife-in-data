@@ -412,6 +412,33 @@ CREATE VIEW silver.spotify_current AS
 SELECT argMax(c, captured_at) FROM bronze.spotify_player_current FINAL;
 ```
 
+#### Spotify metrics are streaming-first (speed layer + batch reconciliation)
+
+The gold Spotify metrics don't read `silver_spotify_plays` (history) directly any
+more, they read `silver_spotify_plays_merged`, a Lambda-style splice of two layers:
+
+- **Batch layer** `silver_spotify_plays` — the authoritative history from the
+  every-minute recently-played pull (`bronze.spotify_plays_raw`). System of record.
+- **Speed layer** `silver_spotify_plays_stream` — clean plays derived from the
+  now-playing stream (`bronze.spotify_player_current`) via dwell-time logic: a
+  segment starts on each track change (pause/resume folds in, same `track_id`), and
+  a segment counts as a play once it stays current for ~30s (the gap to the next
+  track change, or `now()` for the song playing right now). Same 11 columns/types as
+  the batch layer so the two `UNION ALL` cleanly.
+- **Merge** `silver_spotify_plays_merged` — `history(played_at <= T)` +
+  `stream(played_at > T)` where `T = max(played_at)` in `spotify_plays_raw` (the
+  last reconciled play). As the minutely pull advances `T`, each stream play is
+  absorbed into the authoritative count; a small anti-join drops any stream tip the
+  pull JUST reconciled so nothing double-counts.
+
+Non-obvious gotcha baked into the design: recently-played `played_at` is the track's
+**END** time (it lines up with the START of the *next* track), while the stream's
+`captured_at` is the START. The speed layer therefore timestamps each play by its
+**segment end**, so both layers share the end-time convention and the watermark
+splice has no systematic skew (verified on live data: per-day counts match history
+exactly for every past day; only today carries the live tip). Tunables live in
+`dbt_project.yml` (`spotify_stream_dwell_seconds`, `spotify_stream_dedup_window_seconds`).
+
 (YouTube, Maps, Calendar each get a matching `silver.<source>_<entity>` MV
 that does the equivalent cleanup. Schemas mirror bronze with derived columns
 added — `is_weekend`, `day_name`, `time_of_day` typically live here, not in

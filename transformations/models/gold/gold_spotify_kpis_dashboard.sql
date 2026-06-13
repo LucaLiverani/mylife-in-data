@@ -10,7 +10,7 @@ WITH stats AS (
         uniqExact(track_id)                    AS songs,
         uniqExact(primary_artist_id)           AS artists,
         uniqExact(toDate(played_at))           AS active_days
-    FROM {{ ref('silver_spotify_plays') }}
+    FROM {{ ref('silver_spotify_plays_merged') }}
     WHERE played_at >= toDateTime('{{ var("kpi_start_date") }}')
 )
 SELECT

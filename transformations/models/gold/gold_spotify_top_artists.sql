@@ -11,7 +11,7 @@ WITH artists AS (
         any(genres)                                           AS genres,
         count()                                               AS plays,
         round(sum(duration_ms) / 3600000.0, 1)                AS hours
-    FROM {{ ref('silver_spotify_plays') }}
+    FROM {{ ref('silver_spotify_plays_merged') }}
     WHERE primary_artist_id != ''
       AND played_at >= toDateTime('{{ var("kpi_start_date") }}')
     GROUP BY primary_artist_id
@@ -24,7 +24,7 @@ weekly_by_artist AS (
         primary_artist_id,
         toUInt32(intDiv(toDate(played_at) - toDate('{{ var("kpi_start_date") }}'), 7)) AS week_idx,
         count()                                               AS c
-    FROM {{ ref('silver_spotify_plays') }}
+    FROM {{ ref('silver_spotify_plays_merged') }}
     WHERE primary_artist_id != ''
       AND played_at >= toDateTime('{{ var("kpi_start_date") }}')
     GROUP BY primary_artist_id, week_idx

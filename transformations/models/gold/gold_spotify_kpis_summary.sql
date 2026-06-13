@@ -8,5 +8,5 @@ SELECT
     uniqExact(primary_artist_id)                                                  AS artists,
     uniqExact(track_id)                                                           AS songs,
     concat(toString(round(sum(duration_ms) / 3600000.0, 1)), ' hrs')              AS total_hours
-FROM {{ ref('silver_spotify_plays') }}
+FROM {{ ref('silver_spotify_plays_merged') }}
 WHERE played_at >= toDateTime('{{ var("kpi_start_date") }}')

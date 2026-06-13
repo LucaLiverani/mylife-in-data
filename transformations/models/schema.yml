@@ -2,7 +2,21 @@ version: 2
 
 models:
   - name: silver_spotify_plays
-    description: "One row per play, joined with track + artist catalogs."
+    description: "Authoritative history: one row per play (recently-played pull), joined with track + artist catalogs. The batch layer."
+    columns:
+      - name: played_at
+        tests: [not_null]
+      - name: track_id
+        tests: [not_null]
+  - name: silver_spotify_plays_stream
+    description: "Speed layer: plays derived from the now-playing stream via dwell-time logic, timestamped by segment end. Same shape as silver_spotify_plays."
+    columns:
+      - name: played_at
+        tests: [not_null]
+      - name: track_id
+        tests: [not_null]
+  - name: silver_spotify_plays_merged
+    description: "Lambda merge read by every gold Spotify metric: history(played_at <= watermark) + de-duped stream tip(played_at > watermark)."
     columns:
       - name: played_at
         tests: [not_null]

@@ -24,6 +24,14 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
   **Everything else** (Spotify history, YouTube, Maps, Calendar) is a **scheduled batch
   INSERT** into bronze by Dagster. Redpanda is **not** a general ingestion layer, and
   `start-all.sh` creates only that topic and its DLQ.
+- **The Spotify metrics are streaming-first** (Lambda): the now-playing stream isn't just
+  the live card. A dwell-time **speed layer** (`silver_spotify_plays_stream`) is spliced
+  onto the authoritative recently-played **batch** history (`silver_spotify_plays`) at a
+  watermark `T = max(played_at)` in `silver_spotify_plays_merged` — which every gold
+  Spotify metric reads instead of the history alone. History stays the source of truth;
+  the stream only adds the live tip (`played_at > T`) and is absorbed as the minutely pull
+  advances `T`. NB recently-played `played_at` is the track's **END** time, so the speed
+  layer timestamps plays by segment end to align. Design: `docs/DATA_MODEL.md`.
 - **dbt vs DDL boundary** (a frequent point of confusion):
   - **dbt models** (`transformations/models/{silver,gold}/*.sql`) are pure SQL **views**.
   - **DDL** (`warehouse/ddl/*.sql`) owns what dbt can't: raw bronze landing tables (dbt

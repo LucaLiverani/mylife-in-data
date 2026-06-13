@@ -9,9 +9,9 @@
 -- timestamp column) so the home totals span the same window as the per-source
 -- KPI cards.
 SELECT
-    (SELECT uniqExact(track_id) FROM {{ ref('silver_spotify_plays') }}
+    (SELECT uniqExact(track_id) FROM {{ ref('silver_spotify_plays_merged') }}
         WHERE played_at >= toDateTime('{{ var("kpi_start_date") }}'))              AS songsStreamed,
-    (SELECT uniqExact(primary_artist_id) FROM {{ ref('silver_spotify_plays') }}
+    (SELECT uniqExact(primary_artist_id) FROM {{ ref('silver_spotify_plays_merged') }}
         WHERE primary_artist_id != ''
           AND played_at >= toDateTime('{{ var("kpi_start_date") }}'))             AS artistsListened,
     -- Read the deduped silver views (not raw bronze.youtube_*): overlapping
@@ -35,7 +35,7 @@ SELECT
     (SELECT cities_visited FROM {{ ref('gold_maps_kpis_dashboard') }})            AS citiesVisited,
     -- Hours for the Home channel strips. YouTube is the count×duration proxy
     -- (0 until the enricher fills durations).
-    round((SELECT sum(duration_ms) FROM {{ ref('silver_spotify_plays') }}
+    round((SELECT sum(duration_ms) FROM {{ ref('silver_spotify_plays_merged') }}
         WHERE played_at >= toDateTime('{{ var("kpi_start_date") }}')) / 3600000.0, 1) AS spotifyHours,
     round((SELECT sum(duration_seconds) FROM {{ ref('silver_youtube_watches') }}
         WHERE watched_date >= toDate('{{ var("kpi_start_date") }}')) / 3600.0, 1) AS youtubeHours

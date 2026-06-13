@@ -20,7 +20,7 @@ FROM (
         primary_artist_name  AS artist,
         played_at            AS played_at_raw,
         album_art_url        AS album_art
-    FROM {{ ref('silver_spotify_plays') }}
+    FROM {{ ref('silver_spotify_plays_merged') }}
     ORDER BY played_at_raw DESC
     LIMIT 50
 )

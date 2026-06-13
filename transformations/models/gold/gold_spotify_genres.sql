@@ -5,7 +5,7 @@
 SELECT
     genre                                                  AS name,
     count()                                                AS value
-FROM {{ ref('silver_spotify_plays') }}
+FROM {{ ref('silver_spotify_plays_merged') }}
 ARRAY JOIN genres AS genre
 WHERE genre != ''
   AND played_at >= toDateTime('{{ var("kpi_start_date") }}')

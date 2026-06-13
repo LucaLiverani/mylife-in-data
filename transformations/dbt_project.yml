@@ -29,6 +29,14 @@ vars:
   #   dbt run --vars '{kpi_start_date: 2024-12-09}'  (or edit here)
   kpi_start_date: '2025-01-01'
 
+  # Streaming-first Spotify metrics (silver_spotify_plays_stream / _merged):
+  # how long a track must stay current before the now-playing stream counts it
+  # as a play, and the +/- window the watermark merge uses to recognise a stream
+  # tip play that the recently-played pull has already reconciled (drops it so it
+  # is never double-counted). Both in seconds.
+  spotify_stream_dwell_seconds: 30
+  spotify_stream_dedup_window_seconds: 120
+
 models:
   mylife:
     silver:
