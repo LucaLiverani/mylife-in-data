@@ -68,6 +68,15 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 - Do not reintroduce the legacy Maps Timeline path (`bronze.maps_visits/path/search/directions`,
   `import_maps_timeline_export.py`), removed. Full history comes from the Google Takeout
   importer (`scripts/import_google_takeout.py`).
+- **Laptop and VM `infrastructure/.env` must hold the same shared secrets.** Every
+  credential (webhook URL/token, Spotify/R2/Google/LLM keys, ClickHouse/Grafana/Umami
+  passwords) is byte-identical on both hosts, so a value set on one is never silently
+  absent on the other. Only the documented laptop↔VM split flags are allowed to differ
+  (`PLATFORM_ENV`, `ALERTING_ENABLED`, `MYLIFE_TOKEN_WRITER`, `DAGSTER_SCHEDULES_ENABLED`,
+  plus per-instance `VM_SSH`, `VM_REPO_PATH`, `CLICKHOUSE_DBT_DEV_PASSWORD`). Verify with
+  `make env-check`; pull anything the VM has but the laptop lacks with `make env-sync`
+  (`scripts/check_env_parity.sh`; the VM is the source of truth and the script is
+  read-only on it). Set a secret on one host, then sync the other.
 
 ## Workflow
 
@@ -114,7 +123,8 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 - **Public repo**: never commit secrets, IPs, emails, tokens, tunnel IDs. Use placeholders
   (`<VM_IP>`, `<DOMAIN>`, …); real values live in gitignored `ACCESS.md` / `infrastructure/.env`.
 - **Env vars**: add to `infrastructure/.env` (empty) and `.env.example` (placeholder)
-  together with the code that reads them.
+  together with the code that reads them. A real secret value must be set on **both** the
+  laptop and VM `.env` (confirm with `make env-check`); see the parity invariant above.
 - **LLM endpoint**: provider-neutral OpenAI-compatible (`LLM_API_BASE/_KEY/_MODEL`); never
   name the underlying provider.
 - **Prose** (README, docs, content): avoid em dashes.

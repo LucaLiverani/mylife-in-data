@@ -15,7 +15,7 @@ VM_REPO_PATH ?= $(shell grep -E '^VM_REPO_PATH=' $(ENV_FILE) 2>/dev/null | head 
 VM_REPO_PATH := $(if $(VM_REPO_PATH),$(VM_REPO_PATH),~/mylife-in-data)
 GH_REPO      ?= $(shell git remote get-url origin | sed -E 's#.*github.com[:/]##; s#\.git$$##')
 
-.PHONY: help deploy-vm ci-gate deploy-dashboard dbt-dev dev-clean dev-hydrate pull-tokens vm-status vm-logs-dagster
+.PHONY: help deploy-vm ci-gate deploy-dashboard dbt-dev dev-clean dev-hydrate pull-tokens env-check env-sync vm-status vm-logs-dagster
 
 help:
 	@echo "mylife-in-data — workflow targets"
@@ -29,6 +29,8 @@ help:
 	@echo "  make dev-clean        Drop + recreate dev_silver/dev_gold on the VM."
 	@echo "  make dev-hydrate      Laptop: DDL + restore bronze from the R2 snapshot + dbt build."
 	@echo "  make pull-tokens      Copy Google OAuth tokens from VM → laptop ClickHouse."
+	@echo "  make env-check        Verify laptop & VM infrastructure/.env share the same secrets."
+	@echo "  make env-sync         Pull any shared secret the VM has but the laptop lacks."
 	@echo "  make vm-status        Show docker ps on the VM."
 	@echo "  make vm-logs-dagster  Tail dagster-webserver logs on the VM."
 	@echo
@@ -102,6 +104,17 @@ dev-hydrate:
 
 pull-tokens:
 	./scripts/sync_tokens_from_vm.sh
+
+# Verify the laptop and VM infrastructure/.env hold identical SHARED secrets
+# (the documented laptop↔VM split flags are intentionally excluded — see the
+# script header and CLAUDE.md). Read-only on the VM; exits 1 on drift.
+env-check:
+	./scripts/check_env_parity.sh
+
+# Same comparison, then pull any shared value the VM has but the laptop lacks
+# into the local infrastructure/.env (VM is the source of truth).
+env-sync:
+	./scripts/check_env_parity.sh --fix
 
 vm-status:
 	@if [ -z "$(VM_SSH)" ]; then \
