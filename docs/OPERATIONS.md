@@ -357,6 +357,15 @@ resolution emails are sent for everything except `DagsterRunFailure`.
 Inhibitions keep cause-and-symptom emails from stacking (broker down doesn't
 also page consumer lag, site-down doesn't also page serving-mocks).
 
+Deploy noise is suppressed automatically: when `deploy.sh` recreates Dagster,
+ClickHouse, or Redpanda, it first adds a 15-minute `alertname=DagsterRunFailure`
+Alertmanager silence. Recreating a container orphans whatever run is in flight
+(usually the every-minute `spotify_recently_played_job`), which `run_monitoring`
+correctly force-fails at the 300s `start_timeout`; the silence outlives that
+reap window and auto-expires, so the benign page is swallowed while a genuine
+failure after the window still alerts. No teardown, so a mid-deploy abort
+can't leave alerts silenced.
+
 ### Pieces and where they live
 
 | Piece | Where |

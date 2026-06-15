@@ -191,6 +191,35 @@ CLICKHOUSE_DDL_HOST=localhost bash "$REPO_ROOT/warehouse/ddl/apply.sh"
 echo "→ Pruning orphaned dbt views..."
 CLICKHOUSE_DDL_HOST=localhost bash "$REPO_ROOT/warehouse/ddl/prune_orphaned_views.sh" || true
 
+# ── Pre-silence deploy-induced run failures ───────────────────────────────
+# Recreating Dagster (or ClickHouse/Redpanda underneath it) orphans or fails
+# whatever Dagster run is in flight. The usual victim is the every-minute
+# spotify_recently_played_job: its run worker dies with the old container, the
+# run hangs in STARTING, and run_monitoring force-fails it at
+# start_timeout_seconds=300 (plus up to poll_interval_seconds=120 of detection
+# lag, so the page can land ~7 min AFTER the recreate). The reap is correct,
+# but the resulting critical DagsterRunFailure page is pure deploy noise.
+#
+# Time-box an Alertmanager silence that outlives that reap+poll window. It is
+# created BEFORE the recreate and auto-expires, so there is nothing to tear
+# down: a mid-deploy abort can't leave alerts permanently silenced, and a
+# genuine failure after the window still pages. Best-effort: alertmanager has
+# no host port (9093 is Redpanda's), so we reach it via `docker exec`, and a
+# failure here never fails the deploy. Only when alerting is on AND a
+# run-disrupting service is actually being recreated.
+if [ "${ALERTING_ENABLED:-0}" = "1" ] \
+   && { [ "$RESTART_DAGSTER" = "1" ] || [ "$RESTART_CLICKHOUSE" = "1" ] || [ "$RESTART_REDPANDA" = "1" ]; }; then
+    echo "→ Silencing DagsterRunFailure for 15m (deploy-induced reaps)..."
+    if docker exec alertmanager amtool silence add 'alertname=DagsterRunFailure' \
+        --duration=15m --author="deploy.sh" \
+        --comment="deploy ${BEFORE:0:8}..${AFTER:0:8}: container recreate orphans in-flight runs" \
+        --alertmanager.url=http://localhost:9093 >/dev/null 2>&1; then
+        echo "  ✓ silence active (auto-expires in 15m)"
+    else
+        echo "  ⚠ could not create silence (alertmanager unreachable?) — deploy continues"
+    fi
+fi
+
 # ── Recreate what changed ─────────────────────────────────────────────────
 if [ "$RESTART_REDPANDA" = "1" ]; then
     echo "→ Recreating Redpanda..."
