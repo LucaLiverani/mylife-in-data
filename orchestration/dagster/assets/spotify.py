@@ -12,8 +12,11 @@ from pathlib import Path
 from dagster import (
     AssetExecutionContext,
     AssetSelection,
+    Backoff,
     DefaultScheduleStatus,
     DefaultSensorStatus,
+    Jitter,
+    RetryPolicy,
     ScheduleDefinition,
     SensorEvaluationContext,
     RunRequest,
@@ -25,6 +28,20 @@ from dagster import (
 
 
 REPO_ROOT_IN_CONTAINER = Path("/opt/dagster/repo")
+
+# Spotify's API and OAuth token endpoint (accounts.spotify.com/api/token) return
+# transient 503 "temporarily_unavailable" blips. Without an in-run retry a single
+# blip fails the step and pages a critical alert (run_failure_alert_sensor). These
+# assets self-heal — recently-played returns the last 50 plays every run and bronze
+# dedups on (track_id, played_at) — so the retry exists to absorb the blip and keep
+# the page for a genuine, sustained Spotify outage. Worst-case window ~3+6+12s stays
+# under the every-minute recently-played cadence.
+_SPOTIFY_RETRY_POLICY = RetryPolicy(
+    max_retries=3,
+    delay=3,
+    backoff=Backoff.EXPONENTIAL,
+    jitter=Jitter.PLUS_MINUS,
+)
 
 
 def _ddl_path(filename: str) -> Path:
@@ -55,6 +72,7 @@ def spotify_history_schema(context) -> str:
     description="Pull /me/player/recently-played and INSERT into bronze.spotify_plays_raw.",
     deps=[spotify_history_schema],
     required_resource_keys={"spotify"},
+    retry_policy=_SPOTIFY_RETRY_POLICY,
 )
 def spotify_recently_played(context) -> int:
     from ingestion.spotify.recently_played import fetch_and_store
@@ -70,6 +88,7 @@ def spotify_recently_played(context) -> int:
     description="Pull /me/tracks and INSERT into bronze.spotify_saved_tracks.",
     deps=[spotify_history_schema],
     required_resource_keys={"spotify"},
+    retry_policy=_SPOTIFY_RETRY_POLICY,
 )
 def spotify_saved_tracks(context) -> int:
     from ingestion.spotify.saved_tracks import fetch_and_store
@@ -85,6 +104,7 @@ def spotify_saved_tracks(context) -> int:
     description="Enrich missing track/artist IDs via /tracks?ids + /artists?ids.",
     deps=[spotify_recently_played],
     required_resource_keys={"spotify"},
+    retry_policy=_SPOTIFY_RETRY_POLICY,
 )
 def spotify_metadata_enricher(context) -> dict:
     from ingestion.spotify.enrichment import enrich
