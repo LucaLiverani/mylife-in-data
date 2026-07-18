@@ -61,13 +61,16 @@ Four sources, one pipeline, four stops on the way to a chart:
 
 ```mermaid
 flowchart LR
-    S[Spotify<br/>now playing] -->|real-time stream| RP[(Redpanda)]
-    RP --> BR[(ClickHouse<br/>bronze)]
-    Y[YouTube] & M[Maps] & C[Calendar] & SH[Spotify history] -->|daily / scheduled batch| BR
-    BR -->|dbt| GOLD[(silver → gold)]
-    GOLD --> FN[Pages Functions<br/>/api]
+    S[Spotify now playing] -->|real-time stream| RP[(Redpanda)]
+    RP --> BR[(bronze)]
+    Y[YouTube] -->|batch| BR
+    M[Maps] -->|batch| BR
+    C[Calendar] -->|batch| BR
+    SH[Spotify history] -->|batch| BR
+    BR -->|dbt| GOLD[(silver / gold)]
+    GOLD --> FN[Pages Functions /api]
     FN --> UI[React dashboard]
-    DAG{{Dagster}} -. orchestrates .-> BR
+    DAG{{Dagster}} -.orchestrates.-> BR
     DAG -.-> GOLD
 ```
 
