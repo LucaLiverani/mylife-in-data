@@ -168,11 +168,29 @@ class DataPortabilityClient:
             signed_urls=list(data.get("urls") or []),
         )
 
-    def wait_for_archive(self, job_id: str, *, timeout_s: int = 3600) -> ArchiveJob:
+    def wait_for_archive(
+        self, job_id: str, *, timeout_s: int = 3600, logger: Any = None
+    ) -> ArchiveJob:
+        """Poll until the archive reaches COMPLETE.
+
+        On TimeoutError the caller MUST keep `job_id` in mind: the archive
+        normally finishes server-side anyway, and an archive that was initiated
+        but never downloaded appears to keep the whole client rate-limited —
+        Google then 429s every new initiate with a `timestamp_after_24hrs` that
+        is already in the past and never advances. Recovery is to consume the
+        orphan, which `_initiate_dp_with_cooldown_wait` in
+        orchestration/dagster/assets/google.py does via the 429's
+        `previous_job_ids`.
+
+        Pass `logger=context.log` from a Dagster asset — the module logger does
+        not reach Dagster's captured step logs, which once left a stuck archive
+        with no poll-state trail at all.
+        """
+        emit = (logger or log).info
         deadline = time.time() + timeout_s
         while time.time() < deadline:
             job = self.get_state(job_id)
-            log.info("Archive %s state=%s", job_id, job.state)
+            emit("Archive %s state=%s", job_id, job.state)
             if job.state == "COMPLETE":
                 return job
             if job.state in {"FAILED", "EXPIRED", "CANCELLED"}:

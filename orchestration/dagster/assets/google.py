@@ -48,6 +48,34 @@ MAPS_ACTIVITY_RESOURCES = ["myactivity.maps"]
 MAPS_SAVED_PLACES_RESOURCES = ["maps.aliased_places", "maps.starred_places"]
 
 
+# ── Data Portability timing budgets ────────────────────────────────────────
+# Defined up here because the job definitions below tag themselves with
+# DP_DAILY_MAX_RUNTIME_S at import time. See the "Unified daily Data
+# Portability ingest" section for how the cooldown shapes the schedule.
+DP_DAILY_LOOKBACK_DAYS = 3
+# Every in-code budget here must SUM to comfortably less than the job's
+# `dagster/max_runtime_seconds` tag. When they don't, run_monitoring reaps the
+# run before any of the bail-outs can fire, and a precise diagnostic ("cooldown
+# until X exceeds the wait cap") degrades into an opaque "Exceeded maximum
+# runtime" alert. That inversion — a 4500s wait cap under a 3600s instance-wide
+# reaper — is what hid a stuck archive for three days.
+DP_COOLDOWN_MAX_WAIT_S = 30 * 60
+# Google's own docs say archive builds run minutes → hours; the previous 3600s
+# default both under-waited and exactly tied the reaper's 3600s.
+DP_ARCHIVE_WAIT_S = 90 * 60
+DP_DAILY_MAX_RUNTIME_S = 8100  # 2h15m — cooldown wait + archive wait + enrichment
+# Skew margin added when sleeping to the cooldown's clear time. Kept small: it's
+# also the per-day "creep" the anchor gains each time we re-initiate just after
+# the boundary, so a large buffer would slowly inflate the daily wait.
+DP_COOLDOWN_BUFFER_S = 15
+# A 429 whose retry time is already past usually means clock skew, so a few
+# short retries are worth it. Beyond that the timestamp is *stale* — observed
+# frozen at the same value for 48h while an un-consumed archive sat COMPLETE
+# server-side — and retrying is a pure no-op that burns the run's whole budget.
+DP_STALE_COOLDOWN_RETRIES = 3
+DP_STALE_COOLDOWN_SLEEP_S = 30.0
+
+
 @asset(group_name="google", description="DDL bootstrap for Maps tables (trips + activity).")
 def maps_schema(context) -> str:
     from ingestion._shared.clickhouse import execute_file
@@ -97,13 +125,29 @@ def maps_private_places_sync(context) -> int:
     # race the rolling boundary against Sunday's run — wait it out rather than
     # fail. Both initiate and wait happen before the TRUNCATE, so any failure
     # here leaves the existing private-places filter intact (fail-safe).
-    job_id = _initiate_dp_with_cooldown_wait(context, client, MAPS_SAVED_PLACES_RESOURCES)
-    job = client.wait_for_archive(job_id)
+    job_id, adopted = _initiate_dp_with_cooldown_wait(
+        context, client, MAPS_SAVED_PLACES_RESOURCES
+    )
+    if adopted:
+        context.log.warning("Using adopted archive %s for saved places.", job_id)
+    job = client.wait_for_archive(job_id, timeout_s=DP_ARCHIVE_WAIT_S, logger=context.log)
 
     with tempfile.TemporaryDirectory(prefix="maps-saved-") as tmp:
         root = Path(tmp)
         client.download_archive(job, root)
         coords = parse_starred_places_coords(root)
+
+    # An empty parse means the archive carried no Saved Places file — a wrong
+    # archive adopted, or Google moving the path — NOT "every star was removed".
+    # TRUNCATE-ing on that would silently empty the spatial privacy filter and
+    # let private coordinates flow through to gold, so bail out before the
+    # TRUNCATE and keep the existing rows (same fail-safe as an initiate error).
+    if not coords:
+        raise RuntimeError(
+            f"Archive {job_id} yielded 0 starred-place coordinates — refusing to "
+            "TRUNCATE silver.maps_private_places, which backs the privacy filter. "
+            "Verify the Saved Places path in parse_starred_places_coords."
+        )
 
     # TRUNCATE + INSERT so removed stars drop from the filter on next sync.
     ch = get_client()
@@ -268,6 +312,8 @@ def maps_trip_weather(context) -> dict:
 maps_private_places_job = define_asset_job(
     "maps_private_places_job",
     selection=AssetSelection.assets(maps_private_places_sync),
+    # Same DP archive wait as the daily job — same reaper override needed.
+    tags={"dagster/max_runtime_seconds": str(DP_DAILY_MAX_RUNTIME_S)},
 )
 
 
@@ -364,42 +410,82 @@ def youtube_metadata_enricher(context) -> dict:
 #          out the cooldown and retries (same-day recovery), capped at
 #          DP_COOLDOWN_MAX_WAIT_S so a far-off cooldown (e.g. a midday backfill)
 #          surfaces loudly and defers to guard #1 instead of blocking a worker.
-DP_DAILY_LOOKBACK_DAYS = 3
-DP_COOLDOWN_MAX_WAIT_S = 75 * 60
-# Skew margin added when sleeping to the cooldown's clear time. Kept small: it's
-# also the per-day "creep" the anchor gains each time we re-initiate just after
-# the boundary, so a large buffer would slowly inflate the daily wait.
-DP_COOLDOWN_BUFFER_S = 15
+# (DP_* budgets are defined at the top of the module — maps_private_places_job
+#  tags itself with DP_DAILY_MAX_RUNTIME_S well before this point.)
 
 
 def _initiate_dp_with_cooldown_wait(
     context, client, resources, start_time=None, end_time=None
-) -> str:
+) -> tuple[str, bool]:
     """initiate_archive, tolerating Google's per-client 24h cooldown.
+
+    Returns `(job_id, adopted)`. `adopted=True` means we could not initiate at
+    all and instead took over an archive Google itself listed in the 429's
+    `previous_job_ids` — see `_adopt_previous_archive` for why that is the
+    recovery path rather than a consolation prize.
 
     On a time-based 429 we sleep until the cooldown clears (+skew buffer) and
     retry, so the *scheduled* run recovers the same day. Bounded by
-    DP_COOLDOWN_MAX_WAIT_S — past that (or if the retry time is unparseable) we
-    re-raise so the failure alerts and the next run's overlapping window
-    backfills the gap. Shared by the daily combined ingest and the weekly
-    saved-places sync (which passes no time window)."""
+    DP_COOLDOWN_MAX_WAIT_S; past that (or if the retry time is unparseable, or
+    stale) we adopt a previous archive if one was offered, else re-raise so the
+    failure alerts and the next run's overlapping window backfills the gap.
+    Shared by the daily combined ingest and the weekly saved-places sync (which
+    passes no time window)."""
     from ingestion.google.portability import DataPortabilityRateLimited
 
     waited = 0.0
+    stale_retries = 0
     while True:
         try:
-            return client.initiate_archive(resources, start_time=start_time, end_time=end_time)
+            job_id = client.initiate_archive(
+                resources, start_time=start_time, end_time=end_time
+            )
+            return job_id, False
         except DataPortabilityRateLimited as exc:
+            fallback = _adopt_previous_archive(exc)
+
             if exc.retry_after is None:
+                if fallback:
+                    context.log.warning(
+                        "DP cooldown 429 with no parseable retry time — adopting "
+                        "previous archive %s instead of giving up.", fallback,
+                    )
+                    return fallback, True
                 context.log.error("DP cooldown 429 with no parseable retry time — giving up: %s", exc)
                 raise
-            # Sleep exactly to the clear time (+buffer); the 30s floor only kicks
-            # in when the cooldown should already be clear but Google still 429s
-            # (clock skew) — a brief retry rather than per-day creep.
+
+            # Sleep exactly to the clear time (+buffer). A non-positive value
+            # means the cooldown reads as already clear yet Google still 429s.
             sleep_s = exc.seconds_until_ready(buffer_s=DP_COOLDOWN_BUFFER_S)
             if sleep_s <= 0:
-                sleep_s = 30.0
+                stale_retries += 1
+                if stale_retries > DP_STALE_COOLDOWN_RETRIES:
+                    if fallback:
+                        context.log.warning(
+                            "DP cooldown timestamp %s is stale (still 429 after %d retries) — "
+                            "adopting previous archive %s. An un-consumed archive keeps the "
+                            "client rate-limited, so draining it is also the unblock.",
+                            exc.retry_after.isoformat(), stale_retries, fallback,
+                        )
+                        return fallback, True
+                    context.log.error(
+                        "DP cooldown timestamp %s is stale (still 429 after %d retries) and "
+                        "Google offered no previous_job_ids to adopt — giving up.",
+                        exc.retry_after.isoformat(), stale_retries,
+                    )
+                    raise
+                sleep_s = DP_STALE_COOLDOWN_SLEEP_S
+            else:
+                stale_retries = 0
+
             if waited + sleep_s > DP_COOLDOWN_MAX_WAIT_S:
+                if fallback:
+                    context.log.warning(
+                        "DP per-client cooldown until %s exceeds the %ds wait cap — "
+                        "adopting previous archive %s instead of waiting it out.",
+                        exc.retry_after.isoformat(), DP_COOLDOWN_MAX_WAIT_S, fallback,
+                    )
+                    return fallback, True
                 context.log.error(
                     "DP per-client cooldown until %s (prev jobs: %s) exceeds the %ds wait cap — "
                     "giving up; the next run's %dd window will backfill this gap.",
@@ -413,6 +499,28 @@ def _initiate_dp_with_cooldown_wait(
             )
             time.sleep(sleep_s)
             waited += sleep_s
+
+
+def _adopt_previous_archive(exc) -> str | None:
+    """Most recent archive id from a 429 body, or None.
+
+    Google lists recently-initiated archives in `previous_job_ids` (most recent
+    last) precisely so a blocked caller can consume one instead of waiting. It
+    matters more than it looks: an archive that was initiated but never
+    downloaded stays COMPLETE server-side and appears to keep the client
+    rate-limited indefinitely, with a frozen `timestamp_after_24hrs`. Adopting
+    the orphan is therefore both the data recovery *and* the thing that clears
+    the block, which no amount of retrying can do.
+
+    The API exposes no window/resource metadata per job, so an adopted archive
+    can cover a different window than requested — or different resources. That
+    degrades safely: each parser selects its own files by path, so a mismatched
+    archive yields 0 rows rather than wrong rows. Callers must still treat an
+    empty parse as suspect (see maps_private_places_sync).
+    """
+    if not exc.previous_job_ids:
+        return None
+    return exc.previous_job_ids[-1]
 
 
 def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> dict:
@@ -438,8 +546,29 @@ def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> di
         start_time.isoformat(), end_time.isoformat(), resources,
     )
 
-    job_id = _initiate_dp_with_cooldown_wait(context, client, resources, start_time, end_time)
-    job = client.wait_for_archive(job_id)
+    job_id, adopted = _initiate_dp_with_cooldown_wait(
+        context, client, resources, start_time, end_time
+    )
+    if adopted:
+        context.log.warning(
+            "Using adopted archive %s — its window may lag the requested %s → %s; "
+            "the %dd lookback backfills the remainder on the next run.",
+            job_id, start_time.isoformat(), end_time.isoformat(), DP_DAILY_LOOKBACK_DAYS,
+        )
+    try:
+        job = client.wait_for_archive(
+            job_id, timeout_s=DP_ARCHIVE_WAIT_S, logger=context.log
+        )
+    except TimeoutError:
+        # Do not treat this as a dead end: the archive almost always completes
+        # server-side afterwards, and leaving it un-consumed is what blocks the
+        # next initiate. The next run adopts it via the 429's previous_job_ids.
+        context.log.error(
+            "Archive %s still not COMPLETE after %ds. It will finish server-side; "
+            "the next run should adopt and drain it. To recover now, fetch its state "
+            "and download it directly.", job_id, DP_ARCHIVE_WAIT_S,
+        )
+        raise
 
     with tempfile.TemporaryDirectory(prefix="dp-combined-") as tmp:
         root = Path(tmp)
@@ -447,13 +576,32 @@ def _run_combined_dp_ingest(context, *, years_back: float, days_back: int) -> di
         activity_rows = parse_archive_for_activity(root)
         watch, search = parse_archive(root)
 
+    # An adopted archive that parses to nothing means we neither got data nor
+    # made progress on the block — and because adoption always "succeeds", that
+    # would otherwise show up as a green run while bronze silently goes stale.
+    # Fail instead, so it alerts. (A genuinely quiet day still reaches here via
+    # the normal fresh-initiate path, where 0 rows is a legitimate result.)
+    if adopted and not (activity_rows or watch or search):
+        raise RuntimeError(
+            f"Adopted archive {job_id} contained no Maps or YouTube activity. "
+            "It is likely for different resources (e.g. saved places), so the DP "
+            "client is still blocked and bronze is not advancing."
+        )
+
     n_activity = insert_activity(activity_rows)
     n_watch = insert_watch_history(watch)
     n_search = insert_search_history(search)
     context.log.info(
-        "Combined DP ingest: maps=%d, yt_watch=%d, yt_search=%d", n_activity, n_watch, n_search
+        "Combined DP ingest: maps=%d, yt_watch=%d, yt_search=%d (archive=%s, adopted=%s)",
+        n_activity, n_watch, n_search, job_id, adopted,
     )
-    return {"activity_rows": n_activity, "watch": n_watch, "search": n_search}
+    return {
+        "activity_rows": n_activity,
+        "watch": n_watch,
+        "search": n_search,
+        "archive_job_id": job_id,
+        "adopted": adopted,
+    }
 
 
 @asset(
@@ -474,6 +622,12 @@ google_dp_daily_job = define_asset_job(
     selection=AssetSelection.assets(
         maps_youtube_dp_daily, maps_place_enrichment, youtube_metadata_enricher
     ),
+    # Overrides run_monitoring's instance-wide max_runtime_seconds (3600), which
+    # is sized for jobs that finish in seconds. This one legitimately blocks on
+    # Google building an archive (minutes → hours). Without the override the
+    # reaper fires before DP_COOLDOWN_MAX_WAIT_S / DP_ARCHIVE_WAIT_S can, and
+    # every failure mode collapses into the same contentless timeout alert.
+    tags={"dagster/max_runtime_seconds": str(DP_DAILY_MAX_RUNTIME_S)},
 )
 
 

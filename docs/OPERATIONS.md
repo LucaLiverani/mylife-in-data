@@ -444,6 +444,37 @@ alerting up -d alertmanager` from `infrastructure/compose/monitoring/`.
 | ClickHouse 4xx error contains "Database gold does not exist" | Fresh/rebuilt warehouse: DDL not applied yet | `CLICKHOUSE_DDL_HOST=localhost bash warehouse/ddl/apply.sh`, then a dbt build. Dashboard falls back to mocks transparently meanwhile |
 | Pages Function returns 200 but `_meta.cached` is `true` | CH is unreachable from the Function OR the query failed | Check `_meta.error` field for the upstream error message |
 | Every service's env empty / Postgres `you must specify POSTGRES_PASSWORD` | `infrastructure/.env` got replaced by a broken symlink — it must stay a **regular file** (the `compose/*/.env` symlink *to* it, never the reverse) | Restore it: `scp` the laptop's `infrastructure/.env` to the VM, then re-set `MYLIFE_TOKEN_WRITER=1` + `DAGSTER_SCHEDULES_ENABLED=1` |
+| `google_dp_daily_job` fails daily with `Exceeded maximum runtime` | A Data Portability archive was initiated but never downloaded. Google then 429s every new initiate with a **frozen** `timestamp_after_24hrs` already in the past | See "Stuck Data Portability archive" below |
+
+### Stuck Data Portability archive
+
+Google's DP cooldown is per OAuth client. An archive that was initiated but never
+consumed keeps the client rate-limited indefinitely, and the 429 reports a
+`timestamp_after_24hrs` that is stale and never advances (observed frozen for 48h).
+The alert you get is a generic runtime timeout, so the real cause is invisible.
+
+The job now self-heals: `_initiate_dp_with_cooldown_wait` adopts the archive Google
+lists in the 429's `previous_job_ids` instead of retrying. To recover by hand, find
+the orphaned job id in the failing run's compute logs (the `TimeoutError: archive
+<id> did not complete` line), then from the VM:
+
+```python
+# docker exec -i dagster-daemon python
+import sys; sys.path.insert(0, "/opt/dagster/repo")
+from ingestion._shared.google_oauth import GoogleCredentials
+from ingestion.google.portability import DataPortabilityClient
+c = DataPortabilityClient(GoogleCredentials.load_and_refresh(None, scope_group="portability"))
+print(c.get_state("<job-id>"))   # expect state=COMPLETE with signed urls
+```
+
+If it is COMPLETE, download and re-parse it through the normal insert helpers
+(`insert_activity` / `insert_watch_history` / `insert_search_history`). Bronze is
+ReplacingMergeTree on natural keys, so re-ingesting is safe and idempotent.
+
+Do not "fix" this by raising `max_runtime_seconds` alone. The in-code budgets
+(`DP_COOLDOWN_MAX_WAIT_S`, `DP_ARCHIVE_WAIT_S`) must stay comfortably under the job's
+`dagster/max_runtime_seconds` tag, or the reaper fires first and every distinct
+failure mode collapses into the same contentless alert.
 
 ---
 
