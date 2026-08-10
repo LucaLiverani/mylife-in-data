@@ -19,8 +19,11 @@ services:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     ports:
-      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
-      - "${CLICKHOUSE_NATIVE_PORT:-9200}:9000"
+      # Loopback-only: Docker's port publishing bypasses ufw, so an all-interfaces
+      # bind would expose the warehouse to the public internet. The dashboard
+      # reaches it over the Cloudflare Tunnel, which runs host-side.
+      - "127.0.0.1:${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "127.0.0.1:${CLICKHOUSE_NATIVE_PORT:-9200}:9000"
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - clickhouse-logs:/var/log/clickhouse-server
@@ -52,7 +55,7 @@ services:
     container_name: clickhouse-keeper
     hostname: clickhouse-keeper
     ports:
-      - "9181:9181"
+      - "127.0.0.1:9181:9181"
     volumes:
       - clickhouse-keeper-data:/var/lib/clickhouse/coordination
       - clickhouse-keeper-logs:/var/log/clickhouse-keeper

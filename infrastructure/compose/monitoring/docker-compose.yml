@@ -14,7 +14,8 @@ services:
       - ./alerts:/etc/prometheus/alerts:ro
       - prometheus-data:/prometheus
     ports:
-      - "9090:9090"
+      # Loopback-only: Docker's port publishing bypasses ufw.
+      - "127.0.0.1:9090:9090"
     environment:
       # Stamped into external_labels (expand-external-labels) → alert emails
       # say which environment fired.
@@ -31,7 +32,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

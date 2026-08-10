@@ -92,7 +92,9 @@ services:
       # dbt needs to write target/ and logs/ inside the project; RW required.
       - ../../../transformations:/opt/dagster/transformations
     ports:
-      - "${DAGSTER_PORT:-3000}:3000"
+      # Loopback-only: Docker's port publishing bypasses ufw. Reach the UI via the
+      # Cloudflare Tunnel (host-side) rather than the VM's public interface.
+      - "127.0.0.1:${DAGSTER_PORT:-3000}:3000"
     depends_on:
       dagster-postgres:
         condition: service_healthy

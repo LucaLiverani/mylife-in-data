@@ -59,6 +59,13 @@ This file is the only doc auto-loaded each session; keep it short. For depth:
 
 ## Invariants to preserve
 
+- **Every published container port binds to `127.0.0.1` only.** Docker writes its own
+  iptables rules and **bypasses ufw**, so a bare `"8123:8123"` puts the service on the
+  public internet no matter what the firewall says. Always write
+  `"127.0.0.1:8123:8123"`. Anything that must be reachable from outside goes through the
+  Cloudflare Tunnel (host-side, so `localhost` resolves) behind Access, never a raw port.
+  This is not theoretical: in 2026-08 an unauthenticated side-project container published
+  on `0.0.0.0:3010` was compromised and ran a cryptominer as root for two weeks.
 - Every **gold** model is queried by a `dashboard/functions/api/**` endpoint or is
   upstream of one. Orphans get pruned on deploy.
 - `transformations/models/sources.yml` and `docs/DATA_MODEL.md` must match the **actual**

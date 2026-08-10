@@ -28,10 +28,13 @@ services:
       - --memory=512M                 # tight footprint for the VM
       - --default-log-level=warn
     ports:
-      - "9093:9093"      # external Kafka
-      - "18081:18081"    # external Schema Registry
-      - "18082:18082"    # external HTTP Proxy
-      - "19644:9644"     # Admin API
+      # Loopback-only: Docker's port publishing bypasses ufw, so an all-interfaces
+      # bind would put these straight on the public internet. Reach them via the
+      # Cloudflare Tunnel (host-side, so localhost resolves) or an SSH tunnel.
+      - "127.0.0.1:9093:9093"      # external Kafka
+      - "127.0.0.1:18081:18081"    # external Schema Registry
+      - "127.0.0.1:18082:18082"    # external HTTP Proxy
+      - "127.0.0.1:19644:9644"     # Admin API
     volumes:
       - redpanda-data:/var/lib/redpanda/data
     networks:
@@ -52,7 +55,7 @@ services:
       KAFKA_SCHEMAREGISTRY_ENABLED: "true"
       KAFKA_SCHEMAREGISTRY_URLS: http://redpanda:8081
     ports:
-      - "8090:8080"
+      - "127.0.0.1:8090:8080"
     depends_on:
       redpanda:
         condition: service_healthy

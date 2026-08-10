@@ -36,7 +36,9 @@ services:
       # Don't phone home.
       DISABLE_TELEMETRY: "1"
     ports:
-      - "${UMAMI_PORT:-3002}:3000"
+      # Loopback-only: Docker's port publishing bypasses ufw. Reached via the
+      # Cloudflare Tunnel, which runs host-side.
+      - "127.0.0.1:${UMAMI_PORT:-3002}:3000"
     depends_on:
       umami-postgres:
         condition: service_healthy

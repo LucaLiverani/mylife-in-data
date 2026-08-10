@@ -31,7 +31,7 @@ For the deployment history (what was migrated from Airflow+Kafka to Dagster+Redp
                        └────────────────────────────────────────────┘
 ```
 
-Only port `22` is open inbound on the VM. Every other service reaches the public internet via the Cloudflare Tunnel.
+Only port `22` is reachable from the internet. Every other service is published on `127.0.0.1` and reaches the outside world through the Cloudflare Tunnel, behind Access. Keeping that true takes two independent controls, not just UFW: see [Network exposure](#network-exposure-ufw-alone-is-not-enough).
 
 | Surface | URL | Auth |
 |---|---|---|
@@ -276,6 +276,61 @@ front of preview URLs first.
 
 ## VM operations
 
+### Network exposure (UFW alone is not enough)
+
+Two independent controls keep the VM off the public internet. Both are required,
+because either one on its own leaves a hole.
+
+**1. Every published port binds to loopback.** In
+`infrastructure/compose/*/docker-compose.yml` each mapping is written
+`"127.0.0.1:8123:8123"`, never a bare `"8123:8123"`. A bare mapping binds
+`0.0.0.0`. `cloudflared` runs on the host (systemd, not a container) so
+`http://localhost:8123` still resolves, and containers talk to each other over
+the `data-platform-network` bridge rather than through published ports, so
+loopback binding costs nothing.
+
+**2. The DOCKER-USER chain drops inbound traffic to containers.** This is the
+part that surprises people: Docker writes its own iptables rules and evaluates
+them *before* UFW, so a container published on `0.0.0.0` is reachable from the
+internet even while `ufw status` proudly reports "deny incoming". `DOCKER-USER`
+is the one chain Docker never rewrites. `bootstrap.sh` installs these rules; on
+an already-provisioned box:
+
+```bash
+# allow return traffic for connections a container opened, THEN drop the rest
+sudo iptables -I DOCKER-USER 1 -i eth0 -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+sudo iptables -I DOCKER-USER 2 -i eth0 -j DROP
+sudo apt-get install -y iptables-persistent && sudo netfilter-persistent save
+```
+
+Order matters. Without the ESTABLISHED/RELATED rule first, image pulls and every
+outbound API call from a container break.
+
+**Verify from a machine that is not the VM** (checking from on the box proves
+nothing, loopback always answers):
+
+```bash
+nc -z -w3 <VM_IP> 22    && echo "22 open (expected)"
+nc -z -w3 <VM_IP> 8123  && echo "LEAK: warehouse reachable"   # must NOT print
+nc -z -w3 <VM_IP> 3000  && echo "LEAK: Dagster reachable"     # must NOT print
+```
+
+Confirm the rules survive a reboot, or the box re-exposes itself the next time it
+restarts:
+
+```bash
+dpkg -l iptables-persistent | tail -1   # expect "ii"
+systemctl is-enabled netfilter-persistent
+```
+
+Why this is documented so emphatically: in August 2026 an unauthenticated
+side-project container, published on `0.0.0.0:3010` and routed by a stale tunnel
+hostname, was compromised and mined cryptocurrency as root for two weeks. UFW was
+active the entire time and did nothing. The hosting provider caught it, not our
+monitoring. Corollaries worth keeping: do not run unrelated side projects on this
+VM, and delete tunnel ingress rules and their DNS records when a service goes
+away.
+
 ### Service control
 
 ```bash
@@ -316,8 +371,20 @@ sudo journalctl -u cloudflared -n 50 --no-pager
 scp infrastructure/provisioning/install-cloudflared.sh <VM_USER>@<VM_IP>:~/
 scp ~/.cloudflared/<TUNNEL_ID>.json <VM_USER>@<VM_IP>:~/.cloudflared/
 scp infrastructure/provisioning/cloudflared-config.example.yml <VM_USER>@<VM_IP>:~/.cloudflared/config.yml
-# (edit config.yml to fill in TUNNEL_ID + domain + remove airflow ingress)
+# (edit config.yml to fill in TUNNEL_ID + domain, and keep ingress to services that exist)
 ssh -t <VM_USER>@<VM_IP> 'bash ~/install-cloudflared.sh'
+```
+
+Tunnel hygiene: an ingress rule only receives traffic if a DNS record points that
+hostname at the tunnel, so the config and the Cloudflare DNS list must be pruned
+together when a service is retired. Leaving either half behind publishes a
+hostname nobody is watching. Put every hostname behind an Access policy; the only
+intentional exception is Umami's `/script.js` and `/api/send`, which must stay
+public for browser-side analytics to work. Audit with:
+
+```bash
+grep hostname: /etc/cloudflared/config.yml      # on the VM
+curl -s -o /dev/null -w '%{http_code}\n' https://<retired-host>.<DOMAIN>   # expect 000
 ```
 
 ### Bootstrapping a brand-new VM
@@ -445,6 +512,42 @@ alerting up -d alertmanager` from `infrastructure/compose/monitoring/`.
 | Pages Function returns 200 but `_meta.cached` is `true` | CH is unreachable from the Function OR the query failed | Check `_meta.error` field for the upstream error message |
 | Every service's env empty / Postgres `you must specify POSTGRES_PASSWORD` | `infrastructure/.env` got replaced by a broken symlink — it must stay a **regular file** (the `compose/*/.env` symlink *to* it, never the reverse) | Restore it: `scp` the laptop's `infrastructure/.env` to the VM, then re-set `MYLIFE_TOKEN_WRITER=1` + `DAGSTER_SCHEDULES_ENABLED=1` |
 | `google_dp_daily_job` fails daily with `Exceeded maximum runtime` | A Data Portability archive was initiated but never downloaded. Google then 429s every new initiate with a **frozen** `timestamp_after_24hrs` already in the past | See "Stuck Data Portability archive" below |
+| Sustained high load with no matching Dagster run, or an abuse notice from the host | Possible compromise | See "Suspected compromise" below |
+
+### Suspected compromise
+
+Triggered by a provider abuse notice or unexplained sustained load. Work in this
+order, because killing the payload first destroys the evidence needed to find the
+way in.
+
+```bash
+# 1. What is burning CPU, with full argv (miners hide behind innocuous names)
+ps -eo pid,ppid,user,pcpu,etime,cmd --sort=-pcpu | head -20
+
+# 2. Host process or container? Walk the parent chain to the containerd shim
+ps -o pid,ppid,cmd -p <PPID>
+docker ps --format '{{.ID}}\t{{.Names}}\t{{.Ports}}'
+
+# 3. How much damage is reachable: privileged, docker.sock, host mounts?
+docker inspect <name> --format 'Priv:{{.HostConfig.Privileged}} Caps:{{.HostConfig.CapAdd}} Mounts:{{.Mounts}}'
+
+# 4. Persistence: cron, systemd units, and anything running from a temp dir
+systemctl list-units --type=service --all | grep -iE 'tmp|var/tmp'
+ls -la /etc/systemd/system/ /etc/cron.d/
+```
+
+If it is contained to one container, `docker rm -f <name>` kills every process in
+its namespace at once, which beats chasing individual PIDs that respawn. Then
+remove the image and volume, and close the entry vector before restarting
+anything, or it simply gets reinfected. Treat a container that ran untrusted code
+as burned: rebuild it rather than restarting it.
+
+Afterwards, verify externally that nothing is listening (see
+[Network exposure](#network-exposure-ufw-alone-is-not-enough)) and prune any
+tunnel ingress plus DNS record that pointed at the dead service. Rotate anything
+the compromised container could read. A container with no host mounts and no
+`docker.sock` could not reach `infrastructure/.env`, which narrows the blast
+radius considerably, but confirm rather than assume.
 
 ### Stuck Data Portability archive
 

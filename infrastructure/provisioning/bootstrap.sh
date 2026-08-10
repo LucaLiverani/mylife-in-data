@@ -13,7 +13,9 @@
 #   2. Creates a non-root sudoer + docker user (`admin` by default)
 #   3. Copies root's authorized_keys to the new user
 #   4. Installs Docker + Compose plugin (official convenience script)
-#   5. Configures UFW: deny inbound, allow 22 only
+#   5. Configures UFW (deny inbound, allow 22 only) AND drops inbound traffic to
+#      containers in the DOCKER-USER chain, because Docker's published ports
+#      bypass UFW entirely. Persists both across reboot.
 #   6. Installs fail2ban (SSH bruteforce protection)
 #   7. Enables unattended-upgrades (security patches)
 #   8. Generates a GitHub deploy key for the data platform repo + a dedicated SSH
@@ -35,6 +37,9 @@ HOSTNAME_NEW="${HOSTNAME_NEW:-myvm}"
 GH_DEPLOY_KEY_NAME="github_${USERNAME}_deploy_key"  # filename (without .pub) for the GitHub deploy key, stored in the new user's ~/.ssh/
 GH_REPO_HOST="github.com"                 # real GitHub host (HostName + known_hosts target)
 GH_SSH_ALIAS="github-mylife-in-data"      # dedicated SSH Host alias for this repo's deploy key (clone + git remote use git@$GH_SSH_ALIAS:...); coexists with other GitHub identities
+# Public-facing NIC, used to filter inbound container traffic in DOCKER-USER.
+PUBLIC_IFACE="${PUBLIC_IFACE:-$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'dev \K\S+' | head -1)}"
+PUBLIC_IFACE="${PUBLIC_IFACE:-eth0}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pre-flight
@@ -133,7 +138,7 @@ systemctl enable --now docker
 echo "  ✓ Docker enabled and running"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. Firewall (UFW)
+# 5. Firewall (UFW + the DOCKER-USER chain)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "▶ Configuring UFW (deny inbound, allow 22 only)"
 ufw --force reset >/dev/null
@@ -141,7 +146,29 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw allow 22/tcp comment 'ssh'
 ufw --force enable
-echo "  ✓ UFW active. Cloudflare Tunnel makes outbound connections — no other ports needed."
+echo "  ✓ UFW active (port 22 only)"
+
+# UFW ALONE IS NOT ENOUGH. Docker publishes ports by writing its own iptables
+# rules into the DOCKER chain, which is evaluated before UFW's. A container
+# published on 0.0.0.0 is therefore reachable from the internet even though UFW
+# says "deny incoming". In 2026-08 that gap let an unauthenticated side-project
+# container get compromised and mine crypto as root for two weeks.
+#
+# DOCKER-USER is the one chain Docker never rewrites, so filtering here survives
+# container restarts and daemon reloads. Return traffic for connections a
+# container opened outbound must be allowed first, or pulls and API calls break.
+echo "▶ Sealing the Docker/UFW bypass (DOCKER-USER chain on ${PUBLIC_IFACE})"
+iptables -C DOCKER-USER -i "$PUBLIC_IFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN 2>/dev/null \
+  || iptables -I DOCKER-USER 1 -i "$PUBLIC_IFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+iptables -C DOCKER-USER -i "$PUBLIC_IFACE" -j DROP 2>/dev/null \
+  || iptables -I DOCKER-USER 2 -i "$PUBLIC_IFACE" -j DROP
+
+# Without this the rules vanish on reboot and the box is exposed again.
+DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent >/dev/null
+netfilter-persistent save >/dev/null
+systemctl enable netfilter-persistent >/dev/null 2>&1 || true
+echo "  ✓ Inbound traffic to containers dropped, rules persisted across reboot"
+echo "    Verify from OFF the box: nc -z -w3 <VM_IP> 8123  (must fail; only 22 answers)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. fail2ban (default jails include sshd)
@@ -237,7 +264,8 @@ cat <<EOF
   Timezone:   $TIMEZONE
   Docker:     $(docker --version)
   uv:         $([[ -x "$UV_BIN" ]] && echo "installed at $UV_BIN" || echo "NOT installed — install manually")
-  Firewall:   UFW active — only 22/tcp open
+  Firewall:   UFW active (22/tcp only) + DOCKER-USER drops inbound to containers
+              on $PUBLIC_IFACE, persisted via iptables-persistent
   fail2ban:   active
   Updates:    unattended-upgrades enabled
 
