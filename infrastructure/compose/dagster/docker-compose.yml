@@ -88,7 +88,13 @@ services:
       - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml:ro
       - ./workspace.yaml:/opt/dagster/workspace.yaml:ro
       - ../../..:/opt/dagster/repo:ro
-      - ../../../tokens:/opt/dagster/tokens:ro
+      # Only the Spotify token file, RW: spotipy writes the refreshed access token
+      # back. Read-only, the cached token stays expired and every call re-hits
+      # accounts.spotify.com. The file must exist on the host (authenticate_local.py)
+      # or Docker creates a directory in its place.
+      # ponytail: spotipy's in-place write isn't atomic; a concurrent reader can rarely
+      # see a torn file and fail one run (retried). Atomic cache handler if that bites.
+      - ../../../tokens/.spotify_cache:/opt/dagster/tokens/.spotify_cache
       # dbt needs to write target/ and logs/ inside the project; RW required.
       - ../../../transformations:/opt/dagster/transformations
     ports:
@@ -115,7 +121,7 @@ services:
       - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml:ro
       - ./workspace.yaml:/opt/dagster/workspace.yaml:ro
       - ../../..:/opt/dagster/repo:ro
-      - ../../../tokens:/opt/dagster/tokens:ro
+      - ../../../tokens/.spotify_cache:/opt/dagster/tokens/.spotify_cache
       # dbt needs to write target/ and logs/ inside the project; RW required.
       - ../../../transformations:/opt/dagster/transformations
     depends_on:
@@ -137,7 +143,7 @@ services:
       - producer
     volumes:
       - ../../..:/opt/dagster/repo:ro
-      - ../../../tokens:/opt/dagster/tokens:ro
+      - ../../../tokens/.spotify_cache:/opt/dagster/tokens/.spotify_cache
     networks:
       - data-platform-network
     restart: unless-stopped

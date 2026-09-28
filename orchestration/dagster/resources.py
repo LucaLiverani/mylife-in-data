@@ -60,7 +60,7 @@ class R2Resource(ConfigurableResource):
 
 class SpotifyResource(ConfigurableResource):
     """spotipy client backed by a CacheFileHandler. Cache file is bind-mounted
-    in from the host's `tokens/` directory (read-only inside the container)."""
+    in from the host's `tokens/.spotify_cache` (writable, so refreshed tokens persist)."""
 
     # Cache file path inside the container. The host's `tokens/.spotify_cache`
     # is bind-mounted to /opt/dagster/tokens via compose.
