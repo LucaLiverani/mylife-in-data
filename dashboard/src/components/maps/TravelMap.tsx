@@ -57,11 +57,12 @@ export function TravelMap({ locations }: TravelMapProps) {
 
         mapInstanceRef.current = map;
 
-        // Esri Dark Gray canvas: keyless. CARTO's hosted basemaps now stamp
-        // "API KEY REQUIRED" over every tile. Note Esri's {y}/{x} order.
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-          maxZoom: 16,
+        // CARTO's hosted basemaps need a free key (carto.com/basemaps/apikey);
+        // without one every tile is stamped "API KEY REQUIRED".
+        const cartoKey = import.meta.env.VITE_CARTO_API_KEY as string | undefined;
+        L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png${cartoKey ? `?key=${cartoKey}` : ''}`, {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          maxZoom: 19,
           noWrap: true,
         }).addTo(map);
 
